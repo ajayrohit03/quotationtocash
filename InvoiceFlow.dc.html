@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #F6F7F9; }
+  body { font-family: "Instrument Sans", "Helvetica Neue", Helvetica, sans-serif; color: #0E1220; -webkit-font-smoothing: antialiased; font-feature-settings: "tnum" 1; }
+  a { color: #4F46E5; text-decoration: none; }
+  a:hover { color: #3730A3; }
+  input, button { font: inherit; color: inherit; }
+  input:focus { outline: 2px solid #C7D2FE; outline-offset: 0; border-color: #4F46E5 !important; }
+  ::placeholder { color: #98A0B0; }
+  @keyframes riseIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+</style>
+</helmet>
+
+<sc-if value="{{ isOnboarding }}" hint-placeholder-val="{{ true }}">
+<div style="min-height: 100vh; display: grid; grid-template-columns: 300px 1fr; background: #F6F7F9;">
+  <div style="background: #0E1220; padding: 40px 32px; display: flex; flex-direction: column; gap: 48px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 26px; height: 26px; border-radius: 7px; background: #4F46E5; display: grid; place-items: center; color: #fff; font-size: 13px; font-weight: 700;">IF</div>
+      <div style="color: #fff; font-size: 16px; font-weight: 600; letter-spacing: -0.01em;">InvoiceFlow</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <div style="display: flex; gap: 14px; align-items: flex-start;">
+        <div style="width: 22px; height: 22px; border-radius: 50%; background: #4F46E5; color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 600; flex: none;">1</div>
+        <div style="padding-bottom: 22px;">
+          <div style="color: #fff; font-size: 14px; font-weight: 500;">Your business</div>
+          <div style="color: #6E7689; font-size: 13px; margin-top: 2px;">Name, address, contact</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 14px; align-items: flex-start; margin-top: -18px;">
+        <div style="width: 22px; height: 22px; border-radius: 50%; background: #1C2130; color: #8A92A6; display: grid; place-items: center; font-size: 11px; font-weight: 600; flex: none;">2</div>
+        <div style="padding-bottom: 22px;">
+          <div style="color: #C6CBD7; font-size: 14px; font-weight: 500;">Your logo</div>
+          <div style="color: #6E7689; font-size: 13px; margin-top: 2px;">Optional, add later</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 14px; align-items: flex-start; margin-top: -18px;">
+        <div style="width: 22px; height: 22px; border-radius: 50%; background: #1C2130; color: #8A92A6; display: grid; place-items: center; font-size: 11px; font-weight: 600; flex: none;">3</div>
+        <div style="padding-bottom: 22px;">
+          <div style="color: #C6CBD7; font-size: 14px; font-weight: 500;">Tax</div>
+          <div style="color: #6E7689; font-size: 13px; margin-top: 2px;">GST or no GST</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 14px; align-items: flex-start; margin-top: -18px;">
+        <div style="width: 22px; height: 22px; border-radius: 50%; background: #1C2130; color: #8A92A6; display: grid; place-items: center; font-size: 11px; font-weight: 600; flex: none;">4</div>
+        <div>
+          <div style="color: #C6CBD7; font-size: 14px; font-weight: 500;">Document style</div>
+          <div style="color: #6E7689; font-size: 13px; margin-top: 2px;">Pick a look</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top: auto; color: #565E72; font-size: 13px; line-height: 1.5;">Takes about a minute. Everything here is editable later in Settings.</div>
+  </div>
+
+  <div style="display: flex; align-items: flex-start; justify-content: center; padding: 72px 40px;">
+    <div style="width: 100%; max-width: 620px;">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #7E869A;">Step {{ step }} of 4</div>
+
+      <sc-if value="{{ isStep1 }}" hint-placeholder-val="{{ true }}">
+      <div style="animation: riseIn .3s ease both;">
+        <h1 style="font-size: 30px; font-weight: 600; letter-spacing: -0.02em; margin: 10px 0 8px;">Tell us about your business</h1>
+        <p style="color: #656C7E; font-size: 15px; margin: 0 0 28px;">This appears on every quotation and invoice you send.</p>
+        <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.04); padding: 24px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-size: 13px; font-weight: 500; color: #3D4453;">Business name</label>
+              <input defaultValue="Acme Digital Solutions" style="height: 40px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; background: #fff;" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-size: 13px; font-weight: 500; color: #3D4453;">Business email</label>
+              <input defaultValue="hello@acmedigital.in" style="height: 40px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-size: 13px; font-weight: 500; color: #3D4453;">Phone</label>
+              <input defaultValue="+91 98200 41122" style="height: 40px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" />
+            </div>
+            <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-size: 13px; font-weight: 500; color: #3D4453;">Address</label>
+              <input defaultValue="304, Sunbeam House, Linking Road" style="height: 40px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-size: 13px; font-weight: 500; color: #3D4453;">City</label>
+              <input defaultValue="Mumbai" style="height: 40px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-size: 13px; font-weight: 500; color: #3D4453;">State</label>
+              <input defaultValue="Maharashtra" style="height: 40px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-size: 13px; font-weight: 500; color: #3D4453;">Country</label>
+              <input defaultValue="India" style="height: 40px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-size: 13px; font-weight: 500; color: #3D4453;">Website <span style="color: #98A0B0; font-weight: 400;">optional</span></label>
+              <input defaultValue="acmedigital.in" style="height: 40px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" />
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isStep2 }}">
+      <div style="animation: riseIn .3s ease both;">
+        <h1 style="font-size: 30px; font-weight: 600; letter-spacing: -0.02em; margin: 10px 0 8px;">Add your logo</h1>
+        <p style="color: #656C7E; font-size: 15px; margin: 0 0 28px;">Your logo will appear on your quotations and invoices.</p>
+        <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.04); padding: 24px; display: flex; gap: 24px; align-items: center;">
+          <div style="width: 148px; height: 148px; border-radius: 12px; border: 1px dashed #C9CEDA; background: #FAFBFC; display: grid; place-items: center; flex: none; text-align: center; padding: 12px;">
+            <div>
+              <div style="width: 34px; height: 34px; border-radius: 9px; background: #EEF0F5; margin: 0 auto 10px;"></div>
+              <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A92A6; line-height: 1.5;">logo<br />PNG or SVG</div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px; align-items: flex-start;">
+            <div style="font-size: 14px; color: #3D4453; line-height: 1.55;">Square or wide marks both work. We recommend at least 240&nbsp;px tall with a transparent background.</div>
+            <div style="display: flex; gap: 10px;">
+              <button style="height: 38px; padding: 0 16px; border-radius: 9px; border: 1px solid #0E1220; background: #0E1220; color: #fff; font-size: 14px; font-weight: 500; cursor: pointer;">Upload logo</button>
+              <button style="height: 38px; padding: 0 16px; border-radius: 9px; border: 1px solid #DDE0E8; background: #fff; color: #656C7E; font-size: 14px; font-weight: 500; cursor: pointer;">Remove logo</button>
+            </div>
+            <div style="font-size: 13px; color: #8A92A6;">You can skip this and add it later from Settings.</div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isStep3 }}">
+      <div style="animation: riseIn .3s ease both;">
+        <h1 style="font-size: 30px; font-weight: 600; letter-spacing: -0.02em; margin: 10px 0 8px;">Do you charge GST?</h1>
+        <p style="color: #656C7E; font-size: 15px; margin: 0 0 28px;">If you don't, we hide every tax field in the app.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div onClick="{{ enableGst }}" style="background: {{ gstOnCardBg }}; border: 1px solid {{ gstOnCardBorder }}; border-radius: 14px; padding: 20px; cursor: pointer; box-shadow: 0 1px 2px rgba(16,24,40,.04);">
+            <div style="width: 18px; height: 18px; border-radius: 50%; border: 5px solid {{ gstOnDot }}; background: #fff; margin-bottom: 14px;"></div>
+            <div style="font-size: 15px; font-weight: 600;">Yes, I charge GST</div>
+            <div style="font-size: 13px; color: #656C7E; margin-top: 4px; line-height: 1.5;">Registered business. We'll add CGST, SGST and IGST handling.</div>
+          </div>
+          <div onClick="{{ disableGst }}" style="background: {{ gstOffCardBg }}; border: 1px solid {{ gstOffCardBorder }}; border-radius: 14px; padding: 20px; cursor: pointer; box-shadow: 0 1px 2px rgba(16,24,40,.04);">
+            <div style="width: 18px; height: 18px; border-radius: 50%; border: 5px solid {{ gstOffDot }}; background: #fff; margin-bottom: 14px;"></div>
+            <div style="font-size: 15px; font-weight: 600;">No, I don't charge GST</div>
+            <div style="font-size: 13px; color: #656C7E; margin-top: 4px; line-height: 1.5;">Simplest setup. Documents show a plain total with no tax lines.</div>
+          </div>
+        </div>
+        <sc-if value="{{ gst }}">
+        <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 24px; margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; animation: riseIn .25s ease both;">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 13px; font-weight: 500; color: #3D4453;">GSTIN</label>
+            <input defaultValue="27AACCA1234B1Z5" style="height: 40px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; font-family: 'IBM Plex Mono', monospace;" />
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 13px; font-weight: 500; color: #3D4453;">Default GST rate</label>
+            <div style="height: 40px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; background: #fff; cursor: pointer;"><span>18%</span><span style="color: #98A0B0;">&#9662;</span></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 13px; font-weight: 500; color: #3D4453;">Place of supply</label>
+            <div style="height: 40px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;"><span>Maharashtra</span><span style="color: #98A0B0;">&#9662;</span></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 13px; font-weight: 500; color: #3D4453;">Registration type</label>
+            <div style="height: 40px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;"><span>Regular</span><span style="color: #98A0B0;">&#9662;</span></div>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isStep4 }}">
+      <div style="animation: riseIn .3s ease both;">
+        <h1 style="font-size: 30px; font-weight: 600; letter-spacing: -0.02em; margin: 10px 0 8px;">Choose document style</h1>
+        <p style="color: #656C7E; font-size: 15px; margin: 0 0 28px;">You can switch styles any time, on any document.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+          <div onClick="{{ pickClassic }}" style="border: 1px solid {{ tClassicBorder }}; background: #fff; border-radius: 14px; padding: 12px; cursor: pointer; box-shadow: 0 1px 2px rgba(16,24,40,.04);">
+            <div style="aspect-ratio: 1 / 1.414; background: #fff; border: 1px solid #EEF0F5; border-radius: 6px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="height: 8px; width: 46%; background: #0E1220; margin: 0 auto;"></div>
+              <div style="height: 1px; background: #0E1220;"></div>
+              <div style="height: 4px; width: 70%; background: #DDE0E8;"></div>
+              <div style="height: 4px; width: 55%; background: #EEF0F5;"></div>
+              <div style="height: 22px; background: #F3F4F7; margin-top: 6px;"></div>
+              <div style="height: 4px; width: 40%; background: #DDE0E8; margin-left: auto;"></div>
+            </div>
+            <div style="font-size: 14px; font-weight: 500; padding: 12px 4px 4px;">Classic</div>
+          </div>
+          <div onClick="{{ pickModern }}" style="border: 1px solid {{ tModernBorder }}; background: #fff; border-radius: 14px; padding: 12px; cursor: pointer; box-shadow: 0 1px 2px rgba(16,24,40,.04);">
+            <div style="aspect-ratio: 1 / 1.414; background: #fff; border: 1px solid #EEF0F5; border-radius: 6px; padding: 0 0 14px; display: flex; flex-direction: column; gap: 8px; overflow: hidden;">
+              <div style="height: 34px; background: {{ accent }}; margin-bottom: 4px;"></div>
+              <div style="height: 4px; width: 62%; background: #DDE0E8; margin: 0 14px;"></div>
+              <div style="height: 4px; width: 44%; background: #EEF0F5; margin: 0 14px;"></div>
+              <div style="height: 24px; background: #F3F4F7; margin: 6px 14px 0;"></div>
+              <div style="height: 6px; width: 34%; background: {{ accentSoft }}; margin: 0 14px 0 auto; margin-right: 14px;"></div>
+            </div>
+            <div style="font-size: 14px; font-weight: 500; padding: 12px 4px 4px;">Modern</div>
+          </div>
+          <div onClick="{{ pickMinimal }}" style="border: 1px solid {{ tMinimalBorder }}; background: #fff; border-radius: 14px; padding: 12px; cursor: pointer; box-shadow: 0 1px 2px rgba(16,24,40,.04);">
+            <div style="aspect-ratio: 1 / 1.414; background: #fff; border: 1px solid #EEF0F5; border-radius: 6px; padding: 18px 14px; display: flex; flex-direction: column; gap: 10px;">
+              <div style="height: 5px; width: 34%; background: #0E1220;"></div>
+              <div style="height: 3px; width: 58%; background: #EEF0F5;"></div>
+              <div style="height: 1px; background: #EEF0F5; margin-top: 8px;"></div>
+              <div style="height: 3px; width: 72%; background: #E7E9EF;"></div>
+              <div style="height: 3px; width: 64%; background: #E7E9EF;"></div>
+              <div style="height: 1px; background: #EEF0F5;"></div>
+              <div style="height: 5px; width: 30%; background: #0E1220; margin-left: auto;"></div>
+            </div>
+            <div style="font-size: 14px; font-weight: 500; padding: 12px 4px 4px;">Minimal</div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <div style="display: flex; align-items: center; gap: 12px; margin-top: 28px;">
+        <button onClick="{{ back }}" style="height: 42px; padding: 0 18px; border-radius: 10px; border: 1px solid #DDE0E8; background: #fff; color: #3D4453; font-size: 14px; font-weight: 500; cursor: pointer;">Back</button>
+        <button onClick="{{ next }}" style="height: 42px; padding: 0 22px; border-radius: 10px; border: none; background: {{ accent }}; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 1px 2px rgba(16,24,40,.12);">{{ nextLabel }}</button>
+        <button onClick="{{ skipSetup }}" style="height: 42px; padding: 0 12px; border-radius: 10px; border: none; background: transparent; color: #8A92A6; font-size: 14px; cursor: pointer; margin-left: auto;">Skip for now</button>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isApp }}">
+<div style="min-height: 100vh; display: grid; grid-template-columns: 244px 1fr; background: #F6F7F9;">
+
+  <div style="border-right: 1px solid #E7E9EF; background: #fff; display: flex; flex-direction: column; padding: 20px 14px; gap: 20px; position: sticky; top: 0; height: 100vh;">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 0 6px;">
+      <div style="width: 26px; height: 26px; border-radius: 7px; background: {{ accent }}; display: grid; place-items: center; color: #fff; font-size: 13px; font-weight: 700;">IF</div>
+      <div style="font-size: 15px; font-weight: 600; letter-spacing: -0.01em;">InvoiceFlow</div>
+    </div>
+
+    <div style="position: relative;">
+      <button onClick="{{ toggleCreate }}" style="width: 100%; height: 40px; border-radius: 10px; border: none; background: {{ accent }}; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 1px 2px rgba(16,24,40,.14);"><span style="font-size: 17px; line-height: 1; font-weight: 500;">+</span> Create new</button>
+      <sc-if value="{{ createMenu }}">
+      <div style="position: absolute; top: 46px; left: 0; right: 0; background: #fff; border: 1px solid #E7E9EF; border-radius: 11px; box-shadow: 0 12px 32px rgba(16,24,40,.14); padding: 6px; z-index: 40; animation: riseIn .14s ease both;">
+        <div onClick="{{ newQuotation }}" style="padding: 9px 10px; border-radius: 8px; font-size: 14px; cursor: pointer;" style-hover="background: #F3F4F7;">New quotation</div>
+        <div onClick="{{ newInvoice }}" style="padding: 9px 10px; border-radius: 8px; font-size: 14px; cursor: pointer;" style-hover="background: #F3F4F7;">New invoice</div>
+      </div>
+      </sc-if>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <div onClick="{{ goDash }}" style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; font-size: 14px; font-weight: 500; cursor: pointer; background: {{ navDashBg }}; color: {{ navDashColor }};">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex: none;"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.5" stroke="currentColor" stroke-width="1.4" /><rect x="9" y="1.5" width="5.5" height="5.5" rx="1.5" stroke="currentColor" stroke-width="1.4" /><rect x="1.5" y="9" width="5.5" height="5.5" rx="1.5" stroke="currentColor" stroke-width="1.4" /><rect x="9" y="9" width="5.5" height="5.5" rx="1.5" stroke="currentColor" stroke-width="1.4" /></svg>
+        Dashboard
+      </div>
+      <div onClick="{{ goQuotes }}" style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; font-size: 14px; font-weight: 500; cursor: pointer; background: {{ navQuotesBg }}; color: {{ navQuotesColor }};">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex: none;"><rect x="2.5" y="1.5" width="11" height="13" rx="2" stroke="currentColor" stroke-width="1.4" /><line x1="5.5" y1="5.5" x2="10.5" y2="5.5" stroke="currentColor" stroke-width="1.4" /><line x1="5.5" y1="9" x2="9" y2="9" stroke="currentColor" stroke-width="1.4" /></svg>
+        Quotations
+      </div>
+      <div onClick="{{ goInvoices }}" style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; font-size: 14px; font-weight: 500; cursor: pointer; background: {{ navInvBg }}; color: {{ navInvColor }};">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex: none;"><rect x="2.5" y="1.5" width="11" height="13" rx="2" stroke="currentColor" stroke-width="1.4" /><line x1="5.5" y1="5" x2="10.5" y2="5" stroke="currentColor" stroke-width="1.4" /><line x1="5.5" y1="8" x2="10.5" y2="8" stroke="currentColor" stroke-width="1.4" /><line x1="5.5" y1="11" x2="8" y2="11" stroke="currentColor" stroke-width="1.4" /></svg>
+        Invoices
+      </div>
+      <div onClick="{{ goCustomers }}" style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; font-size: 14px; font-weight: 500; cursor: pointer; background: {{ navCustBg }}; color: {{ navCustColor }};">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex: none;"><circle cx="8" cy="5.5" r="2.75" stroke="currentColor" stroke-width="1.4" /><path d="M2.75 14c0-2.6 2.35-4.25 5.25-4.25S13.25 11.4 13.25 14" stroke="currentColor" stroke-width="1.4" /></svg>
+        Customers
+      </div>
+      <div onClick="{{ goProducts }}" style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; font-size: 14px; font-weight: 500; cursor: pointer; background: {{ navProdBg }}; color: {{ navProdColor }};">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex: none;"><rect x="1.5" y="4.5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.4" /><path d="M5.5 4.5v-1a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1" stroke="currentColor" stroke-width="1.4" /></svg>
+        Products &amp; services
+      </div>
+      <div onClick="{{ goSettings }}" style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; font-size: 14px; font-weight: 500; cursor: pointer; background: {{ navSetBg }}; color: {{ navSetColor }};">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex: none;"><circle cx="8" cy="8" r="2.25" stroke="currentColor" stroke-width="1.4" /><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4" /></svg>
+        Settings
+      </div>
+    </div>
+
+    <div style="margin-top: auto; border-top: 1px solid #EEF0F5; padding-top: 14px; display: flex; align-items: center; gap: 10px;">
+      <div style="width: 30px; height: 30px; border-radius: 8px; background: #EEF0F5; display: grid; place-items: center; font-size: 12px; font-weight: 600; color: #3D4453;">AD</div>
+      <div style="min-width: 0;">
+        <div style="font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Acme Digital</div>
+        <div style="font-size: 12px; color: #8A92A6;">{{ taxModeLabel }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="min-width: 0;">
+
+    <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+    <div style="padding: 36px 40px 56px; max-width: 1180px;">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;">
+        <div>
+          <h1 style="font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 0;">Good morning, Acme Digital Solutions</h1>
+          <p style="color: #656C7E; font-size: 15px; margin: 6px 0 0;">Two quotations are waiting on a customer reply.</p>
+        </div>
+        <button onClick="{{ toggleCreate }}" style="height: 40px; padding: 0 18px; border-radius: 10px; border: none; background: {{ accent }}; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; flex: none;">+ Create new</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 28px;">
+        <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 18px 18px 20px; box-shadow: 0 1px 2px rgba(16,24,40,.04);">
+          <div style="font-size: 13px; color: #7E869A; font-weight: 500;">Total revenue</div>
+          <div style="font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin-top: 8px;">&#8377;8,42,500</div>
+          <div style="font-size: 12px; color: #15803D; margin-top: 6px;">+18% vs last quarter</div>
+        </div>
+        <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 18px 18px 20px; box-shadow: 0 1px 2px rgba(16,24,40,.04);">
+          <div style="font-size: 13px; color: #7E869A; font-weight: 500;">Outstanding</div>
+          <div style="font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin-top: 8px;">&#8377;1,67,000</div>
+          <div style="font-size: 12px; color: #B45309; margin-top: 6px;">1 invoice overdue</div>
+        </div>
+        <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 18px 18px 20px; box-shadow: 0 1px 2px rgba(16,24,40,.04);">
+          <div style="font-size: 13px; color: #7E869A; font-weight: 500;">Paid</div>
+          <div style="font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin-top: 8px;">&#8377;6,75,500</div>
+          <div style="font-size: 12px; color: #8A92A6; margin-top: 6px;">Across 11 invoices</div>
+        </div>
+        <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 18px 18px 20px; box-shadow: 0 1px 2px rgba(16,24,40,.04);">
+          <div style="font-size: 13px; color: #7E869A; font-weight: 500;">Drafts</div>
+          <div style="font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin-top: 8px;">3</div>
+          <div style="font-size: 12px; color: #8A92A6; margin-top: 6px;">Not sent yet</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 14px;">
+        <div onClick="{{ newQuotation }}" style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.04);" style-hover="border-color: #C9CEDA;">
+          <div style="width: 32px; height: 32px; border-radius: 9px; background: #EEF0FF; color: #4F46E5; display: grid; place-items: center; font-size: 16px; flex: none;">+</div>
+          <div style="font-size: 14px; font-weight: 500;">Create quotation</div>
+        </div>
+        <div onClick="{{ newInvoice }}" style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.04);" style-hover="border-color: #C9CEDA;">
+          <div style="width: 32px; height: 32px; border-radius: 9px; background: #EEF0FF; color: #4F46E5; display: grid; place-items: center; font-size: 16px; flex: none;">+</div>
+          <div style="font-size: 14px; font-weight: 500;">Create invoice</div>
+        </div>
+        <div onClick="{{ goCustomers }}" style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.04);" style-hover="border-color: #C9CEDA;">
+          <div style="width: 32px; height: 32px; border-radius: 9px; background: #F3F4F7; color: #3D4453; display: grid; place-items: center; font-size: 16px; flex: none;">+</div>
+          <div style="font-size: 14px; font-weight: 500;">Add customer</div>
+        </div>
+        <div onClick="{{ goProducts }}" style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 2px rgba(16,24,40,.04);" style-hover="border-color: #C9CEDA;">
+          <div style="width: 32px; height: 32px; border-radius: 9px; background: #F3F4F7; color: #3D4453; display: grid; place-items: center; font-size: 16px; flex: none;">+</div>
+          <div style="font-size: 14px; font-weight: 500;">Add product</div>
+        </div>
+      </div>
+
+      <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; margin-top: 28px; box-shadow: 0 1px 2px rgba(16,24,40,.04); overflow-x: auto;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid #EEF0F5;">
+          <div style="font-size: 15px; font-weight: 600;">Recent documents</div>
+          <div onClick="{{ goInvoices }}" style="font-size: 13px; color: #4F46E5; cursor: pointer; font-weight: 500;">View all</div>
+        </div>
+        <div style="display: flex; min-width: 840px; padding: 10px 20px; background: #FAFBFC; border-bottom: 1px solid #EEF0F5; font-size: 12px; font-weight: 600; color: #7E869A; letter-spacing: 0.02em;">
+          <div style="width: 148px;">Document</div>
+          <div style="flex: 1;">Customer</div>
+          <div style="width: 100px;">Type</div>
+          <div style="width: 110px;">Date</div>
+          <div style="width: 120px; text-align: right;">Amount</div>
+          <div style="width: 110px; padding-left: 20px;">Status</div>
+          <div style="width: 76px;"></div>
+        </div>
+        <sc-for list="{{ recent }}" as="d" hint-placeholder-count="6">
+          <div onClick="{{ d.open }}" style="display: flex; align-items: center; min-width: 840px; padding: 14px 20px; border-bottom: 1px solid #F3F4F7; font-size: 14px; cursor: pointer;" style-hover="background: #FAFBFC;">
+            <div style="width: 148px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #3D4453;">{{ d.number }}</div>
+            <div style="flex: 1; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 12px;">{{ d.customer }}</div>
+            <div style="width: 100px; color: #656C7E;">{{ d.type }}</div>
+            <div style="width: 110px; color: #656C7E;">{{ d.date }}</div>
+            <div style="width: 120px; text-align: right; font-weight: 500;">{{ d.amount }}</div>
+            <div style="width: 110px; padding-left: 20px;"><span style="display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 500; background: {{ d.pillBg }}; color: {{ d.pillColor }};">{{ d.status }}</span></div>
+            <div style="width: 76px; text-align: right; color: #98A0B0; font-size: 16px;">&#8250;</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isList }}">
+    <div style="padding: 36px 40px 56px; max-width: 1180px;">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;">
+        <div>
+          <h1 style="font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0;">{{ listTitle }}</h1>
+          <p style="color: #656C7E; font-size: 14px; margin: 6px 0 0;">{{ listSubtitle }}</p>
+        </div>
+        <button onClick="{{ listCreate }}" style="height: 40px; padding: 0 18px; border-radius: 10px; border: none; background: {{ accent }}; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; flex: none;">{{ listCta }}</button>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 12px; margin-top: 24px;">
+        <div style="display: flex; gap: 4px; background: #EEF0F5; padding: 3px; border-radius: 10px;">
+          <sc-for list="{{ filters }}" as="f" hint-placeholder-count="6">
+            <div onClick="{{ f.pick }}" style="padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; background: {{ f.bg }}; color: {{ f.color }};">{{ f.label }}</div>
+          </sc-for>
+        </div>
+        <input placeholder="{{ searchPlaceholder }}" style="margin-left: auto; height: 36px; width: 260px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; background: #fff;" />
+      </div>
+
+      <sc-if value="{{ listEmpty }}">
+      <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; margin-top: 16px; padding: 72px 24px; text-align: center; box-shadow: 0 1px 2px rgba(16,24,40,.04);">
+        <div style="width: 44px; height: 44px; border-radius: 12px; background: #F3F4F7; margin: 0 auto 18px;"></div>
+        <div style="font-size: 16px; font-weight: 600;">{{ emptyTitle }}</div>
+        <div style="font-size: 14px; color: #656C7E; margin: 8px auto 20px; max-width: 340px; line-height: 1.55;">{{ emptyBody }}</div>
+        <button onClick="{{ listCreate }}" style="height: 38px; padding: 0 18px; border-radius: 10px; border: none; background: {{ accent }}; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;">{{ listCta }}</button>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ listHasRows }}" hint-placeholder-val="{{ true }}">
+      <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; margin-top: 16px; box-shadow: 0 1px 2px rgba(16,24,40,.04); overflow-x: auto;">
+        <div style="display: flex; min-width: 840px; padding: 10px 20px; background: #FAFBFC; border-bottom: 1px solid #EEF0F5; font-size: 12px; font-weight: 600; color: #7E869A;">
+          <div style="width: 148px;">{{ colNumber }}</div>
+          <div style="flex: 1;">Customer</div>
+          <div style="width: 110px;">{{ colDate }}</div>
+          <div style="width: 110px;">{{ colDate2 }}</div>
+          <div style="width: 120px; text-align: right;">Amount</div>
+          <div style="width: 120px; padding-left: 20px;">Status</div>
+          <div style="width: 96px; text-align: right;">Actions</div>
+        </div>
+        <sc-for list="{{ listRows }}" as="r" hint-placeholder-count="6">
+          <div style="display: flex; align-items: center; min-width: 840px; padding: 14px 20px; border-bottom: 1px solid #F3F4F7; font-size: 14px;" style-hover="background: #FAFBFC;">
+            <div onClick="{{ r.open }}" style="width: 148px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #3D4453; cursor: pointer;">{{ r.number }}</div>
+            <div style="flex: 1; font-weight: 500; padding-right: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ r.customer }}</div>
+            <div style="width: 110px; color: #656C7E;">{{ r.date }}</div>
+            <div style="width: 110px; color: #656C7E;">{{ r.date2 }}</div>
+            <div style="width: 120px; text-align: right; font-weight: 500;">{{ r.amount }}</div>
+            <div style="width: 120px; padding-left: 20px;"><span style="display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 500; background: {{ r.pillBg }}; color: {{ r.pillColor }};">{{ r.status }}</span></div>
+            <div style="width: 96px; display: flex; justify-content: flex-end; gap: 6px;">
+              <div onClick="{{ r.open }}" style="font-size: 13px; color: #4F46E5; cursor: pointer; font-weight: 500;">View</div>
+              <div onClick="{{ r.action }}" style="font-size: 13px; color: #7E869A; cursor: pointer;">{{ r.actionLabel }}</div>
+            </div>
+          </div>
+        </sc-for>
+        <div style="padding: 12px 20px; font-size: 13px; color: #8A92A6; display: flex; justify-content: space-between;">
+          <span>{{ listCount }}</span>
+          <span>Edit &middot; Duplicate &middot; Download &middot; Delete available on each row</span>
+        </div>
+      </div>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isCustomers }}">
+    <div style="padding: 36px 40px 56px; max-width: 1180px;">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;">
+        <div>
+          <h1 style="font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0;">Customers</h1>
+          <p style="color: #656C7E; font-size: 14px; margin: 6px 0 0;">5 customers, &#8377;1,67,000 outstanding.</p>
+        </div>
+        <button style="height: 40px; padding: 0 18px; border-radius: 10px; border: none; background: {{ accent }}; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; flex: none;">+ Add customer</button>
+      </div>
+      <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; margin-top: 24px; box-shadow: 0 1px 2px rgba(16,24,40,.04); overflow-x: auto;">
+        <div style="display: flex; min-width: 840px; padding: 10px 20px; background: #FAFBFC; border-bottom: 1px solid #EEF0F5; font-size: 12px; font-weight: 600; color: #7E869A;">
+          <div style="flex: 1.4;">Customer</div>
+          <div style="flex: 1;">Company</div>
+          <div style="flex: 1.2;">Email</div>
+          <div style="width: 130px;">Phone</div>
+          <div style="width: 130px; text-align: right;">Total invoiced</div>
+          <div style="width: 120px; text-align: right;">Outstanding</div>
+        </div>
+        <sc-for list="{{ customers }}" as="c" hint-placeholder-count="5">
+          <div onClick="{{ c.open }}" style="display: flex; align-items: center; min-width: 840px; padding: 14px 20px; border-bottom: 1px solid #F3F4F7; font-size: 14px; cursor: pointer;" style-hover="background: #FAFBFC;">
+            <div style="flex: 1.4; font-weight: 500; display: flex; align-items: center; gap: 10px;"><span style="width: 28px; height: 28px; border-radius: 8px; background: #EEF0F5; display: grid; place-items: center; font-size: 11px; font-weight: 600; color: #3D4453;">{{ c.initials }}</span>{{ c.name }}</div>
+            <div style="flex: 1; color: #656C7E; padding-right: 10px;">{{ c.company }}</div>
+            <div style="flex: 1.2; color: #656C7E; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 10px;">{{ c.email }}</div>
+            <div style="width: 130px; color: #656C7E;">{{ c.phone }}</div>
+            <div style="width: 130px; text-align: right; font-weight: 500;">{{ c.invoiced }}</div>
+            <div style="width: 120px; text-align: right; color: {{ c.outColor }}; font-weight: 500;">{{ c.outstanding }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isCustomer }}">
+    <div style="padding: 36px 40px 56px; max-width: 1000px;">
+      <div onClick="{{ goCustomers }}" style="font-size: 13px; color: #7E869A; cursor: pointer; margin-bottom: 14px;">&#8249; Customers</div>
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 24px;">
+        <div style="display: flex; gap: 14px; align-items: center;">
+          <div style="width: 46px; height: 46px; border-radius: 12px; background: #EEF0F5; display: grid; place-items: center; font-size: 15px; font-weight: 600; color: #3D4453;">AT</div>
+          <div>
+            <h1 style="font-size: 22px; font-weight: 600; letter-spacing: -0.02em; margin: 0;">ABC Technologies Pvt Ltd</h1>
+            <p style="color: #656C7E; font-size: 14px; margin: 4px 0 0;">accounts@abctech.in &middot; +91 98111 20345 &middot; Pune, Maharashtra</p>
+          </div>
+        </div>
+        <button onClick="{{ newQuotation }}" style="height: 38px; padding: 0 16px; border-radius: 10px; border: 1px solid #DDE0E8; background: #fff; font-size: 14px; font-weight: 500; cursor: pointer; flex: none;">New quotation</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 24px;">
+        <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 18px;">
+          <div style="font-size: 13px; color: #7E869A;">Total billed</div>
+          <div style="font-size: 22px; font-weight: 600; margin-top: 6px;">&#8377;3,18,750</div>
+        </div>
+        <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 18px;">
+          <div style="font-size: 13px; color: #7E869A;">Outstanding</div>
+          <div style="font-size: 22px; font-weight: 600; margin-top: 6px; color: #B45309;">&#8377;1,25,000</div>
+        </div>
+        <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 18px;">
+          <div style="font-size: 13px; color: #7E869A;">Documents</div>
+          <div style="font-size: 22px; font-weight: 600; margin-top: 6px;">6</div>
+        </div>
+      </div>
+      <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; margin-top: 14px; overflow: hidden;">
+        <div style="padding: 16px 20px; border-bottom: 1px solid #EEF0F5; font-size: 15px; font-weight: 600;">Documents</div>
+        <sc-for list="{{ customerDocs }}" as="d" hint-placeholder-count="4">
+          <div onClick="{{ d.open }}" style="display: flex; align-items: center; min-width: 720px; padding: 13px 20px; border-bottom: 1px solid #F3F4F7; font-size: 14px; cursor: pointer;" style-hover="background: #FAFBFC;">
+            <div style="width: 150px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #3D4453;">{{ d.number }}</div>
+            <div style="flex: 1; color: #656C7E;">{{ d.type }}</div>
+            <div style="width: 110px; color: #656C7E;">{{ d.date }}</div>
+            <div style="width: 120px; text-align: right; font-weight: 500;">{{ d.amount }}</div>
+            <div style="width: 120px; padding-left: 20px;"><span style="display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 500; background: {{ d.pillBg }}; color: {{ d.pillColor }};">{{ d.status }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isProducts }}">
+    <div style="padding: 36px 40px 56px; max-width: 1180px;">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;">
+        <div>
+          <h1 style="font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0;">Products &amp; services</h1>
+          <p style="color: #656C7E; font-size: 14px; margin: 6px 0 0;">Saved items fill in the rate automatically on any document.</p>
+        </div>
+        <button style="height: 40px; padding: 0 18px; border-radius: 10px; border: none; background: {{ accent }}; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; flex: none;">+ Add item</button>
+      </div>
+      <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; margin-top: 24px; box-shadow: 0 1px 2px rgba(16,24,40,.04); overflow-x: auto;">
+        <div style="display: flex; min-width: 840px; padding: 10px 20px; background: #FAFBFC; border-bottom: 1px solid #EEF0F5; font-size: 12px; font-weight: 600; color: #7E869A;">
+          <div style="flex: 1.5;">Name</div>
+          <div style="width: 120px;">SKU</div>
+          <div style="width: 110px;">Unit</div>
+          <div style="width: 130px; text-align: right;">Price</div>
+          <sc-if value="{{ gst }}"><div style="width: 100px; text-align: right;">GST rate</div></sc-if>
+        </div>
+        <sc-for list="{{ products }}" as="p" hint-placeholder-count="6">
+          <div style="display: flex; align-items: center; min-width: 840px; padding: 14px 20px; border-bottom: 1px solid #F3F4F7; font-size: 14px;" style-hover="background: #FAFBFC;">
+            <div style="flex: 1.5; padding-right: 16px;">
+              <div style="font-weight: 500;">{{ p.name }}</div>
+              <div style="font-size: 13px; color: #8A92A6; margin-top: 2px;">{{ p.desc }}</div>
+            </div>
+            <div style="width: 120px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #7E869A;">{{ p.sku }}</div>
+            <div style="width: 110px; color: #656C7E;">{{ p.unit }}</div>
+            <div style="width: 130px; text-align: right; font-weight: 500;">{{ p.price }}</div>
+            <sc-if value="{{ gst }}"><div style="width: 100px; text-align: right; color: #656C7E;">18%</div></sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isBuilder }}">
+    <div>
+      <div style="position: sticky; top: 0; z-index: 20; background: rgba(246,247,249,.92); backdrop-filter: blur(8px); border-bottom: 1px solid #E7E9EF; padding: 16px 40px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;">
+        <div onClick="{{ builderBack }}" style="font-size: 13px; color: #7E869A; cursor: pointer;">&#8249; Back</div>
+        <div style="height: 20px; width: 1px; background: #DDE0E8;"></div>
+        <div>
+          <div style="font-size: 16px; font-weight: 600; letter-spacing: -0.01em;">{{ builderTitle }}</div>
+          <div style="font-size: 12px; color: #8A92A6; margin-top: 1px; white-space: nowrap;">Draft saved automatically &middot; {{ docNumber }}</div>
+        </div>
+        <div style="margin-left: auto; display: flex; gap: 10px;">
+          <button onClick="{{ savedToast }}" style="height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid #DDE0E8; background: #fff; font-size: 14px; font-weight: 500; cursor: pointer;">Save draft</button>
+          <button onClick="{{ openPreview }}" style="height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid #DDE0E8; background: #fff; font-size: 14px; font-weight: 500; cursor: pointer;">Preview</button>
+          <button onClick="{{ downloadToast }}" style="height: 38px; padding: 0 16px; border-radius: 10px; border: none; background: {{ accent }}; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;">Download PDF</button>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; padding: 24px 40px 56px; align-items: flex-start;">
+        <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0; flex: 1 1 520px;">
+
+          <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 20px; box-shadow: 0 1px 2px rgba(16,24,40,.04);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <div style="font-size: 15px; font-weight: 600;">Customer</div>
+              <div style="font-size: 13px; color: #4F46E5; cursor: pointer; font-weight: 500;">+ Add new customer</div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #FAFBFC; border: 1px solid #EEF0F5; border-radius: 11px; padding: 14px;">
+              <div style="width: 34px; height: 34px; border-radius: 9px; background: #EEF0F5; display: grid; place-items: center; font-size: 12px; font-weight: 600; color: #3D4453; flex: none;">AT</div>
+              <div style="min-width: 0; flex: 1 1 220px;">
+                <div style="font-size: 14px; font-weight: 500;">ABC Technologies Pvt Ltd</div>
+                <div style="font-size: 13px; color: #7E869A; margin-top: 1px;">accounts@abctech.in &middot; Baner, Pune 411045</div>
+              </div>
+              <div style="margin-left: auto; display: flex; gap: 12px; font-size: 13px; white-space: nowrap;">
+                <span style="color: #4F46E5; cursor: pointer; font-weight: 500;">Change</span>
+                <span style="color: #7E869A; cursor: pointer;">Edit details</span>
+              </div>
+            </div>
+            <sc-if value="{{ gst }}">
+            <div style="display: flex; gap: 10px; margin-top: 12px; font-size: 13px; color: #656C7E; align-items: center;">
+              <span style="font-family: 'IBM Plex Mono', monospace;">GSTIN 27AABCU9603R1ZX</span>
+              <span style="color: #DDE0E8;">|</span>
+              <span>Place of supply: Maharashtra &mdash; intra-state, CGST + SGST</span>
+            </div>
+            </sc-if>
+          </div>
+
+          <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 20px; box-shadow: 0 1px 2px rgba(16,24,40,.04);">
+            <div style="font-size: 15px; font-weight: 600; margin-bottom: 14px;">{{ detailsTitle }}</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 13px; font-weight: 500; color: #3D4453;">{{ numberLabel }}</label>
+                <input defaultValue="{{ docNumber }}" style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; font-family: 'IBM Plex Mono', monospace;" />
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 13px; font-weight: 500; color: #3D4453;">{{ dateLabel }}</label>
+                <input defaultValue="15 Aug 2026" style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" />
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 13px; font-weight: 500; color: #3D4453;">{{ dueLabel }}</label>
+                <input defaultValue="{{ dueValue }}" style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" />
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 13px; font-weight: 500; color: #3D4453;">Reference / PO number</label>
+                <input placeholder="Optional" style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" />
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 13px; font-weight: 500; color: #3D4453;">Currency</label>
+                <div style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;"><span>INR &mdash; &#8377;</span><span style="color: #98A0B0;">&#9662;</span></div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 13px; font-weight: 500; color: #3D4453;">{{ termsLabel }}</label>
+                <div style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;"><span>{{ termsValue }}</span><span style="color: #98A0B0;">&#9662;</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.04); overflow-x: auto;">
+            <div style="padding: 20px 20px 14px; display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size: 15px; font-weight: 600;">Items</div>
+              <input placeholder="Search products &amp; services" style="height: 34px; width: 240px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 13px;" />
+            </div>
+            <div style="display: flex; min-width: 680px; padding: 9px 20px; background: #FAFBFC; border-top: 1px solid #EEF0F5; border-bottom: 1px solid #EEF0F5; font-size: 12px; font-weight: 600; color: #7E869A;">
+              <div style="width: 22px;"></div>
+              <div style="flex: 1;">Item &amp; description</div>
+              <div style="width: 58px; text-align: right;">Qty</div>
+              <div style="width: 92px; text-align: right;">Rate</div>
+              <div style="width: 78px; text-align: right;">Discount</div>
+              <sc-if value="{{ gst }}"><div style="width: 66px; text-align: right;">Tax</div></sc-if>
+              <div style="width: 108px; text-align: right;">Amount</div>
+              <div style="width: 56px;"></div>
+            </div>
+            <sc-for list="{{ lineItems }}" as="li" hint-placeholder-count="3">
+              <div style="display: flex; align-items: center; min-width: 680px; padding: 12px 20px; border-bottom: 1px solid #F3F4F7; font-size: 14px;" style-hover="background: #FCFCFD;">
+                <div style="width: 22px; color: #C9CEDA; cursor: grab; font-size: 13px;">&#8942;&#8942;</div>
+                <div style="flex: 1; padding-right: 14px; min-width: 0;">
+                  <div style="font-weight: 500;">{{ li.name }}</div>
+                  <div style="font-size: 13px; color: #8A92A6; margin-top: 2px;">{{ li.desc }}</div>
+                </div>
+                <div style="width: 58px; text-align: right; color: #3D4453;">{{ li.qty }}</div>
+                <div style="width: 92px; text-align: right; color: #3D4453;">{{ li.rate }}</div>
+                <div style="width: 78px; text-align: right; color: #3D4453;">{{ li.disc }}</div>
+                <sc-if value="{{ gst }}"><div style="width: 66px; text-align: right; color: #656C7E;">18%</div></sc-if>
+                <div style="width: 108px; text-align: right; font-weight: 600;">{{ li.amount }}</div>
+                <div style="width: 56px; display: flex; justify-content: flex-end; gap: 10px; color: #98A0B0; font-size: 13px;">
+                  <span style="cursor: pointer;">&#10697;</span>
+                  <span style="cursor: pointer;">&#10005;</span>
+                </div>
+              </div>
+            </sc-for>
+            <div style="padding: 14px 20px; display: flex; gap: 10px;">
+              <button style="height: 34px; padding: 0 14px; border-radius: 9px; border: 1px dashed #C9CEDA; background: #fff; font-size: 13px; font-weight: 500; color: #3D4453; cursor: pointer;">+ Add item</button>
+              <button style="height: 34px; padding: 0 14px; border-radius: 9px; border: 1px dashed #C9CEDA; background: #fff; font-size: 13px; font-weight: 500; color: #3D4453; cursor: pointer;">+ Custom line</button>
+            </div>
+          </div>
+
+          <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 20px; box-shadow: 0 1px 2px rgba(16,24,40,.04);">
+            <div style="font-size: 15px; font-weight: 600; margin-bottom: 14px;">Notes &amp; terms</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 13px; font-weight: 500; color: #3D4453;">Notes to customer</label>
+                <div style="min-height: 76px; padding: 10px 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; color: #3D4453; line-height: 1.55;">Thanks for the opportunity. Timeline assumes content is supplied by 25 Aug.</div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 13px; font-weight: 500; color: #3D4453;">Terms &amp; conditions</label>
+                <div style="min-height: 76px; padding: 10px 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; color: #3D4453; line-height: 1.55;">50% advance, balance on delivery. Two rounds of revisions included.</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 18px; margin-top: 14px; font-size: 13px; color: #4F46E5; font-weight: 500;">
+              <span style="cursor: pointer;">+ Payment instructions</span>
+              <span style="cursor: pointer;">+ Internal note</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="position: sticky; top: 90px; display: flex; flex-direction: column; gap: 14px; flex: 1 1 300px; max-width: 332px; min-width: 0;">
+          <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 20px; box-shadow: 0 1px 2px rgba(16,24,40,.04);">
+            <div style="font-size: 15px; font-weight: 600; margin-bottom: 14px;">Summary</div>
+            <div style="display: flex; justify-content: space-between; font-size: 14px; padding: 7px 0;"><span style="color: #656C7E;">Subtotal</span><span>{{ subtotal }}</span></div>
+            <div style="display: flex; justify-content: space-between; font-size: 14px; padding: 7px 0;"><span style="color: #656C7E;">Discount</span><span style="color: #15803D;">&minus;{{ discount }}</span></div>
+            <sc-if value="{{ gst }}">
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 14px; padding: 7px 0;"><span style="color: #656C7E;">Taxable amount</span><span>{{ taxable }}</span></div>
+              <div style="display: flex; justify-content: space-between; font-size: 14px; padding: 7px 0;"><span style="color: #656C7E;">CGST 9%</span><span>{{ cgst }}</span></div>
+              <div style="display: flex; justify-content: space-between; font-size: 14px; padding: 7px 0;"><span style="color: #656C7E;">SGST 9%</span><span>{{ sgst }}</span></div>
+            </div>
+            </sc-if>
+            <div style="height: 1px; background: #EEF0F5; margin: 10px 0;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline;"><span style="font-size: 14px; font-weight: 600;">Total</span><span style="font-size: 22px; font-weight: 600; letter-spacing: -0.02em;">{{ total }}</span></div>
+            <sc-if value="{{ isInvoiceDoc }}">
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 14px; padding: 10px 0 7px;"><span style="color: #656C7E;">Amount paid</span><span>&#8377;0</span></div>
+              <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 600;"><span>Balance due</span><span>{{ total }}</span></div>
+              <button onClick="{{ paidToast }}" style="width: 100%; height: 38px; margin-top: 14px; border-radius: 10px; border: 1px solid #DDE0E8; background: #fff; font-size: 14px; font-weight: 500; cursor: pointer;">Mark as paid</button>
+            </div>
+            </sc-if>
+            <button onClick="{{ savedToast }}" style="width: 100%; height: 40px; margin-top: 14px; border-radius: 10px; border: none; background: {{ accent }}; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;">{{ saveLabel }}</button>
+            <button onClick="{{ openPreview }}" style="width: 100%; height: 38px; margin-top: 8px; border-radius: 10px; border: 1px solid #DDE0E8; background: #fff; font-size: 14px; font-weight: 500; cursor: pointer;">Preview</button>
+          </div>
+          <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; padding: 18px; box-shadow: 0 1px 2px rgba(16,24,40,.04);">
+            <div style="font-size: 14px; font-weight: 600;">{{ sideTipTitle }}</div>
+            <div style="font-size: 13px; color: #656C7E; margin-top: 6px; line-height: 1.55;">{{ sideTipBody }}</div>
+            <div onClick="{{ goSettingsTax }}" style="font-size: 13px; color: #4F46E5; font-weight: 500; margin-top: 10px; cursor: pointer;">{{ sideTipLink }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isPreview }}">
+    <div>
+      <div style="position: sticky; top: 0; z-index: 20; background: rgba(246,247,249,.92); backdrop-filter: blur(8px); border-bottom: 1px solid #E7E9EF; padding: 16px 40px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;">
+        <div onClick="{{ previewBack }}" style="font-size: 13px; color: #7E869A; cursor: pointer;">&#8249; Back to editor</div>
+        <div style="height: 20px; width: 1px; background: #DDE0E8;"></div>
+        <div style="font-size: 16px; font-weight: 600;">{{ previewHeading }}</div>
+        <div style="margin-left: auto; display: flex; gap: 10px;">
+          <sc-if value="{{ isQuoteDoc }}">
+          <button onClick="{{ convert }}" style="height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid #DDE0E8; background: #fff; font-size: 14px; font-weight: 500; cursor: pointer;">Convert to invoice</button>
+          </sc-if>
+          <button onClick="{{ sharedToast }}" style="height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid #DDE0E8; background: #fff; font-size: 14px; font-weight: 500; cursor: pointer;">Share</button>
+          <button onClick="{{ downloadToast }}" style="height: 38px; padding: 0 16px; border-radius: 10px; border: none; background: {{ accent }}; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;">Download PDF</button>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 24px; padding: 28px 40px 60px; align-items: flex-start; background: #EEF0F3; min-height: calc(100vh - 71px);">
+        <div style="display: flex; justify-content: center; flex: 1 1 560px; min-width: 0;">
+          <div style="width: 100%; max-width: 794px; min-height: 1123px; background: #fff; box-shadow: 0 8px 40px rgba(16,24,40,.10); border-radius: 2px; padding: 0 0 56px; overflow: hidden;">
+
+            <sc-if value="{{ isModern }}">
+            <div style="height: 10px; background: {{ accent }};"></div>
+            </sc-if>
+
+            <div style="padding: 56px 56px 0;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 32px;">
+                <div>
+                  <sc-if value="{{ showLogo }}">
+                  <div style="width: 116px; height: 40px; border: 1px dashed #C9CEDA; border-radius: 5px; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #98A0B0; margin-bottom: 16px;">logo</div>
+                  </sc-if>
+                  <div style="font-size: 19px; font-weight: 700; letter-spacing: -0.01em;">Acme Digital Solutions</div>
+                  <div style="font-size: 12.5px; color: #565E72; line-height: 1.7; margin-top: 6px;">304, Sunbeam House, Linking Road<br />Mumbai, Maharashtra 400050, India<br />hello@acmedigital.in &middot; +91 98200 41122</div>
+                  <sc-if value="{{ showGstinRow }}">
+                  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #565E72; margin-top: 6px;">GSTIN 27AACCA1234B1Z5</div>
+                  </sc-if>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 26px; font-weight: 700; letter-spacing: 0.12em; color: {{ docTitleColor }};">{{ docTitleText }}</div>
+                  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #3D4453; margin-top: 8px;">{{ docNumber }}</div>
+                  <div style="font-size: 12.5px; color: #565E72; line-height: 1.8; margin-top: 10px;">{{ dateLabel }}: 15 Aug 2026<br />{{ dueLabel }}: {{ dueValue }}</div>
+                </div>
+              </div>
+
+              <div style="height: 1px; background: #E7E9EF; margin: 32px 0;"></div>
+
+              <div style="display: flex; gap: 48px;">
+                <div>
+                  <div style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; color: #8A92A6;">BILL TO</div>
+                  <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">ABC Technologies Pvt Ltd</div>
+                  <div style="font-size: 12.5px; color: #565E72; line-height: 1.7; margin-top: 4px;">Ravi Menon<br />4th Floor, Orbit One, Baner<br />Pune, Maharashtra 411045<br />accounts@abctech.in</div>
+                  <sc-if value="{{ showGstinRow }}">
+                  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #565E72; margin-top: 5px;">GSTIN 27AABCU9603R1ZX</div>
+                  </sc-if>
+                </div>
+                <div>
+                  <div style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; color: #8A92A6;">REFERENCE</div>
+                  <div style="font-size: 12.5px; color: #565E72; line-height: 1.7; margin-top: 8px;">PO-2026-114<br />{{ termsLabel }}: {{ termsValue }}<br />Currency: INR (&#8377;)</div>
+                </div>
+              </div>
+
+              <div style="margin-top: 34px;">
+                <div style="display: flex; padding: 9px 12px; background: {{ tableHeadBg }}; color: {{ tableHeadColor }}; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em;">
+                  <div style="flex: 1;">DESCRIPTION</div>
+                  <div style="width: 52px; text-align: right;">QTY</div>
+                  <div style="width: 92px; text-align: right;">RATE</div>
+                  <sc-if value="{{ showTaxCol }}"><div style="width: 60px; text-align: right;">TAX</div></sc-if>
+                  <div style="width: 104px; text-align: right;">AMOUNT</div>
+                </div>
+                <sc-for list="{{ lineItems }}" as="li" hint-placeholder-count="3">
+                  <div style="display: flex; padding: 13px 12px; border-bottom: 1px solid #F3F4F7; font-size: 13px;">
+                    <div style="flex: 1; padding-right: 16px;">
+                      <div style="font-weight: 600;">{{ li.name }}</div>
+                      <div style="font-size: 12px; color: #7E869A; margin-top: 2px;">{{ li.desc }}</div>
+                    </div>
+                    <div style="width: 52px; text-align: right;">{{ li.qty }}</div>
+                    <div style="width: 92px; text-align: right;">{{ li.rate }}</div>
+                    <sc-if value="{{ showTaxCol }}"><div style="width: 60px; text-align: right; color: #565E72;">18%</div></sc-if>
+                    <div style="width: 104px; text-align: right; font-weight: 600;">{{ li.amount }}</div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; margin-top: 22px;">
+                <div style="width: 320px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 13px; padding: 6px 12px;"><span style="color: #565E72;">Subtotal</span><span>{{ subtotal }}</span></div>
+                  <div style="display: flex; justify-content: space-between; font-size: 13px; padding: 6px 12px;"><span style="color: #565E72;">Discount</span><span>&minus;{{ discount }}</span></div>
+                  <sc-if value="{{ showTaxBreakdown }}">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; padding: 6px 12px;"><span style="color: #565E72;">Taxable amount</span><span>{{ taxable }}</span></div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; padding: 6px 12px;"><span style="color: #565E72;">CGST 9%</span><span>{{ cgst }}</span></div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; padding: 6px 12px;"><span style="color: #565E72;">SGST 9%</span><span>{{ sgst }}</span></div>
+                  </div>
+                  </sc-if>
+                  <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; padding: 12px; background: {{ totalRowBg }};">
+                    <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em; color: {{ totalRowColor }};">GRAND TOTAL</span>
+                    <span style="font-size: 19px; font-weight: 700; color: {{ totalRowColor }};">{{ total }}</span>
+                  </div>
+                  <sc-if value="{{ isInvoiceDoc }}">
+                  <div style="display: flex; justify-content: space-between; font-size: 13px; padding: 8px 12px 0;"><span style="color: #565E72;">Balance due</span><span style="font-weight: 600;">{{ total }}</span></div>
+                  </sc-if>
+                </div>
+              </div>
+
+              <sc-if value="{{ showNotes }}">
+              <div style="margin-top: 34px;">
+                <div style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; color: #8A92A6;">NOTES</div>
+                <div style="font-size: 12.5px; color: #3D4453; line-height: 1.7; margin-top: 6px;">Thanks for the opportunity. Timeline assumes content is supplied by 25 Aug 2026.</div>
+              </div>
+              </sc-if>
+              <sc-if value="{{ showTerms }}">
+              <div style="margin-top: 20px;">
+                <div style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; color: #8A92A6;">TERMS &amp; CONDITIONS</div>
+                <div style="font-size: 12.5px; color: #3D4453; line-height: 1.7; margin-top: 6px;">50% advance, balance on delivery. Two rounds of revisions included. {{ validityLine }}</div>
+              </div>
+              </sc-if>
+              <sc-if value="{{ showPayment }}">
+              <div style="margin-top: 20px; padding: 14px; background: #FAFBFC; border: 1px solid #EEF0F5;">
+                <div style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; color: #8A92A6;">PAYMENT DETAILS</div>
+                <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #3D4453; line-height: 1.8; margin-top: 6px;">Acme Digital Solutions &middot; HDFC Bank, Bandra West<br />A/C 50200041122334 &middot; IFSC HDFC0000521 &middot; UPI acmedigital@hdfcbank</div>
+              </div>
+              </sc-if>
+
+              <div style="margin-top: 40px; padding-top: 16px; border-top: 1px solid #EEF0F5; display: flex; justify-content: space-between; font-size: 11.5px; color: #8A92A6;">
+                <span>Acme Digital Solutions &middot; acmedigital.in</span>
+                <span>Page 1 of 1</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="position: sticky; top: 95px; flex: 1 1 272px; max-width: 300px; background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.04); overflow-x: auto;">
+          <div style="padding: 16px 18px; border-bottom: 1px solid #EEF0F5;">
+            <div style="font-size: 15px; font-weight: 600;">Customize</div>
+            <div style="font-size: 12.5px; color: #8A92A6; margin-top: 2px;">Changes apply to the preview and the PDF.</div>
+          </div>
+          <div style="padding: 16px 18px; border-bottom: 1px solid #EEF0F5;">
+            <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #7E869A; margin-bottom: 10px;">LAYOUT</div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <div onClick="{{ pickClassic }}" style="padding: 9px 11px; border-radius: 9px; font-size: 14px; cursor: pointer; display: flex; justify-content: space-between; background: {{ tClassicBg }}; color: {{ tClassicColor }};">Classic<span>{{ tClassicMark }}</span></div>
+              <div onClick="{{ pickModern }}" style="padding: 9px 11px; border-radius: 9px; font-size: 14px; cursor: pointer; display: flex; justify-content: space-between; background: {{ tModernBg }}; color: {{ tModernColor }};">Modern<span>{{ tModernMark }}</span></div>
+              <div onClick="{{ pickMinimal }}" style="padding: 9px 11px; border-radius: 9px; font-size: 14px; cursor: pointer; display: flex; justify-content: space-between; background: {{ tMinimalBg }}; color: {{ tMinimalColor }};">Minimal<span>{{ tMinimalMark }}</span></div>
+            </div>
+          </div>
+          <div style="padding: 16px 18px; border-bottom: 1px solid #EEF0F5;">
+            <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #7E869A; margin-bottom: 10px;">ACCENT COLOR</div>
+            <div style="display: flex; gap: 8px;">
+              <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="5">
+                <div onClick="{{ s.pick }}" style="width: 28px; height: 28px; border-radius: 8px; cursor: pointer; background: {{ s.color }}; box-shadow: {{ s.ring }};"></div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="padding: 16px 18px;">
+            <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #7E869A; margin-bottom: 6px;">SHOW ON DOCUMENT</div>
+            <sc-for list="{{ toggles }}" as="t" hint-placeholder-count="6">
+              <div onClick="{{ t.toggle }}" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; cursor: pointer;">
+                <span style="font-size: 14px; color: #3D4453;">{{ t.label }}</span>
+                <span style="width: 34px; height: 20px; border-radius: 999px; padding: 2px; display: flex; background: {{ t.trackBg }}; justify-content: {{ t.knobPos }};"><span style="width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(16,24,40,.2);"></span></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isSettings }}">
+    <div style="padding: 36px 40px 56px; max-width: 1080px;">
+      <h1 style="font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0;">Settings</h1>
+      <p style="color: #656C7E; font-size: 14px; margin: 6px 0 0;">Everything from setup lives here, editable any time.</p>
+      <div style="display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 24px; margin-top: 26px; align-items: start;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <sc-for list="{{ settingsTabs }}" as="t" hint-placeholder-count="5">
+            <div onClick="{{ t.pick }}" style="padding: 9px 11px; border-radius: 9px; font-size: 14px; font-weight: 500; cursor: pointer; background: {{ t.bg }}; color: {{ t.color }};">{{ t.label }}</div>
+          </sc-for>
+        </div>
+        <div style="background: #fff; border: 1px solid #E7E9EF; border-radius: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.04); padding: 24px;">
+
+          <sc-if value="{{ setBusiness }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="font-size: 16px; font-weight: 600;">Business profile</div>
+            <div style="font-size: 13.5px; color: #656C7E; margin-top: 4px;">Shown in the header of every document.</div>
+            <div style="display: flex; gap: 16px; align-items: center; margin: 20px 0 20px;">
+              <div style="width: 76px; height: 76px; border-radius: 12px; border: 1px dashed #C9CEDA; background: #FAFBFC; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #98A0B0; flex: none;">logo</div>
+              <div style="display: flex; gap: 10px;">
+                <button style="height: 36px; padding: 0 14px; border-radius: 9px; border: 1px solid #DDE0E8; background: #fff; font-size: 13.5px; font-weight: 500; cursor: pointer;">Upload logo</button>
+                <button style="height: 36px; padding: 0 14px; border-radius: 9px; border: 1px solid #DDE0E8; background: #fff; font-size: 13.5px; color: #656C7E; cursor: pointer;">Remove</button>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Business name</label><input defaultValue="Acme Digital Solutions" style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" /></div>
+              <div style="display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Email</label><input defaultValue="hello@acmedigital.in" style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" /></div>
+              <div style="display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Phone</label><input defaultValue="+91 98200 41122" style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" /></div>
+              <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Address</label><input defaultValue="304, Sunbeam House, Linking Road, Mumbai 400050" style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" /></div>
+              <div style="display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Website</label><input defaultValue="acmedigital.in" style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" /></div>
+            </div>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ setTax }}">
+          <div>
+            <div style="font-size: 16px; font-weight: 600;">Tax</div>
+            <div style="font-size: 13.5px; color: #656C7E; margin-top: 4px;">Turn GST off and every tax field disappears across the app.</div>
+            <div onClick="{{ toggleGst }}" style="display: flex; align-items: center; justify-content: space-between; margin-top: 20px; padding: 16px; border: 1px solid #E7E9EF; border-radius: 12px; cursor: pointer;">
+              <div>
+                <div style="font-size: 14px; font-weight: 500;">Charge GST</div>
+                <div style="font-size: 13px; color: #8A92A6; margin-top: 2px;">{{ gstHint }}</div>
+              </div>
+              <span style="width: 40px; height: 24px; border-radius: 999px; padding: 3px; display: flex; background: {{ gstTrackBg }}; justify-content: {{ gstKnobPos }}; flex: none;"><span style="width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(16,24,40,.2);"></span></span>
+            </div>
+            <sc-if value="{{ gst }}">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; animation: riseIn .2s ease both;">
+              <div style="display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">GSTIN</label><input defaultValue="27AACCA1234B1Z5" style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; font-family: 'IBM Plex Mono', monospace;" /></div>
+              <div style="display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Default rate</label><div style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;"><span>18%</span><span style="color: #98A0B0;">&#9662;</span></div></div>
+              <div style="display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Home state</label><div style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;"><span>Maharashtra</span><span style="color: #98A0B0;">&#9662;</span></div></div>
+              <div style="display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Registration type</label><div style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;"><span>Regular</span><span style="color: #98A0B0;">&#9662;</span></div></div>
+              <div style="grid-column: span 2; font-size: 13px; color: #656C7E; background: #FAFBFC; border: 1px solid #EEF0F5; border-radius: 10px; padding: 12px; line-height: 1.6;">Same-state customers get CGST + SGST split evenly. Other states get IGST at the full rate. We pick the right one from the customer's place of supply.</div>
+            </div>
+            </sc-if>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ setDocs }}">
+          <div>
+            <div style="font-size: 16px; font-weight: 600;">Documents</div>
+            <div style="font-size: 13.5px; color: #656C7E; margin-top: 4px;">Numbering and the defaults that prefill every new document.</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;">
+              <div style="display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Quotation numbering</label><input defaultValue="QT-2026-0001" style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; font-family: 'IBM Plex Mono', monospace;" /></div>
+              <div style="display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Invoice numbering</label><input defaultValue="INV-2026-0001" style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; font-family: 'IBM Plex Mono', monospace;" /></div>
+              <div style="display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Default payment terms</label><div style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;"><span>Net 15</span><span style="color: #98A0B0;">&#9662;</span></div></div>
+              <div style="display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Quotation validity</label><div style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;"><span>15 days</span><span style="color: #98A0B0;">&#9662;</span></div></div>
+              <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Default notes</label><div style="min-height: 64px; padding: 10px 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; color: #3D4453; line-height: 1.55;">Thanks for the opportunity.</div></div>
+              <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Default terms &amp; conditions</label><div style="min-height: 64px; padding: 10px 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px; color: #3D4453; line-height: 1.55;">50% advance, balance on delivery. Two rounds of revisions included.</div></div>
+            </div>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ setAppearance }}">
+          <div>
+            <div style="font-size: 16px; font-weight: 600;">Appearance</div>
+            <div style="font-size: 13.5px; color: #656C7E; margin-top: 4px;">Applies to new documents and the PDF export.</div>
+            <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #7E869A; margin: 22px 0 10px;">ACCENT COLOR</div>
+            <div style="display: flex; gap: 10px;">
+              <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="5">
+                <div onClick="{{ s.pick }}" style="width: 34px; height: 34px; border-radius: 9px; cursor: pointer; background: {{ s.color }}; box-shadow: {{ s.ring }};"></div>
+              </sc-for>
+            </div>
+            <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #7E869A; margin: 24px 0 10px;">TEMPLATE</div>
+            <div style="display: flex; gap: 10px;">
+              <div onClick="{{ pickClassic }}" style="padding: 9px 16px; border-radius: 9px; font-size: 14px; cursor: pointer; border: 1px solid {{ tClassicBorder }}; background: {{ tClassicBg }}; color: {{ tClassicColor }};">Classic</div>
+              <div onClick="{{ pickModern }}" style="padding: 9px 16px; border-radius: 9px; font-size: 14px; cursor: pointer; border: 1px solid {{ tModernBorder }}; background: {{ tModernBg }}; color: {{ tModernColor }};">Modern</div>
+              <div onClick="{{ pickMinimal }}" style="padding: 9px 16px; border-radius: 9px; font-size: 14px; cursor: pointer; border: 1px solid {{ tMinimalBorder }}; background: {{ tMinimalBg }}; color: {{ tMinimalColor }};">Minimal</div>
+            </div>
+            <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #7E869A; margin: 24px 0 10px;">LOGO POSITION</div>
+            <div style="display: flex; gap: 10px;">
+              <div style="padding: 9px 16px; border-radius: 9px; font-size: 14px; cursor: pointer; border: 1px solid #0E1220; background: #0E1220; color: #fff;">Left</div>
+              <div style="padding: 9px 16px; border-radius: 9px; font-size: 14px; cursor: pointer; border: 1px solid #DDE0E8; background: #fff; color: #3D4453;">Center</div>
+              <div style="padding: 9px 16px; border-radius: 9px; font-size: 14px; cursor: pointer; border: 1px solid #DDE0E8; background: #fff; color: #3D4453;">Right</div>
+            </div>
+            <div onClick="{{ openPreview }}" style="font-size: 13.5px; color: #4F46E5; font-weight: 500; margin-top: 22px; cursor: pointer;">Open live document preview &#8250;</div>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ setAccount }}">
+          <div>
+            <div style="font-size: 16px; font-weight: 600;">Account</div>
+            <div style="font-size: 13.5px; color: #656C7E; margin-top: 4px;">Your personal login, separate from the business profile.</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;">
+              <div style="display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Name</label><input defaultValue="Priya Nair" style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" /></div>
+              <div style="display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Email</label><input defaultValue="priya@acmedigital.in" style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" /></div>
+              <div style="display: flex; flex-direction: column; gap: 6px;"><label style="font-size: 13px; font-weight: 500; color: #3D4453;">Password</label><input defaultValue="••••••••••" style="height: 38px; padding: 0 12px; border: 1px solid #DDE0E8; border-radius: 9px; font-size: 14px;" /></div>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 22px; align-items: center;">
+              <button style="height: 38px; padding: 0 16px; border-radius: 10px; border: none; background: #0E1220; color: #fff; font-size: 14px; font-weight: 500; cursor: pointer;">Save changes</button>
+              <button onClick="{{ restartOnboarding }}" style="height: 38px; padding: 0 16px; border-radius: 10px; border: 1px solid #DDE0E8; background: #fff; font-size: 14px; color: #656C7E; cursor: pointer;">Re-run setup</button>
+              <button style="height: 38px; padding: 0 12px; border-radius: 10px; border: none; background: transparent; color: #B42318; font-size: 14px; cursor: pointer; margin-left: auto;">Log out</button>
+            </div>
+          </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ toast }}">
+<div style="position: fixed; bottom: 28px; left: 50%; z-index: 90; background: #0E1220; color: #fff; padding: 13px 18px; border-radius: 11px; font-size: 14px; box-shadow: 0 12px 32px rgba(16,24,40,.28); display: flex; align-items: center; gap: 14px; animation: toastIn .18s ease both; max-width: 560px;">
+  <span style="width: 7px; height: 7px; border-radius: 50%; background: #4ADE80; flex: none;"></span>
+  <span>{{ toast }}</span>
+  <span onClick="{{ clearToast }}" style="color: #8A92A6; cursor: pointer; margin-left: 6px;">&#10005;</span>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#4F46E5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#4F46E5&quot;,&quot;#0F766E&quot;,&quot;#1D4ED8&quot;,&quot;#C2410C&quot;,&quot;#111827&quot;],&quot;section&quot;:&quot;Brand&quot;},&quot;gstEnabled&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Tax&quot;},&quot;template&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;classic&quot;,&quot;options&quot;:[&quot;classic&quot;,&quot;modern&quot;,&quot;minimal&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Documents&quot;}}">
+class Component extends DCLogic {
+  state = {
+    screen: "onboarding",
+    step: 1,
+    gst: this.props.gstEnabled ?? false,
+    template: this.props.template ?? "modern",
+    accent: this.props.accentColor ?? "#4F46E5",
+    docType: "quotation",
+    listFilter: "All",
+    settingsTab: "Business profile",
+    createMenu: false,
+    toast: null,
+    show: { logo: true, gstin: true, tax: true, payment: true, notes: true, terms: true }
+  };
+
+  inr(n) { return "\u20B9" + Math.round(n).toLocaleString("en-IN"); }
+
+  items = [
+    { name: "Website Development", desc: "Design and build, 8 pages, CMS handover", qty: 1, rate: 50000, disc: 0 },
+    { name: "UI/UX Design", desc: "Wireframes, hi-fi screens, component library", qty: 1, rate: 25000, disc: 5 },
+    { name: "Annual Maintenance", desc: "Monthly retainer, 12 months", qty: 12, rate: 10000, disc: 0 }
+  ];
+
+  pill(status) {
+    const m = {
+      Draft: ["#F3F4F7", "#565E72"], Sent: ["#EEF0FF", "#4338CA"], Viewed: ["#EFF6FF", "#1D4ED8"],
+      Accepted: ["#ECFDF3", "#15803D"], Paid: ["#ECFDF3", "#15803D"], Overdue: ["#FEF3F2", "#B42318"],
+      Converted: ["#F5F3FF", "#6D28D9"], Rejected: ["#FEF3F2", "#B42318"], "Partially paid": ["#FFFAEB", "#B45309"],
+      Cancelled: ["#F3F4F7", "#8A92A6"]
+    };
+    const c = m[status] || m.Draft;
+    return { pillBg: c[0], pillColor: c[1] };
+  }
+
+  toast(msg) {
+    this.setState({ toast: msg, createMenu: false });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: null }), 4200);
+  }
+
+  go(screen) { this.setState({ screen, createMenu: false }); }
+
+  docs = [
+    { number: "QT-2026-0004", customer: "ABC Technologies Pvt Ltd", type: "Quotation", date: "12 Aug 2026", d2: "27 Aug 2026", amt: 193750, status: "Sent" },
+    { number: "INV-2026-0007", customer: "Nimbus Retail LLP", type: "Invoice", date: "10 Aug 2026", d2: "25 Aug 2026", amt: 88500, status: "Paid" },
+    { number: "INV-2026-0006", customer: "Sharma Traders", type: "Invoice", date: "04 Aug 2026", d2: "19 Aug 2026", amt: 42000, status: "Overdue" },
+    { number: "QT-2026-0003", customer: "Vertex Consulting", type: "Quotation", date: "01 Aug 2026", d2: "16 Aug 2026", amt: 110000, status: "Accepted" },
+    { number: "QT-2026-0002", customer: "Lumen Interiors", type: "Quotation", date: "28 Jul 2026", d2: "12 Aug 2026", amt: 35000, status: "Draft" },
+    { number: "INV-2026-0005", customer: "ABC Technologies Pvt Ltd", type: "Invoice", date: "22 Jul 2026", d2: "06 Aug 2026", amt: 125000, status: "Viewed" },
+    { number: "QT-2026-0001", customer: "Sharma Traders", type: "Quotation", date: "18 Jul 2026", d2: "02 Aug 2026", amt: 64000, status: "Converted" },
+    { number: "INV-2026-0004", customer: "Vertex Consulting", type: "Invoice", date: "14 Jul 2026", d2: "29 Jul 2026", amt: 96000, status: "Partially paid" }
+  ];
+
+  openDoc(d) {
+    this.setState({ docType: d.type === "Invoice" ? "invoice" : "quotation", screen: "preview", createMenu: false });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const accent = s.accent;
+    const gst = s.gst;
+    const isQuote = s.docType === "quotation";
+    const sub = this.items.reduce((a, i) => a + i.qty * i.rate, 0);
+    const disc = this.items.reduce((a, i) => a + i.qty * i.rate * i.disc / 100, 0);
+    const taxable = sub - disc;
+    const tax = gst ? taxable * 0.18 : 0;
+    const total = taxable + tax;
+
+    const navStyle = (key) => s.screen === key
+      ? { bg: "#F3F3FE", color: accent }
+      : { bg: "transparent", color: "#565E72" };
+    const nav = {
+      dash: navStyle("dashboard"), quotes: navStyle("quotations"), inv: navStyle("invoices"),
+      cust: (s.screen === "customers" || s.screen === "customer") ? { bg: "#F3F3FE", color: accent } : { bg: "transparent", color: "#565E72" },
+      prod: navStyle("products"), set: navStyle("settings")
+    };
+
+    const isList = s.screen === "quotations" || s.screen === "invoices";
+    const quoteFilters = ["All", "Draft", "Sent", "Viewed", "Accepted", "Rejected", "Converted"];
+    const invFilters = ["All", "Draft", "Sent", "Paid", "Partially paid", "Overdue", "Cancelled"];
+    const filterList = s.screen === "invoices" ? invFilters : quoteFilters;
+    const wantType = s.screen === "invoices" ? "Invoice" : "Quotation";
+    const rows = this.docs.filter(d => d.type === wantType && (s.listFilter === "All" || d.status === s.listFilter));
+
+    const tmplChip = (key) => s.template === key
+      ? { bg: "#F3F3FE", color: accent, border: accent, mark: "\u2713" }
+      : { bg: "transparent", color: "#3D4453", border: "#DDE0E8", mark: "" };
+    const tc = tmplChip("classic"), tm = tmplChip("modern"), tmin = tmplChip("minimal");
+
+    const swatchList = ["#4F46E5", "#0F766E", "#1D4ED8", "#C2410C", "#111827"].map(c => ({
+      color: c, ring: c === accent ? "0 0 0 2px #fff inset, 0 0 0 2px " + c : "0 0 0 1px rgba(16,24,40,.12)",
+      pick: () => this.setState({ accent: c })
+    }));
+
+    const toggleDefs = [
+      ["logo", "Logo"], ["gstin", "GSTIN"], ["tax", "Tax breakdown"],
+      ["payment", "Payment details"], ["notes", "Notes"], ["terms", "Terms & conditions"]
+    ].filter(([k]) => gst || (k !== "gstin" && k !== "tax"));
+
+    return {
+      accent,
+      accentSoft: accent + "55",
+      swatches: swatchList,
+      gst,
+      isOnboarding: s.screen === "onboarding",
+      isApp: s.screen !== "onboarding",
+      step: s.step,
+      isStep1: s.step === 1, isStep2: s.step === 2, isStep3: s.step === 3, isStep4: s.step === 4,
+      nextLabel: s.step === 4 ? "Finish setup" : "Continue",
+      next: () => s.step === 4 ? this.go("dashboard") : this.setState({ step: s.step + 1 }),
+      back: () => s.step === 1 ? this.go("dashboard") : this.setState({ step: s.step - 1 }),
+      skipSetup: () => this.go("dashboard"),
+      enableGst: () => this.setState({ gst: true }),
+      disableGst: () => this.setState({ gst: false }),
+      gstOnCardBg: gst ? "#F8F8FE" : "#fff",
+      gstOffCardBg: gst ? "#fff" : "#F8F8FE",
+      gstOnCardBorder: gst ? accent : "#E7E9EF",
+      gstOffCardBorder: gst ? "#E7E9EF" : accent,
+      gstOnDot: gst ? accent : "#DDE0E8",
+      gstOffDot: gst ? "#DDE0E8" : accent,
+
+      pickClassic: () => this.setState({ template: "classic" }),
+      pickModern: () => this.setState({ template: "modern" }),
+      pickMinimal: () => this.setState({ template: "minimal" }),
+      tClassicBorder: tc.border, tModernBorder: tm.border, tMinimalBorder: tmin.border,
+      tClassicBg: tc.bg, tModernBg: tm.bg, tMinimalBg: tmin.bg,
+      tClassicColor: tc.color, tModernColor: tm.color, tMinimalColor: tmin.color,
+      tClassicMark: tc.mark, tModernMark: tm.mark, tMinimalMark: tmin.mark,
+      isModern: s.template === "modern",
+
+      taxModeLabel: gst ? "GST registered" : "No GST",
+      toggleCreate: () => this.setState({ createMenu: !s.createMenu }),
+      createMenu: s.createMenu,
+      newQuotation: () => this.setState({ docType: "quotation", screen: "builder", createMenu: false }),
+      newInvoice: () => this.setState({ docType: "invoice", screen: "builder", createMenu: false }),
+      goDash: () => this.go("dashboard"),
+      goQuotes: () => this.setState({ screen: "quotations", listFilter: "All", createMenu: false }),
+      goInvoices: () => this.setState({ screen: "invoices", listFilter: "All", createMenu: false }),
+      goCustomers: () => this.go("customers"),
+      goProducts: () => this.go("products"),
+      goSettings: () => this.go("settings"),
+      goSettingsTax: () => this.setState({ screen: "settings", settingsTab: "Tax", createMenu: false }),
+      restartOnboarding: () => this.setState({ screen: "onboarding", step: 1 }),
+
+      navDashBg: nav.dash.bg, navDashColor: nav.dash.color,
+      navQuotesBg: nav.quotes.bg, navQuotesColor: nav.quotes.color,
+      navInvBg: nav.inv.bg, navInvColor: nav.inv.color,
+      navCustBg: nav.cust.bg, navCustColor: nav.cust.color,
+      navProdBg: nav.prod.bg, navProdColor: nav.prod.color,
+      navSetBg: nav.set.bg, navSetColor: nav.set.color,
+
+      isDash: s.screen === "dashboard",
+      recent: this.docs.slice(0, 6).map(d => Object.assign({
+        number: d.number, customer: d.customer, type: d.type, date: d.date,
+        amount: this.inr(d.amt), status: d.status, open: () => this.openDoc(d)
+      }, this.pill(d.status))),
+
+      isList,
+      listTitle: s.screen === "invoices" ? "Invoices" : "Quotations",
+      listSubtitle: s.screen === "invoices" ? "\u20B91,67,000 outstanding across 2 unpaid invoices." : "2 quotations awaiting a customer reply.",
+      listCta: s.screen === "invoices" ? "+ New invoice" : "+ New quotation",
+      listCreate: () => this.setState({ docType: s.screen === "invoices" ? "invoice" : "quotation", screen: "builder" }),
+      searchPlaceholder: s.screen === "invoices" ? "Search customer or invoice number" : "Search customer or quotation number",
+      colNumber: s.screen === "invoices" ? "Invoice #" : "Quotation #",
+      colDate: s.screen === "invoices" ? "Invoice date" : "Date",
+      colDate2: s.screen === "invoices" ? "Due date" : "Valid until",
+      filters: filterList.map(f => ({
+        label: f,
+        bg: s.listFilter === f ? "#fff" : "transparent",
+        color: s.listFilter === f ? "#0E1220" : "#656C7E",
+        pick: () => this.setState({ listFilter: f })
+      })),
+      listRows: rows.map(d => Object.assign({
+        number: d.number, customer: d.customer, date: d.date, date2: d.d2,
+        amount: this.inr(d.amt), status: d.status,
+        open: () => this.openDoc(d),
+        actionLabel: d.type === "Invoice" ? "\u00B7 Mark paid" : "\u00B7 Convert",
+        action: () => d.type === "Invoice"
+          ? this.toast("Invoice " + d.number + " marked as paid.")
+          : this.toast("Quotation " + d.number + " has been converted to Invoice INV-2026-0008.")
+      }, this.pill(d.status))),
+      listHasRows: rows.length > 0,
+      listEmpty: rows.length === 0,
+      listCount: rows.length + (rows.length === 1 ? " document" : " documents"),
+      emptyTitle: s.screen === "invoices" ? "No invoices here yet." : "No quotations here yet.",
+      emptyBody: s.screen === "invoices"
+        ? "Create an invoice, or convert an accepted quotation in one click."
+        : "Create your first quotation and send a professional quote to your customer.",
+
+      isCustomers: s.screen === "customers",
+      customers: [
+        ["ABC Technologies Pvt Ltd", "ABC Technologies", "accounts@abctech.in", "+91 98111 20345", 318750, 125000],
+        ["Nimbus Retail LLP", "Nimbus Retail", "finance@nimbusretail.com", "+91 99870 11223", 188500, 0],
+        ["Sharma Traders", "Sharma Traders", "sharma.traders@gmail.com", "+91 98330 44567", 106000, 42000],
+        ["Vertex Consulting", "Vertex Consulting", "ap@vertexconsult.in", "+91 97020 88991", 206000, 0],
+        ["Lumen Interiors", "Lumen Interiors", "hello@lumeninteriors.in", "+91 90040 23311", 23250, 0]
+      ].map(c => ({
+        name: c[0], company: c[1], email: c[2], phone: c[3],
+        initials: c[0].split(" ").slice(0, 2).map(w => w[0]).join(""),
+        invoiced: this.inr(c[4]),
+        outstanding: c[5] ? this.inr(c[5]) : "\u2014",
+        outColor: c[5] ? "#B45309" : "#98A0B0",
+        open: () => this.go("customer")
+      })),
+
+      isCustomer: s.screen === "customer",
+      customerDocs: this.docs.filter(d => d.customer === "ABC Technologies Pvt Ltd").map(d => Object.assign({
+        number: d.number, type: d.type, date: d.date, amount: this.inr(d.amt), status: d.status,
+        open: () => this.openDoc(d)
+      }, this.pill(d.status))),
+
+      isProducts: s.screen === "products",
+      products: [
+        ["Website Development", "Design and build, CMS handover", "WEB-001", "project", 50000],
+        ["UI/UX Design", "Wireframes, hi-fi screens, design system", "DES-002", "project", 25000],
+        ["Annual Maintenance", "Updates, backups, uptime monitoring", "AMC-003", "month", 10000],
+        ["Consulting", "Strategy and technical advisory", "CON-004", "hour", 3500],
+        ["Graphic Design", "Collateral, social, print-ready files", "GRD-005", "project", 12000],
+        ["Brand Audit", "Positioning and identity review", "BRA-006", "project", 18000]
+      ].map(p => ({ name: p[0], desc: p[1], sku: p[2], unit: "per " + p[3], price: this.inr(p[4]) })),
+
+      isBuilder: s.screen === "builder",
+      isPreview: s.screen === "preview",
+      isQuoteDoc: isQuote,
+      isInvoiceDoc: !isQuote,
+      builderTitle: isQuote ? "New quotation" : "New invoice",
+      builderBack: () => this.go(isQuote ? "quotations" : "invoices"),
+      previewBack: () => this.go("builder"),
+      previewHeading: isQuote ? "Quotation preview" : "Invoice preview",
+      detailsTitle: isQuote ? "Quotation details" : "Invoice details",
+      numberLabel: isQuote ? "Quotation number" : "Invoice number",
+      docNumber: isQuote ? "QT-2026-0005" : "INV-2026-0008",
+      dateLabel: isQuote ? "Issue date" : "Invoice date",
+      dueLabel: isQuote ? "Valid until" : "Due date",
+      dueValue: isQuote ? "30 Aug 2026" : "30 Aug 2026",
+      termsLabel: isQuote ? "Validity" : "Payment terms",
+      termsValue: isQuote ? "15 days" : "Net 15",
+      saveLabel: isQuote ? "Save quotation" : "Save invoice",
+      validityLine: isQuote ? "This quotation is valid until 30 Aug 2026." : "Late payments attract 1.5% interest per month.",
+      docTitleText: isQuote ? "QUOTATION" : "INVOICE",
+      docTitleColor: s.template === "minimal" ? "#0E1220" : accent,
+      tableHeadBg: s.template === "minimal" ? "#fff" : (s.template === "classic" ? "#0E1220" : "#F3F4F7"),
+      tableHeadColor: s.template === "classic" ? "#fff" : (s.template === "minimal" ? "#8A92A6" : "#3D4453"),
+      totalRowBg: s.template === "minimal" ? "#F6F7F9" : accent,
+      totalRowColor: s.template === "minimal" ? "#0E1220" : "#fff",
+
+      lineItems: this.items.map(i => ({
+        name: i.name, desc: i.desc, qty: i.qty, rate: this.inr(i.rate),
+        disc: i.disc ? i.disc + "%" : "\u2014",
+        amount: this.inr(i.qty * i.rate * (1 - i.disc / 100))
+      })),
+      subtotal: this.inr(sub), discount: this.inr(disc), taxable: this.inr(taxable),
+      cgst: this.inr(tax / 2), sgst: this.inr(tax / 2), total: this.inr(total),
+
+      sideTipTitle: gst ? "Tax is set automatically" : "No GST on this document",
+      sideTipBody: gst
+        ? "Maharashtra to Maharashtra, so we split 18% into CGST and SGST. Another state would switch to IGST."
+        : "Your business is set up without GST, so tax fields stay hidden on documents and totals.",
+      sideTipLink: gst ? "Change tax settings" : "Turn on GST",
+
+      openPreview: () => this.go("preview"),
+      savedToast: () => this.toast(isQuote ? "Quotation QT-2026-0005 saved as a draft." : "Invoice INV-2026-0008 saved as a draft."),
+      downloadToast: () => this.toast((isQuote ? "QT-2026-0005" : "INV-2026-0008") + ".pdf downloaded, A4, ready to email or send on WhatsApp."),
+      sharedToast: () => this.toast("Share link copied to clipboard."),
+      paidToast: () => this.toast("Invoice INV-2026-0008 marked as paid."),
+      convert: () => this.toast("Quotation QT-2026-0005 has been converted to Invoice INV-2026-0008."),
+
+      showLogo: s.show.logo,
+      showGstinRow: gst && s.show.gstin,
+      showTaxCol: gst && s.show.tax,
+      showTaxBreakdown: gst && s.show.tax,
+      showPayment: s.show.payment,
+      showNotes: s.show.notes,
+      showTerms: s.show.terms,
+      toggles: toggleDefs.map(([k, label]) => ({
+        label,
+        trackBg: s.show[k] ? accent : "#DDE0E8",
+        knobPos: s.show[k] ? "flex-end" : "flex-start",
+        toggle: () => this.setState({ show: Object.assign({}, s.show, { [k]: !s.show[k] }) })
+      })),
+
+      isSettings: s.screen === "settings",
+      settingsTabs: ["Business profile", "Tax", "Documents", "Appearance", "Account"].map(t => ({
+        label: t,
+        bg: s.settingsTab === t ? "#F3F3FE" : "transparent",
+        color: s.settingsTab === t ? accent : "#565E72",
+        pick: () => this.setState({ settingsTab: t })
+      })),
+      setBusiness: s.settingsTab === "Business profile",
+      setTax: s.settingsTab === "Tax",
+      setDocs: s.settingsTab === "Documents",
+      setAppearance: s.settingsTab === "Appearance",
+      setAccount: s.settingsTab === "Account",
+      toggleGst: () => this.setState({ gst: !gst }),
+      gstHint: gst ? "CGST, SGST and IGST fields are visible." : "All tax fields are hidden across the app.",
+      gstTrackBg: gst ? accent : "#DDE0E8",
+      gstKnobPos: gst ? "flex-end" : "flex-start",
+
+      toast: s.toast,
+      clearToast: () => this.setState({ toast: null })
+    };
+  }
+}
+</script>
+</body>
+</html>

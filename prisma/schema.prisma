@@ -1,0 +1,260 @@
+// InvoiceFlow — Prisma schema
+//
+// NOTES FOR IMPLEMENTERS:
+// - Document.status and LineItem.gstRate/discountPct are validated in
+//   application code (lib/documents/status.ts), not as DB-level enums —
+//   quotation and invoice statuses are mutually exclusive vocabularies.
+// - Every business-owned model carries businessId and must be queried
+//   scoped to it (see lib/auth/* helpers). Never fetch by id alone.
+// - Document.customerSnapshot / businessSnapshot freeze the data used to
+//   render that document at creation time; never derive historical
+//   documents from the live Customer/Business rows.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum BusinessRole {
+  owner
+  staff
+
+  @@map("business_role")
+}
+
+enum DocumentType {
+  quotation
+  invoice
+
+  @@map("document_type")
+}
+
+enum DocumentTemplate {
+  classic
+  modern
+  minimal
+
+  @@map("document_template")
+}
+
+model Business {
+  id       String @id @default(uuid())
+  name     String
+  email    String
+  phone    String?
+  address  String?
+  city     String?
+  state    String?
+  country  String?
+  website  String?
+  logoUrl  String? @map("logo_url")
+
+  gstEnabled       Boolean  @default(false) @map("gst_enabled")
+  gstin            String?
+  gstDefaultRate   Decimal? @map("gst_default_rate") @db.Decimal(5, 2)
+  placeOfSupply    String?  @map("place_of_supply")
+  registrationType String?  @map("registration_type")
+
+  documentTemplate DocumentTemplate @default(classic) @map("document_template")
+  accentColor      String           @default("#4F46E5") @map("accent_color")
+
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  members   BusinessMember[]
+  customers Customer[]
+  products  Product[]
+  documents Document[]
+
+  @@map("businesses")
+}
+
+model User {
+  id             String  @id @default(uuid())
+  email          String  @unique
+  name           String?
+  avatarUrl      String? @map("avatar_url")
+  authProviderId String  @unique @map("auth_provider_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  memberships BusinessMember[]
+
+  @@map("users")
+}
+
+model BusinessMember {
+  id         String       @id @default(uuid())
+  businessId String       @map("business_id")
+  userId     String       @map("user_id")
+  role       BusinessRole @default(staff)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId])
+  @@index([userId])
+  @@map("business_members")
+}
+
+model Customer {
+  id         String @id @default(uuid())
+  businessId String @map("business_id")
+
+  name    String
+  company String?
+  email   String?
+  phone   String?
+  address String?
+  city    String?
+  state   String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  documents Document[]
+
+  @@index([businessId])
+  @@map("customers")
+}
+
+model Product {
+  id         String @id @default(uuid())
+  businessId String @map("business_id")
+
+  name        String
+  description String?
+  sku         String?
+  unit        String?
+  price       Decimal  @db.Decimal(12, 2)
+  gstRate     Decimal? @map("gst_rate") @db.Decimal(5, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  business   Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  lineItems  LineItem[]
+
+  @@index([businessId])
+  @@map("products")
+}
+
+model Document {
+  id         String       @id @default(uuid())
+  businessId String       @map("business_id")
+  type       DocumentType
+
+  number     String
+  customerId String   @map("customer_id")
+
+  issueDate      DateTime  @map("issue_date")
+  dueDate        DateTime? @map("due_date")
+  validUntil     DateTime? @map("valid_until")
+  paymentTerms   String?   @map("payment_terms")
+  validityTerms  String?   @map("validity_terms")
+
+  // String, not a DB enum — validated against QUOTATION_STATUSES /
+  // INVOICE_STATUSES in lib/documents/status.ts based on `type`.
+  status String @default("draft")
+
+  subtotal      Decimal @default(0) @db.Decimal(12, 2)
+  discountTotal Decimal @default(0) @map("discount_total") @db.Decimal(12, 2)
+  taxableAmount Decimal @default(0) @map("taxable_amount") @db.Decimal(12, 2)
+  cgst          Decimal @default(0) @db.Decimal(12, 2)
+  sgst          Decimal @default(0) @db.Decimal(12, 2)
+  igst          Decimal @default(0) @db.Decimal(12, 2)
+  total         Decimal @default(0) @db.Decimal(12, 2)
+  currency      String  @default("INR")
+
+  template    DocumentTemplate @default(classic)
+  accentColor String           @default("#4F46E5") @map("accent_color")
+
+  showLogo     Boolean @default(true) @map("show_logo")
+  showGstinRow Boolean @default(true) @map("show_gstin_row")
+  showTax      Boolean @default(true) @map("show_tax")
+  showPayment  Boolean @default(true) @map("show_payment")
+  showNotes    Boolean @default(true) @map("show_notes")
+  showTerms    Boolean @default(true) @map("show_terms")
+
+  notes     String?
+  termsText String? @map("terms_text")
+
+  // Frozen copies of the business/customer data used to render this
+  // document — must never be re-derived from the live rows.
+  customerSnapshot Json @map("customer_snapshot")
+  businessSnapshot Json @map("business_snapshot")
+
+  convertedFromQuotationId String?   @unique @map("converted_from_quotation_id")
+  convertedFromQuotation   Document? @relation("QuotationConversion", fields: [convertedFromQuotationId], references: [id])
+  convertedToInvoice       Document? @relation("QuotationConversion")
+
+  shareToken String?   @unique @map("share_token")
+  sentAt     DateTime? @map("sent_at")
+  viewedAt   DateTime? @map("viewed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer  Customer   @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  lineItems LineItem[]
+  payments  Payment[]
+
+  @@unique([businessId, number])
+  @@index([businessId])
+  @@index([businessId, type])
+  @@index([businessId, status])
+  @@index([businessId, customerId])
+  @@map("documents")
+}
+
+model LineItem {
+  id         String  @id @default(uuid())
+  documentId String  @map("document_id")
+  productId  String? @map("product_id")
+
+  name        String
+  description String?
+  qty         Decimal @db.Decimal(12, 2)
+  rate        Decimal @db.Decimal(12, 2)
+  discountPct Decimal @default(0) @map("discount_pct") @db.Decimal(5, 2)
+  gstRate     Decimal? @map("gst_rate") @db.Decimal(5, 2)
+  amount      Decimal @db.Decimal(12, 2)
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  product  Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([documentId])
+  @@map("line_items")
+}
+
+// Phase 2 — full payment tracking against invoices. Table is modeled now
+// so the schema doesn't need a disruptive migration later; no API/UI yet.
+model Payment {
+  id        String   @id @default(uuid())
+  invoiceId String   @map("invoice_id")
+  amount    Decimal  @db.Decimal(12, 2)
+  method    String?
+  paidAt    DateTime @map("paid_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  invoice Document @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("payments")
+}
