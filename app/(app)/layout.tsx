@@ -4,6 +4,8 @@ import { requireBusinessForPage } from "@/lib/auth/page";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/quotations", label: "Quotations" },
+  { href: "/invoices", label: "Invoices" },
   { href: "/customers", label: "Customers" },
   { href: "/products", label: "Products" },
 ];

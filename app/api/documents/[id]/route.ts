@@ -180,3 +180,32 @@ export async function PATCH(
     return errorResponse(error);
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { business } = await requireBusiness();
+    const { id } = await params;
+
+    const existing = await prisma.document.findFirst({
+      where: { id, businessId: business.id },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+    }
+    if (!isEditableStatus(existing.status)) {
+      return NextResponse.json(
+        { error: "Only draft documents can be deleted" },
+        { status: 403 },
+      );
+    }
+
+    await prisma.document.delete({ where: { id } });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return errorResponse(error);
+  }
+}

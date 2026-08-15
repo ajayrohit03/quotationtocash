@@ -24,6 +24,10 @@ export const documentCreateSchema = z.object({
 export type DocumentCreateInput = z.infer<typeof documentCreateSchema>;
 
 export const documentUpdateSchema = z.object({
+  // Auto-suggested at creation, but the spec calls it editable — unique
+  // constraint violations are caught and surfaced as a clear error in the
+  // route handler rather than a raw P2002.
+  number: z.string().trim().min(1, "Number can't be empty").max(50).optional(),
   customerId: z.string().min(1).optional(),
   issueDate: z.coerce.date().optional(),
   dueDate: z.coerce.date().nullable().optional(),
