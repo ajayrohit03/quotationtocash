@@ -1,17 +1,11 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
-const isPublicRoute = createRouteMatcher([
-  "/",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
-  "/public/documents/(.*)",
-]);
-
-export default clerkMiddleware(async (auth, req) => {
-  if (!isPublicRoute(req)) {
-    await auth.protect();
-  }
-});
+// Clerk's routing/matcher-based protection (`createRouteMatcher` +
+// `auth.protect()`) is deprecated in favor of resource-based checks: each
+// page, layout, API route, and public route resolves its own auth via
+// requireAuth() / requireBusiness() (see lib/auth/). This middleware only
+// establishes the Clerk auth context so those calls work.
+export default clerkMiddleware();
 
 export const config = {
   matcher: [

@@ -20,11 +20,15 @@ Postgres, Supabase Storage, Clerk auth, Resend for email, react-pdf for PDF expo
    npm install
    ```
 
-3. Push the Prisma schema to your Supabase database:
+3. Apply the checked-in migrations to your Supabase database:
 
    ```bash
-   npx prisma migrate dev
+   npx prisma migrate deploy
    ```
+
+   (Use `npx prisma migrate dev` instead once you start changing
+   `schema.prisma` yourself — it diffs against the database and writes a new
+   migration file.)
 
 4. Run the dev server:
 
@@ -45,5 +49,7 @@ prisma/         schema.prisma, migrations
 ```
 
 Business logic (tax calculations, authorization, document calculations) lives in
-`lib/`, not inside React components. Every tenant-owned query is scoped by
-`businessId` — see `lib/auth/` once Phase 2 lands.
+`lib/`, not inside React components. Every tenant-owned query must be scoped by
+`businessId`; use `requireAuth()` / `requireBusiness()` / `requireBusinessOwner()`
+from `lib/auth/session.ts` (or the redirect-on-failure `*ForPage()` variants in
+`lib/auth/page.ts`) to get it — see [`lib/auth/`](./lib/auth).
