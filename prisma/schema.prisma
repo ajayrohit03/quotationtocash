@@ -66,10 +66,11 @@ model Business {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  members   BusinessMember[]
-  customers Customer[]
-  products  Product[]
-  documents Document[]
+  members          BusinessMember[]
+  customers        Customer[]
+  products         Product[]
+  documents        Document[]
+  documentCounters DocumentCounter[]
 
   @@map("businesses")
 }
@@ -240,6 +241,23 @@ model LineItem {
 
   @@index([documentId])
   @@map("line_items")
+}
+
+// Backs concurrency-safe document numbering (lib/documents/numbering.ts).
+// One row per (business, document type, year); lastNumber is incremented
+// atomically via Prisma upsert, which compiles to a native Postgres
+// INSERT ... ON CONFLICT DO UPDATE — no read-then-write race window.
+model DocumentCounter {
+  id         String       @id @default(uuid())
+  businessId String       @map("business_id")
+  type       DocumentType
+  year       Int
+  lastNumber Int          @default(0) @map("last_number")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, type, year])
+  @@map("document_counters")
 }
 
 // Phase 2 — full payment tracking against invoices. Table is modeled now
