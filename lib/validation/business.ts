@@ -1,4 +1,9 @@
 import { z } from "zod";
+import { GST_REGISTRATION_TYPES, INDIAN_STATES } from "@/lib/constants/indian-states";
+
+// Official GSTIN format: 2-digit state code, 10-char PAN, 1-digit entity
+// code, 'Z' by default, 1 checksum char.
+const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 
 export const businessCreateSchema = z.object({
   name: z.string().trim().min(1, "Business name is required").max(200),
@@ -24,12 +29,10 @@ export const businessUpdateSchema = z.object({
   website: z.string().trim().max(300).nullable().optional(),
   logoUrl: z.string().trim().max(2000).nullable().optional(),
 
-  gstEnabled: z.boolean().optional(),
-  gstin: z.string().trim().max(20).nullable().optional(),
-  gstDefaultRate: z.number().min(0).max(100).nullable().optional(),
-  placeOfSupply: z.string().trim().max(120).nullable().optional(),
-  registrationType: z.string().trim().max(120).nullable().optional(),
-
+  // GST fields are intentionally not here — they have cross-field rules
+  // (GSTIN/rate/place/registration are required together, and disabling
+  // GST should clear them) that don't fit a plain partial-update schema.
+  // See gstSetupSchema and PATCH /api/business/gst.
   documentTemplate: z.enum(["classic", "modern", "minimal"]).optional(),
   accentColor: z
     .string()
@@ -39,3 +42,31 @@ export const businessUpdateSchema = z.object({
 });
 
 export type BusinessUpdateInput = z.infer<typeof businessUpdateSchema>;
+
+// Used by the onboarding GST step (and later Settings > Tax) — stricter
+// than businessUpdateSchema's permissive per-field optionality, since here
+// we know exactly which fields the form is submitting together.
+export const gstSetupSchema = z.discriminatedUnion("gstEnabled", [
+  z.object({
+    gstEnabled: z.literal(false),
+  }),
+  z.object({
+    gstEnabled: z.literal(true),
+    gstin: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(GSTIN_REGEX, "Enter a valid 15-character GSTIN"),
+    gstDefaultRate: z.number().min(0).max(100),
+    placeOfSupply: z.enum(INDIAN_STATES),
+    registrationType: z.enum(GST_REGISTRATION_TYPES),
+  }),
+]);
+
+export type GstSetupInput = z.infer<typeof gstSetupSchema>;
+
+export const templateSetupSchema = z.object({
+  documentTemplate: z.enum(["classic", "modern", "minimal"]),
+});
+
+export type TemplateSetupInput = z.infer<typeof templateSetupSchema>;
