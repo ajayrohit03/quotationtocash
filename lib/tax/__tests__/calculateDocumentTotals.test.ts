@@ -94,4 +94,32 @@ describe("calculateDocumentTotals", () => {
     });
     expect(totals.subtotal.toString()).toBe("1");
   });
+
+  // Rounding convention: each line's tax is rounded to the cent
+  // individually (inside calculateGST), and the already-rounded per-line
+  // amounts are what get summed — not summed as precise Decimals and
+  // rounded once at the end. This locks that in with numbers chosen so
+  // the two approaches actually disagree, rather than coincidentally
+  // matching.
+  it("rounds tax per line item and sums the rounded amounts", () => {
+    // Three identical lines: taxable ₹2.50 @ 5% IGST -> raw 0.125 each,
+    // which rounds half-up to ₹0.13 per line. Summed per-line: ₹0.39.
+    // If tax were instead summed as precise decimals first (0.125 * 3 =
+    // 0.375) and rounded once at the end, that rounds to ₹0.38 — one
+    // paisa less. The assertion below is only true under the per-line
+    // convention.
+    const items = [
+      { qty: 1, rate: 2.5, gstRate: 5 },
+      { qty: 1, rate: 2.5, gstRate: 5 },
+      { qty: 1, rate: 2.5, gstRate: 5 },
+    ];
+    const totals = calculateDocumentTotals(items, {
+      gstEnabled: true,
+      sameState: false,
+    });
+
+    expect(totals.taxableAmount.toString()).toBe("7.5");
+    expect(totals.igst.toString()).toBe("0.39");
+    expect(totals.total.toString()).toBe("7.89");
+  });
 });
