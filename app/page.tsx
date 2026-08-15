@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -13,18 +14,24 @@ export default function Home() {
       <p className="max-w-md text-muted-foreground">
         Create a polished quotation or invoice in about two minutes.
       </p>
-      <div className="flex gap-3">
-        <Button nativeButton={false} render={<Link href="/sign-up" />}>
-          Get started
-        </Button>
-        <Button
-          nativeButton={false}
-          variant="outline"
-          render={<Link href="/sign-in" />}
-        >
-          Sign in
-        </Button>
-      </div>
+      <Show when="signed-out">
+        <div className="flex gap-3">
+          <SignUpButton>
+            <Button>Get started</Button>
+          </SignUpButton>
+          <SignInButton>
+            <Button variant="outline">Sign in</Button>
+          </SignInButton>
+        </div>
+      </Show>
+      <Show when="signed-in">
+        <div className="flex items-center gap-3">
+          <Button nativeButton={false} render={<Link href="/dashboard" />}>
+            Go to dashboard
+          </Button>
+          <UserButton />
+        </div>
+      </Show>
     </div>
   );
 }
