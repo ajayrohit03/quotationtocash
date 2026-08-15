@@ -2,13 +2,16 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { errorResponse } from "@/lib/api/respond";
 import { requireBusiness } from "@/lib/auth/session";
-import { documentUpdateSchema } from "@/lib/validation/document";
-import { calculateBaseTotals, calculateLineAmount } from "@/lib/documents/calculations";
+import { documentUpdateSchema, type LineItemInput } from "@/lib/validation/document";
+import { calculateLineAmount } from "@/lib/documents/calculations";
 import { isEditableStatus, isManuallySettableStatus, isValidStatus } from "@/lib/documents/status";
 import {
   buildBusinessSnapshot,
   buildCustomerSnapshot,
 } from "@/lib/documents/snapshots";
+import { calculateDocumentTotals } from "@/lib/tax/calculateDocumentTotals";
+import { isSameState } from "@/lib/tax/calculateGST";
+import { resolveGstRate } from "@/lib/tax/resolveGstRate";
 
 export async function GET(
   _request: NextRequest,
@@ -84,13 +87,56 @@ export async function PATCH(
 
     const { lineItems, status, ...contentFields } = input;
 
+    // Resolved once here and stored on each LineItem — never re-resolved
+    // live, so a later change to a product's rate or the business default
+    // can't retroactively alter this document's tax (see resolveGstRate).
+    let resolvedItems: Array<
+      LineItemInput & { resolvedGstRate: ReturnType<typeof resolveGstRate> }
+    > = [];
+
+    if (lineItems && lineItems.length > 0) {
+      const productIds = [
+        ...new Set(
+          lineItems
+            .map((item) => item.productId)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
+      const products = productIds.length
+        ? await prisma.product.findMany({
+            where: { id: { in: productIds }, businessId: business.id },
+          })
+        : [];
+      const productsById = new Map(products.map((p) => [p.id, p]));
+
+      resolvedItems = lineItems.map((item) => ({
+        ...item,
+        resolvedGstRate: resolveGstRate(
+          item.gstRate,
+          item.productId ? productsById.get(item.productId)?.gstRate : null,
+          business.gstDefaultRate,
+        ),
+      }));
+    }
+
+    const sameState = isSameState(business.placeOfSupply, customer.state);
+    const totals = lineItems
+      ? calculateDocumentTotals(
+          resolvedItems.map((item) => ({
+            ...item,
+            gstRate: item.resolvedGstRate,
+          })),
+          { gstEnabled: business.gstEnabled, sameState },
+        )
+      : undefined;
+
     const updated = await prisma.$transaction(async (tx) => {
       if (lineItems) {
         await tx.lineItem.deleteMany({ where: { documentId: id } });
 
-        if (lineItems.length > 0) {
+        if (resolvedItems.length > 0) {
           await tx.lineItem.createMany({
-            data: lineItems.map((item, index) => ({
+            data: resolvedItems.map((item, index) => ({
               documentId: id,
               productId: item.productId ?? null,
               name: item.name,
@@ -98,17 +144,13 @@ export async function PATCH(
               qty: item.qty,
               rate: item.rate,
               discountPct: item.discountPct ?? 0,
-              gstRate: item.gstRate ?? null,
+              gstRate: item.resolvedGstRate,
               amount: calculateLineAmount(item),
               sortOrder: index,
             })),
           });
         }
       }
-
-      const totals = lineItems
-        ? calculateBaseTotals(lineItems)
-        : undefined;
 
       return tx.document.update({
         where: { id },
@@ -122,6 +164,9 @@ export async function PATCH(
                 subtotal: totals.subtotal,
                 discountTotal: totals.discountTotal,
                 taxableAmount: totals.taxableAmount,
+                cgst: totals.cgst,
+                sgst: totals.sgst,
+                igst: totals.igst,
                 total: totals.total,
               }
             : {}),

@@ -11,15 +11,13 @@ export type LineItemAmountInput = {
   discountPct?: Decimal | number | string | null;
 };
 
-export type DocumentBaseTotals = {
-  subtotal: Decimal;
-  discountTotal: Decimal;
-  taxableAmount: Decimal;
-  total: Decimal;
-};
-
 // A line's billed amount: qty * rate, less its own discount %, rounded to
 // the cent. This is what gets stored on LineItem.amount.
+//
+// The only other piece of a document's totals — subtotal/discount/
+// taxable/CGST/SGST/IGST/total — lives in lib/tax/calculateDocumentTotals,
+// which calls this for each line rather than duplicating the math (see
+// spec rule "Do not duplicate document calculation logic").
 export function calculateLineAmount(item: LineItemAmountInput): Decimal {
   const qty = new Decimal(item.qty);
   const rate = new Decimal(item.rate);
@@ -27,39 +25,4 @@ export function calculateLineAmount(item: LineItemAmountInput): Decimal {
   const gross = qty.mul(rate);
   const discountFactor = new Decimal(1).minus(discountPct.div(100));
   return gross.mul(discountFactor).toDecimalPlaces(2);
-}
-
-// Document-level subtotal/discount/taxable amount from a set of line
-// items — no GST applied. lib/tax/calculateDocumentTotals (Phase 5) wraps
-// this, adding CGST/SGST/IGST on top of taxableAmount to get the real
-// `total`; until that's wired in, total === taxableAmount.
-//
-// Always recompute from the raw line item inputs (qty/rate/discountPct)
-// rather than trusting stored/client-submitted totals — see spec rule
-// "Recalculate totals server-side before persisting important document
-// changes."
-export function calculateBaseTotals(
-  items: LineItemAmountInput[],
-): DocumentBaseTotals {
-  let subtotal = new Decimal(0);
-  let discountTotal = new Decimal(0);
-
-  for (const item of items) {
-    const qty = new Decimal(item.qty);
-    const rate = new Decimal(item.rate);
-    const gross = qty.mul(rate).toDecimalPlaces(2);
-    const lineAmount = calculateLineAmount(item);
-
-    subtotal = subtotal.plus(gross);
-    discountTotal = discountTotal.plus(gross.minus(lineAmount));
-  }
-
-  const taxableAmount = subtotal.minus(discountTotal);
-
-  return {
-    subtotal,
-    discountTotal,
-    taxableAmount,
-    total: taxableAmount,
-  };
 }
