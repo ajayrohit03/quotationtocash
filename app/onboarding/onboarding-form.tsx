@@ -52,7 +52,6 @@ export function OnboardingForm({ className }: { className?: string }) {
       }
 
       router.push("/dashboard");
-      router.refresh();
     } finally {
       setSubmitting(false);
     }
