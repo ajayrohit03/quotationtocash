@@ -1,4 +1,5 @@
 import type { DocumentType } from "@prisma/client";
+import { ForbiddenError } from "@/lib/auth/errors";
 
 // Document.status is a plain String column (see schema.prisma), not a DB
 // enum — quotations and invoices have different, mutually exclusive
@@ -77,4 +78,20 @@ export function isManuallySettableStatus(
 // accepted, paid, etc. — the builder shouldn't silently rewrite it.
 export function isEditableStatus(status: string): boolean {
   return status === "draft";
+}
+
+// The single check PATCH and DELETE /api/documents/:id both apply before
+// doing anything else with the document — one source of truth for "is
+// this still editable" rather than two hand-written comparisons in two
+// route files that could drift apart. Throws (rather than returning a
+// boolean) so call sites don't have to remember to check a return value
+// and short-circuit themselves; it's caught by the route's existing
+// try/catch -> errorResponse() the same way AuthError/ForbiddenError from
+// requireAuth()/requireBusiness() already are.
+export function requireEditableDocument(status: string): void {
+  if (!isEditableStatus(status)) {
+    throw new ForbiddenError(
+      "This document is no longer a draft and can't be edited or deleted.",
+    );
+  }
 }

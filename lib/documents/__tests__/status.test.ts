@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { ForbiddenError } from "@/lib/auth/errors";
 import {
   INVOICE_STATUSES,
   QUOTATION_STATUSES,
   isEditableStatus,
   isManuallySettableStatus,
   isValidStatus,
+  requireEditableDocument,
 } from "@/lib/documents/status";
 
 describe("isEditableStatus", () => {
@@ -76,5 +78,18 @@ describe("isManuallySettableStatus", () => {
     // "cancelled" is a real, manually-settable *invoice* status, but not
     // a valid quotation status at all.
     expect(isManuallySettableStatus("quotation", "cancelled")).toBe(false);
+  });
+});
+
+describe("requireEditableDocument", () => {
+  it("does not throw for a draft", () => {
+    expect(() => requireEditableDocument("draft")).not.toThrow();
+  });
+
+  it("throws ForbiddenError for every non-draft status of either type", () => {
+    for (const status of [...QUOTATION_STATUSES, ...INVOICE_STATUSES]) {
+      if (status === "draft") continue;
+      expect(() => requireEditableDocument(status)).toThrow(ForbiddenError);
+    }
   });
 });

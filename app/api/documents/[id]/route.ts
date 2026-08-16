@@ -4,7 +4,11 @@ import { errorResponse } from "@/lib/api/respond";
 import { requireBusiness } from "@/lib/auth/session";
 import { documentUpdateSchema, type LineItemInput } from "@/lib/validation/document";
 import { calculateLineAmount } from "@/lib/documents/calculations";
-import { isEditableStatus, isManuallySettableStatus, isValidStatus } from "@/lib/documents/status";
+import {
+  isManuallySettableStatus,
+  isValidStatus,
+  requireEditableDocument,
+} from "@/lib/documents/status";
 import {
   buildBusinessSnapshot,
   buildCustomerSnapshot,
@@ -53,12 +57,7 @@ export async function PATCH(
     if (!existing) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
-    if (!isEditableStatus(existing.status)) {
-      return NextResponse.json(
-        { error: "This document is no longer editable" },
-        { status: 403 },
-      );
-    }
+    requireEditableDocument(existing.status);
 
     const input = documentUpdateSchema.parse(await request.json());
 
@@ -195,12 +194,7 @@ export async function DELETE(
     if (!existing) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
-    if (!isEditableStatus(existing.status)) {
-      return NextResponse.json(
-        { error: "Only draft documents can be deleted" },
-        { status: 403 },
-      );
-    }
+    requireEditableDocument(existing.status);
 
     await prisma.document.delete({ where: { id } });
 
