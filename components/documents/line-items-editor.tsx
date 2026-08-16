@@ -133,6 +133,7 @@ export function LineItemsEditor({
                     <TableCell className="align-top">
                       <Input
                         placeholder="Item name"
+                        autoComplete="off"
                         value={item.name}
                         onChange={(e) =>
                           updateItem(item.key, { name: e.target.value })
@@ -141,6 +142,7 @@ export function LineItemsEditor({
                       />
                       <Input
                         placeholder="Description (optional)"
+                        autoComplete="off"
                         value={item.description}
                         onChange={(e) =>
                           updateItem(item.key, { description: e.target.value })
@@ -153,6 +155,7 @@ export function LineItemsEditor({
                         type="number"
                         min={0}
                         step="any"
+                        autoComplete="off"
                         value={item.qty}
                         onChange={(e) =>
                           updateItem(item.key, {
@@ -167,6 +170,7 @@ export function LineItemsEditor({
                         type="number"
                         min={0}
                         step="any"
+                        autoComplete="off"
                         value={item.rate}
                         onChange={(e) =>
                           updateItem(item.key, {
@@ -182,6 +186,7 @@ export function LineItemsEditor({
                         min={0}
                         max={100}
                         step="any"
+                        autoComplete="off"
                         value={item.discountPct}
                         onChange={(e) =>
                           updateItem(item.key, {
@@ -198,6 +203,7 @@ export function LineItemsEditor({
                           min={0}
                           max={100}
                           step="any"
+                          autoComplete="off"
                           placeholder={resolvedRate?.toString() ?? "0"}
                           value={item.gstRate ?? ""}
                           onChange={(e) =>
