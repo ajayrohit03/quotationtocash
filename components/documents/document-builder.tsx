@@ -131,6 +131,15 @@ export function DocumentBuilder({
   );
 
   async function save() {
+    // Belt-and-suspenders alongside the server's own check (PATCH
+    // /api/documents/:id rejects any edit once status isn't "draft",
+    // unconditionally, before it even looks at the request body) — this
+    // stops the request from firing at all rather than firing and being
+    // rejected. The disabled <fieldset> alone wouldn't cover this: it's a
+    // UI-only guard that doesn't prevent handleManualSave() or an
+    // in-flight debounce timer from calling save() directly.
+    if (!editable) return;
+
     setSaveState("saving");
     try {
       const response = await fetch(`/api/documents/${document.id}`, {
