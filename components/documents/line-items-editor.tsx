@@ -131,24 +131,37 @@ export function LineItemsEditor({
                 return (
                   <TableRow key={item.key}>
                     <TableCell className="align-top">
-                      <Input
-                        placeholder="Item name"
-                        autoComplete="off"
-                        value={item.name}
-                        onChange={(e) =>
-                          updateItem(item.key, { name: e.target.value })
-                        }
-                        className="mb-1.5"
-                      />
-                      <Input
-                        placeholder="Description (optional)"
-                        autoComplete="off"
-                        value={item.description}
-                        onChange={(e) =>
-                          updateItem(item.key, { description: e.target.value })
-                        }
-                        className="h-8 text-xs text-muted-foreground"
-                      />
+                      {/*
+                        A plain <input> defaults to display: inline-block.
+                        Without this wrapper, these two inputs were direct
+                        children of the <td> with nothing forcing a line
+                        break between them, so they laid out side by side
+                        instead of stacked — each claiming its own ~200px
+                        intrinsic width, overflowing the intended column
+                        and cascading a width-miscalculation into every
+                        column after it (that's what caused the reported
+                        Qty-field overlap; autoComplete="off" was real
+                        hygiene but not the actual cause).
+                      */}
+                      <div className="flex flex-col gap-1.5">
+                        <Input
+                          placeholder="Item name"
+                          autoComplete="off"
+                          value={item.name}
+                          onChange={(e) =>
+                            updateItem(item.key, { name: e.target.value })
+                          }
+                        />
+                        <Input
+                          placeholder="Description (optional)"
+                          autoComplete="off"
+                          value={item.description}
+                          onChange={(e) =>
+                            updateItem(item.key, { description: e.target.value })
+                          }
+                          className="h-8 text-xs text-muted-foreground"
+                        />
+                      </div>
                     </TableCell>
                     <TableCell className="align-top">
                       <Input
