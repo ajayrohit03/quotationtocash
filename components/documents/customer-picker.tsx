@@ -25,11 +25,13 @@ export function CustomerPicker({
   selected,
   onChange,
   onCustomerCreated,
+  disabled = false,
 }: {
   customers: Customer[];
   selected: Customer | null;
   onChange: (customer: Customer) => void;
   onCustomerCreated: (customer: Customer) => void;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -61,12 +63,16 @@ export function CustomerPicker({
                 "No contact details"}
             </p>
           </div>
-          <Popover open={open} onOpenChange={setOpen}>
+          <Popover
+            open={open}
+            onOpenChange={(next) => !disabled && setOpen(next)}
+          >
             <PopoverTrigger
               render={
                 <button
                   type="button"
-                  className="text-sm font-medium text-primary hover:underline"
+                  disabled={disabled}
+                  className="text-sm font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50 disabled:no-underline"
                 />
               }
             >
@@ -90,8 +96,11 @@ export function CustomerPicker({
           </Popover>
         </div>
       ) : (
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger render={<Button variant="outline" />}>
+        <Popover
+          open={open}
+          onOpenChange={(next) => !disabled && setOpen(next)}
+        >
+          <PopoverTrigger render={<Button variant="outline" disabled={disabled} />}>
             Select customer
           </PopoverTrigger>
           <PopoverContent align="start" className="w-80 p-0">

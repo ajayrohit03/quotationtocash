@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { errorResponse } from "@/lib/api/respond";
-import { requireBusiness } from "@/lib/auth/session";
+import { requirePermission } from "@/lib/auth/permissions";
 import { productUpdateSchema } from "@/lib/validation/product";
 
 export async function PATCH(
@@ -9,7 +9,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { business } = await requireBusiness();
+    const { business } = await requirePermission("products.edit");
     const { id } = await params;
 
     const existing = await prisma.product.findFirst({

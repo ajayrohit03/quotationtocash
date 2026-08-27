@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
       <span className="font-mono text-xs tracking-wide text-muted-foreground uppercase">
-        InvoiceFlow
+        QuotationToCash
       </span>
       <h1 className="max-w-xl text-4xl font-semibold tracking-tight text-balance">
         Professional quotations and invoices, built for Indian GST

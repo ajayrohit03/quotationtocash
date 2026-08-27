@@ -1,3 +1,4 @@
+import { Package } from "lucide-react";
 import { prisma } from "@/lib/db/prisma";
 import { requireBusinessForPage } from "@/lib/auth/page";
 import { formatCurrency } from "@/lib/format";
@@ -10,6 +11,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AddProductDialog } from "./add-product-dialog";
+
+const HEAD_CLASS = "bg-muted/40 text-xs font-semibold tracking-wide text-muted-foreground";
 
 export default async function ProductsPage() {
   const { business } = await requireBusinessForPage();
@@ -29,7 +32,10 @@ export default async function ProductsPage() {
       </div>
 
       {products.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-border py-16 text-center">
+          <span className="mb-4 flex size-11 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+            <Package className="size-5" />
+          </span>
           <p className="text-sm font-medium">No products yet</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Add products or services to select them quickly on quotations
@@ -37,17 +43,21 @@ export default async function ProductsPage() {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-border">
+        <div className="overflow-hidden rounded-xl border border-border shadow-xs">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Unit</TableHead>
-                <TableHead className="text-right">Price</TableHead>
+                <TableHead className={HEAD_CLASS}>Name</TableHead>
+                <TableHead className={HEAD_CLASS}>Description</TableHead>
+                <TableHead className={HEAD_CLASS}>SKU</TableHead>
+                <TableHead className={HEAD_CLASS}>Unit</TableHead>
+                <TableHead className={`${HEAD_CLASS} text-right`}>
+                  Price
+                </TableHead>
                 {business.gstEnabled && (
-                  <TableHead className="text-right">GST rate</TableHead>
+                  <TableHead className={`${HEAD_CLASS} text-right`}>
+                    GST rate
+                  </TableHead>
                 )}
               </TableRow>
             </TableHeader>
@@ -58,7 +68,7 @@ export default async function ProductsPage() {
                   <TableCell className="max-w-xs truncate text-muted-foreground">
                     {product.description || "—"}
                   </TableCell>
-                  <TableCell className="font-mono text-sm">
+                  <TableCell className="font-mono text-xs text-muted-foreground">
                     {product.sku || "—"}
                   </TableCell>
                   <TableCell>{product.unit || "—"}</TableCell>

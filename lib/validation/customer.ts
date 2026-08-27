@@ -35,3 +35,4 @@ export const customerUpdateSchema = z.object({
 });
 
 export type CustomerUpdateInput = z.infer<typeof customerUpdateSchema>;
+export type CustomerUpdateFormValues = z.input<typeof customerUpdateSchema>;

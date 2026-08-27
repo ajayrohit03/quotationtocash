@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError, z } from "zod";
 import { AuthError, ForbiddenError, NoBusinessError } from "@/lib/auth/errors";
+import { InvitationError } from "@/lib/invitations/errors";
 
 // Checked by code, not identity (`instanceof Prisma.PrismaClientKnownRequestError`)
 // — see lib/auth/user-identity.ts for why that's unreliable under Turbopack.
@@ -24,6 +25,9 @@ export function errorResponse(error: unknown): NextResponse {
   }
   if (error instanceof NoBusinessError) {
     return NextResponse.json({ error: error.message }, { status: 404 });
+  }
+  if (error instanceof InvitationError) {
+    return NextResponse.json({ error: error.message }, { status: error.status });
   }
   if (error instanceof ZodError) {
     return NextResponse.json(

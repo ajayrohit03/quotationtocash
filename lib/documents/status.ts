@@ -95,3 +95,72 @@ export function requireEditableDocument(status: string): void {
     );
   }
 }
+
+// Whether opening the public share link should bump status to "viewed".
+// A document only ever moves forward through the vocabulary — from draft
+// or sent — never regressed back from something further along (paid,
+// accepted, cancelled, ...) just because the link was opened again.
+export function shouldMarkViewed(status: string): boolean {
+  return status === "draft" || status === "sent";
+}
+
+// A handful of terminal-ish statuses per type make POST
+// /api/documents/:id/send nonsensical — a declined/expired/converted
+// quotation or a cancelled invoice shouldn't be re-emailed.
+const UNSENDABLE_STATUSES: Record<DocumentType, readonly string[]> = {
+  quotation: ["declined", "expired", "converted"],
+  invoice: ["cancelled"],
+};
+
+export function canSendDocument(type: DocumentType, status: string): boolean {
+  return !UNSENDABLE_STATUSES[type].includes(status);
+}
+
+export function requireSendableDocument(
+  type: DocumentType,
+  status: string,
+): void {
+  if (!canSendDocument(type, status)) {
+    throw new ForbiddenError(
+      `This ${type} can't be sent in its current status ("${status}").`,
+    );
+  }
+}
+
+// A quotation that's already been declined, has expired, or was already
+// converted can't be converted (again) — everything else (draft, sent,
+// viewed, accepted) is fair game. Formal quote acceptance/e-signature is
+// a later product-roadmap phase (see spec), not this build's Phase 9, so
+// for now conversion is the business owner's own call rather than being
+// gated on the quotation having reached "accepted".
+const UNCONVERTIBLE_QUOTATION_STATUSES = new Set<string>([
+  "declined",
+  "expired",
+  "converted",
+]);
+
+export function canConvertQuotation(status: string): boolean {
+  return !UNCONVERTIBLE_QUOTATION_STATUSES.has(status);
+}
+
+export function requireConvertibleQuotation(status: string): void {
+  if (!canConvertQuotation(status)) {
+    throw new ForbiddenError(
+      `This quotation can't be converted in its current status ("${status}").`,
+    );
+  }
+}
+
+// A cancelled invoice shouldn't be marked paid; every other status
+// (including an already-paid invoice, harmlessly idempotent) is allowed.
+export function canMarkPaid(status: string): boolean {
+  return status !== "cancelled";
+}
+
+export function requireMarkPayableInvoice(status: string): void {
+  if (!canMarkPaid(status)) {
+    throw new ForbiddenError(
+      `This invoice can't be marked paid in its current status ("${status}").`,
+    );
+  }
+}

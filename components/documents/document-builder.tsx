@@ -4,8 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import type { Customer, DocumentType } from "@prisma/client";
-import { calculateDocumentTotals } from "@/lib/tax/calculateDocumentTotals";
+import { Prisma, type Customer, type DocumentType } from "@prisma/client";
+import {
+  calculateDocumentTotals,
+  type DocumentTotals,
+} from "@/lib/tax/calculateDocumentTotals";
 import { isSameState } from "@/lib/tax/calculateGST";
 import { resolveGstRate } from "@/lib/tax/resolveGstRate";
 import { isEditableStatus } from "@/lib/documents/status";
@@ -38,6 +41,16 @@ export type BuilderBusiness = {
 
 export type BuilderLineItem = Omit<LocalLineItem, "key">;
 
+export type BuilderStoredTotals = {
+  subtotal: number;
+  discountTotal: number;
+  taxableAmount: number;
+  cgst: number;
+  sgst: number;
+  igst: number;
+  total: number;
+};
+
 export type BuilderDocument = {
   id: string;
   type: DocumentType;
@@ -52,6 +65,16 @@ export type BuilderDocument = {
   notes: string | null;
   termsText: string | null;
   lineItems: BuilderLineItem[];
+  // The document's actual, currently-persisted totals — including which
+  // of CGST+SGST vs IGST applies. Shown as-is until the user makes a
+  // real edit; only then does the summary switch to a live recompute.
+  // Without this, opening an already-computed document (most notably one
+  // just created by quotation -> invoice conversion) would immediately
+  // show a *different* tax breakdown than what's actually stored,
+  // because the live recompute below re-derives same-state/inter-state
+  // from the customer's row as it stands right now — which may have
+  // changed since the totals were frozen.
+  totals: BuilderStoredTotals;
 };
 
 function toDateInputValue(date: Date | null): string {
@@ -96,10 +119,13 @@ export function DocumentBuilder({
 
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [deleting, setDeleting] = useState(false);
+  // Flips true on the user's first real edit — see BuilderDocument.totals
+  // for why the summary shouldn't live-recompute before that.
+  const [edited, setEdited] = useState(false);
   const lastSavedSnapshot = useRef<string>("");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const totals = useMemo(() => {
+  const liveTotals = useMemo(() => {
     const sameState = isSameState(business.placeOfSupply, customer.state);
     const productsById = new Map(products.map((p) => [p.id, p]));
     return calculateDocumentTotals(
@@ -114,6 +140,24 @@ export function DocumentBuilder({
       { gstEnabled: business.gstEnabled, sameState },
     );
   }, [lineItems, customer, products, business]);
+
+  // The document's own persisted totals, as-is — including whichever of
+  // CGST+SGST vs IGST was actually frozen (e.g. by conversion), not
+  // re-derived from the customer's current state.
+  const storedTotals: DocumentTotals = useMemo(
+    () => ({
+      subtotal: new Prisma.Decimal(document.totals.subtotal),
+      discountTotal: new Prisma.Decimal(document.totals.discountTotal),
+      taxableAmount: new Prisma.Decimal(document.totals.taxableAmount),
+      cgst: new Prisma.Decimal(document.totals.cgst),
+      sgst: new Prisma.Decimal(document.totals.sgst),
+      igst: new Prisma.Decimal(document.totals.igst),
+      total: new Prisma.Decimal(document.totals.total),
+    }),
+    [document.totals],
+  );
+
+  const totals = edited ? liveTotals : storedTotals;
 
   const snapshot = useMemo(
     () =>
@@ -198,6 +242,10 @@ export function DocumentBuilder({
       lastSavedSnapshot.current = snapshot;
       return;
     }
+
+    // A real change from what was loaded — from here on, show live
+    // totals instead of the document's stored ones (see storedTotals).
+    setEdited(true);
 
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
@@ -287,8 +335,8 @@ export function DocumentBuilder({
         </p>
       )}
 
-      <fieldset disabled={!editable} className="contents">
-        <div className="flex flex-col gap-6 lg:flex-row">
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <fieldset disabled={!editable} className="contents">
           <div className="flex flex-1 flex-col gap-6">
             <CustomerPicker
               customers={allCustomers}
@@ -297,6 +345,7 @@ export function DocumentBuilder({
               onCustomerCreated={(created) =>
                 setAllCustomers((prev) => [created, ...prev])
               }
+              disabled={!editable}
             />
 
             <div className="rounded-lg border border-border bg-card p-5">
@@ -309,6 +358,7 @@ export function DocumentBuilder({
                     className="font-mono"
                     value={number}
                     onChange={(e) => setNumber(e.target.value)}
+                    disabled={!editable}
                   />
                 </div>
                 <div className="grid gap-1.5">
@@ -318,6 +368,7 @@ export function DocumentBuilder({
                     type="date"
                     value={issueDate}
                     onChange={(e) => setIssueDate(e.target.value)}
+                    disabled={!editable}
                   />
                 </div>
                 <div className="grid gap-1.5">
@@ -329,6 +380,7 @@ export function DocumentBuilder({
                     type="date"
                     value={secondaryDate}
                     onChange={(e) => setSecondaryDate(e.target.value)}
+                    disabled={!editable}
                   />
                 </div>
                 <div className="col-span-2 grid gap-1.5 sm:col-span-3">
@@ -342,6 +394,7 @@ export function DocumentBuilder({
                     }
                     value={terms}
                     onChange={(e) => setTerms(e.target.value)}
+                    disabled={!editable}
                   />
                 </div>
               </div>
@@ -355,6 +408,7 @@ export function DocumentBuilder({
                 gstEnabled={business.gstEnabled}
                 gstDefaultRate={business.gstDefaultRate}
                 onChange={setLineItems}
+                disabled={!editable}
               />
             </div>
 
@@ -368,6 +422,7 @@ export function DocumentBuilder({
                     rows={3}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
+                    disabled={!editable}
                   />
                 </div>
                 <div className="grid gap-1.5">
@@ -377,35 +432,36 @@ export function DocumentBuilder({
                     rows={3}
                     value={termsText}
                     onChange={(e) => setTermsText(e.target.value)}
+                    disabled={!editable}
                   />
                 </div>
               </div>
             </div>
           </div>
+        </fieldset>
 
-          <div className="flex w-full flex-col gap-4 lg:w-80 lg:flex-none">
-            <TotalsSummary totals={totals} gstEnabled={business.gstEnabled} />
+        <div className="flex w-full flex-col gap-4 lg:w-80 lg:flex-none">
+          <TotalsSummary totals={totals} gstEnabled={business.gstEnabled} />
+          <div className="flex flex-col gap-2">
             {editable && (
-              <div className="flex flex-col gap-2">
-                <Button type="button" onClick={handleManualSave}>
-                  {saveLabel}
-                </Button>
-                <Button
-                  variant="outline"
-                  nativeButton={false}
-                  render={
-                    <Link
-                      href={`/${isQuotation ? "quotations" : "invoices"}/${document.id}/preview`}
-                    />
-                  }
-                >
-                  Preview
-                </Button>
-              </div>
+              <Button type="button" onClick={handleManualSave}>
+                {saveLabel}
+              </Button>
             )}
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={
+                <Link
+                  href={`/${isQuotation ? "quotations" : "invoices"}/${document.id}/preview`}
+                />
+              }
+            >
+              Preview
+            </Button>
           </div>
         </div>
-      </fieldset>
+      </div>
     </div>
   );
 }

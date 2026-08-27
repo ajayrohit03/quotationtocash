@@ -45,6 +45,7 @@ async function createTestBusiness(
   const business = await prisma.business.create({
     data: {
       name: `Snapshot Test ${randomUUID()}`,
+      slug: `snapshot-test-${randomUUID()}`,
       email: `snapshot-test-${randomUUID()}@example.invalid`,
       ...overrides,
     },

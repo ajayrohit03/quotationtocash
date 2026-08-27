@@ -15,10 +15,12 @@ export function AddLineItemMenu({
   products,
   onSelectProduct,
   onAddCustom,
+  disabled = false,
 }: {
   products: BuilderProduct[];
   onSelectProduct: (product: BuilderProduct) => void;
   onAddCustom: () => void;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -34,13 +36,14 @@ export function AddLineItemMenu({
 
   return (
     <div className="flex gap-2 p-4">
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={(next) => !disabled && setOpen(next)}>
         <PopoverTrigger
           render={
             <Button
               type="button"
               variant="outline"
               className="border-dashed"
+              disabled={disabled}
             />
           }
         >
@@ -89,6 +92,7 @@ export function AddLineItemMenu({
         variant="outline"
         className="border-dashed"
         onClick={onAddCustom}
+        disabled={disabled}
       >
         + Custom line
       </Button>

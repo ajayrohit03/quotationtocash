@@ -6,6 +6,7 @@ import { AuthError, ForbiddenError, NoBusinessError } from "@/lib/auth/errors";
 import {
   requireAuth,
   requireBusiness,
+  requireBusinessAdmin,
   requireBusinessOwner,
   type BusinessContext,
 } from "@/lib/auth/session";
@@ -43,6 +44,23 @@ export async function requireBusinessForPage(): Promise<BusinessContext> {
 export async function requireBusinessOwnerForPage(): Promise<BusinessContext> {
   try {
     return await requireBusinessOwner();
+  } catch (error) {
+    if (error instanceof AuthError) {
+      redirect("/sign-in");
+    }
+    if (error instanceof NoBusinessError) {
+      redirect("/onboarding");
+    }
+    if (error instanceof ForbiddenError) {
+      redirect("/dashboard");
+    }
+    throw error;
+  }
+}
+
+export async function requireBusinessAdminForPage(): Promise<BusinessContext> {
+  try {
+    return await requireBusinessAdmin();
   } catch (error) {
     if (error instanceof AuthError) {
       redirect("/sign-in");

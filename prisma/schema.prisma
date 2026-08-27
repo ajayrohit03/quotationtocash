@@ -1,4 +1,4 @@
-// InvoiceFlow — Prisma schema
+// QuotationToCash — Prisma schema
 //
 // NOTES FOR IMPLEMENTERS:
 // - Document.status and LineItem.gstRate/discountPct are validated in
@@ -20,9 +20,20 @@ datasource db {
 
 enum BusinessRole {
   owner
+  admin
   staff
 
   @@map("business_role")
+}
+
+// See docs/invitation-onboarding-design.md §2/§4 for the full lifecycle.
+enum InvitationStatus {
+  pending
+  accepted
+  revoked
+  expired
+
+  @@map("invitation_status")
 }
 
 enum DocumentType {
@@ -43,6 +54,10 @@ enum DocumentTemplate {
 model Business {
   id       String @id @default(uuid())
   name     String
+  // Auto-generated from name at creation, never a UI-editable field —
+  // see docs/public-share-subdomains-design.md §1. Powers the public
+  // share-link subdomain ({slug}.{apex domain}), nothing else.
+  slug     String @unique
   email    String
   phone    String?
   address  String?
@@ -61,6 +76,13 @@ model Business {
   documentTemplate DocumentTemplate @default(classic) @map("document_template")
   accentColor      String           @default("#4F46E5") @map("accent_color")
 
+  // Pre-fill defaults for new documents (Settings > Documents) — never
+  // applied retroactively to documents that already exist.
+  defaultPaymentTerms  String? @map("default_payment_terms")
+  defaultValidityTerms String? @map("default_validity_terms")
+  defaultNotes         String? @map("default_notes")
+  defaultTermsText     String? @map("default_terms_text")
+
   onboardingCompletedAt DateTime? @map("onboarding_completed_at")
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -71,6 +93,7 @@ model Business {
   products         Product[]
   documents        Document[]
   documentCounters DocumentCounter[]
+  invitations      Invitation[]
 
   @@map("businesses")
 }
@@ -85,7 +108,16 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  memberships BusinessMember[]
+  memberships      BusinessMember[]
+  // Historical attribution only — never used to resolve a User's current
+  // hierarchy position (that's per-business, on BusinessMember). SetNull
+  // on delete so a User row disappearing never breaks a document.
+  createdDocuments Document[]
+
+  // Historical attribution only, same rationale as createdDocuments above
+  // — see docs/invitation-onboarding-design.md §2.
+  invitationsSent     Invitation[] @relation("InvitationsSent")
+  invitationsAccepted Invitation[] @relation("InvitationsAccepted")
 
   @@map("users")
 }
@@ -96,14 +128,44 @@ model BusinessMember {
   userId     String       @map("user_id")
   role       BusinessRole @default(staff)
 
+  // Document-visibility hierarchy — orthogonal to `role` (see
+  // docs/hierarchy-access-control-design.md §7, Fork B Option A, and
+  // docs/invitation-onboarding-design.md §1.3 for how `admin` extends
+  // it). `role` keeps its own meaning: owner and admin both see every
+  // document unconditionally (only owner reaches Tax/Billing settings,
+  // see requireBusinessOwner() vs requireBusinessAdmin());
+  // reportsToId/title/isActive govern hierarchy-based document
+  // visibility among staff only.
+  reportsToId String? @map("reports_to_id")
+  // Free text, display-only — never read by authorization logic (§0 of
+  // the design doc: access is a function of tree position, not title).
+  title       String?
+  // Soft-delete for departing members: revokes their own access
+  // immediately (checked in requireBusiness()) without touching their
+  // reportsToId, their direct reports' reportsToId, or any document's
+  // createdByUserId — see design doc §5.
+  isActive    Boolean @default(true) @map("is_active")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Restrict, not Cascade/SetNull: a member with direct reports can't be
+  // hard-deleted until those reports are explicitly reassigned — see
+  // design doc §1 and §5. Deactivation (isActive), not deletion, is the
+  // normal offboarding path.
+  reportsTo     BusinessMember?  @relation("ReportsTo", fields: [reportsToId], references: [id], onDelete: Restrict)
+  directReports BusinessMember[] @relation("ReportsTo")
+
+  // Pending invitations that pre-fill this member as the new hire's
+  // manager — see Invitation.reportsTo above.
+  invitationsAsManager Invitation[]
+
   @@unique([businessId, userId])
   @@index([userId])
+  @@index([businessId, reportsToId])
   @@map("business_members")
 }
 
@@ -203,11 +265,18 @@ model Document {
   sentAt     DateTime? @map("sent_at")
   viewedAt   DateTime? @map("viewed_at")
 
+  // Hierarchy-based visibility key. NULL means "created before this
+  // feature existed" and is deliberately never backfilled — see
+  // docs/hierarchy-access-control-design.md §3. Every document created
+  // from this feature onward always has this set at creation time.
+  createdByUserId String? @map("created_by_user_id")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
   customer  Customer   @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  createdBy User?      @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   lineItems LineItem[]
   payments  Payment[]
 
@@ -216,6 +285,7 @@ model Document {
   @@index([businessId, type])
   @@index([businessId, status])
   @@index([businessId, customerId])
+  @@index([businessId, createdByUserId])
   @@map("documents")
 }
 
@@ -275,4 +345,69 @@ model Payment {
 
   @@index([invoiceId])
   @@map("payments")
+}
+
+// See docs/invitation-onboarding-design.md for the full design. A person
+// joins a business by accepting one of these, never by "add member by
+// email" (that mechanism is being retired in the same change that adds
+// this table).
+model Invitation {
+  id         String @id @default(uuid())
+  businessId String @map("business_id")
+
+  // Stored as provided; every comparison against it is case-insensitive
+  // (creation dedup, accept-time email match) rather than normalized at
+  // write time.
+  email String
+
+  // Never "owner" — there is exactly one Owner, set at business
+  // creation; enforced in the create-invitation handler, not here.
+  role BusinessRole @default(staff)
+
+  // Pre-fills the new member's hierarchy position; no cycle check is
+  // needed at this stage since the invitee isn't a tree node yet — see
+  // design doc §4.1. SetNull, not Restrict: BusinessMember rows are never
+  // hard-deleted in practice (isActive is the offboarding path), but if
+  // one ever were, a stale reference here shouldn't block it.
+  title       String?
+  reportsToId String?         @map("reports_to_id")
+  reportsTo   BusinessMember? @relation(fields: [reportsToId], references: [id], onDelete: SetNull)
+
+  // SHA-256 of the raw token — the raw value is never persisted, same
+  // standard as a password-reset token. See design doc §3.
+  tokenHash String @unique @map("token_hash")
+
+  status InvitationStatus @default(pending)
+
+  invitedByUserId  String  @map("invited_by_user_id")
+  acceptedByUserId String? @map("accepted_by_user_id")
+
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  invitedBy  User     @relation("InvitationsSent", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+  acceptedBy User?    @relation("InvitationsAccepted", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([email])
+  @@map("invitations")
+}
+
+// Postgres-backed fixed-window rate limiting (design doc §6.2) — this app
+// has no Redis/cache layer, so an in-memory counter wouldn't survive a
+// multi-instance deployment. bucketKey encodes both the dimension and the
+// identity being limited (e.g. "invite:user:<id>", "invite:email:<addr>",
+// "invite-accept:ip:<addr>"); windowStart is the fixed-window floor, so
+// (bucketKey, windowStart) is naturally the unit to upsert-increment
+// atomically via Postgres's native INSERT ... ON CONFLICT.
+model RateLimitHit {
+  id          String   @id @default(uuid())
+  bucketKey   String   @map("bucket_key")
+  windowStart DateTime @map("window_start")
+  count       Int      @default(1)
+
+  @@unique([bucketKey, windowStart])
+  @@map("rate_limit_hits")
 }

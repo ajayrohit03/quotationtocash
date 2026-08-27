@@ -5,6 +5,7 @@
 
 import type { DocumentType } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import { getISTYear } from "@/lib/dates";
 
 const PREFIXES: Record<DocumentType, string> = {
   quotation: "QT",
@@ -21,7 +22,7 @@ export async function getNextDocumentNumber(
   type: DocumentType,
   now: Date = new Date(),
 ): Promise<string> {
-  const year = now.getFullYear();
+  const year = getISTYear(now);
 
   const counter = await prisma.documentCounter.upsert({
     where: { businessId_type_year: { businessId, type, year } },

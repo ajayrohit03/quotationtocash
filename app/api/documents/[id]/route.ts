@@ -1,7 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
+import type { DocumentType } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { errorResponse } from "@/lib/api/respond";
 import { requireBusiness } from "@/lib/auth/session";
+import { hasPermission, type Permission } from "@/lib/auth/permissions";
 import { documentUpdateSchema, type LineItemInput } from "@/lib/validation/document";
 import { calculateLineAmount } from "@/lib/documents/calculations";
 import {
@@ -13,26 +15,43 @@ import {
   buildBusinessSnapshot,
   buildCustomerSnapshot,
 } from "@/lib/documents/snapshots";
+import { documentScopeWhere } from "@/lib/documents/visibility";
 import { calculateDocumentTotals } from "@/lib/tax/calculateDocumentTotals";
 import { isSameState } from "@/lib/tax/calculateGST";
 import { resolveGstRate } from "@/lib/tax/resolveGstRate";
+
+const VIEW_PERMISSION: Record<DocumentType, Permission> = {
+  quotation: "quotations.view",
+  invoice: "invoices.view",
+};
+
+const EDIT_PERMISSION: Record<DocumentType, Permission> = {
+  quotation: "quotations.edit",
+  invoice: "invoices.edit",
+};
+
+const DELETE_PERMISSION: Record<DocumentType, Permission> = {
+  quotation: "quotations.delete",
+  invoice: "invoices.delete",
+};
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { business } = await requireBusiness();
+    const context = await requireBusiness();
+    const { business } = context;
     const { id } = await params;
 
     const document = await prisma.document.findFirst({
-      where: { id, businessId: business.id },
+      where: { id, businessId: business.id, ...(await documentScopeWhere("view")) },
       include: {
         customer: true,
         lineItems: { orderBy: { sortOrder: "asc" } },
       },
     });
-    if (!document) {
+    if (!document || !(await hasPermission(context, VIEW_PERMISSION[document.type]))) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
@@ -47,14 +66,20 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { business } = await requireBusiness();
+    const context = await requireBusiness();
+    const { business } = context;
     const { id } = await params;
 
+    // "mutate" scope, not "view" — own documents only, even for a
+    // Manager with a real subtree. Editing a subordinate's document
+    // requires reassigning it first (POST .../reassign); this route no
+    // longer grants that implicitly. See
+    // docs/permission-layer-design.md §5.
     const existing = await prisma.document.findFirst({
-      where: { id, businessId: business.id },
+      where: { id, businessId: business.id, ...(await documentScopeWhere("mutate")) },
       include: { customer: true },
     });
-    if (!existing) {
+    if (!existing || !(await hasPermission(context, EDIT_PERMISSION[existing.type]))) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
     requireEditableDocument(existing.status);
@@ -185,13 +210,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { business } = await requireBusiness();
+    const context = await requireBusiness();
+    const { business } = context;
     const { id } = await params;
 
+    // "mutate" scope — see the PATCH handler above for why.
     const existing = await prisma.document.findFirst({
-      where: { id, businessId: business.id },
+      where: { id, businessId: business.id, ...(await documentScopeWhere("mutate")) },
     });
-    if (!existing) {
+    if (!existing || !(await hasPermission(context, DELETE_PERMISSION[existing.type]))) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
     requireEditableDocument(existing.status);

@@ -72,8 +72,13 @@ export type BusinessContext = {
 async function requireBusinessUncached(): Promise<BusinessContext> {
   const { user } = await requireAuth();
 
+  // Deactivated memberships (see docs/hierarchy-access-control-design.md
+  // §5 — the departing-member offboarding path) are excluded entirely,
+  // not just hidden in the UI: this is the one place every request
+  // already passes through, so it's where "revoked immediately" actually
+  // gets enforced, not just where it's displayed.
   const memberships = await prisma.businessMember.findMany({
-    where: { userId: user.id },
+    where: { userId: user.id, isActive: true },
     include: { business: true },
     orderBy: { createdAt: "asc" },
   });
@@ -108,6 +113,22 @@ export async function requireBusinessOwner(): Promise<BusinessContext> {
   return context;
 }
 
+// The one shared gate for every admin-tier action (team management,
+// invitations, business profile/documents/appearance — never Tax or
+// Billing, which stay on requireBusinessOwner() above). Owner's
+// permissions are a strict superset of Admin's, so this must always
+// accept "owner" too — written once, here, specifically so no call site
+// can accidentally re-derive it as an exact `role === "admin"` match and
+// lock the Owner out of something they're supposed to have. See
+// docs/invitation-onboarding-design.md §1.1.
+export async function requireBusinessAdmin(): Promise<BusinessContext> {
+  const context = await requireBusiness();
+  if (context.membership.role !== "owner" && context.membership.role !== "admin") {
+    throw new ForbiddenError("Only a business owner or admin can do this");
+  }
+  return context;
+}
+
 // For verifying access to a specific businessId already in hand (e.g. one
 // read off a record), as opposed to requireBusiness()'s "pick the active
 // one" resolution.
@@ -118,7 +139,7 @@ export async function requireBusinessMembership(
   const membership = await prisma.businessMember.findUnique({
     where: { businessId_userId: { businessId, userId: user.id } },
   });
-  if (!membership) {
+  if (!membership || !membership.isActive) {
     throw new ForbiddenError("Not a member of this business");
   }
   return membership;

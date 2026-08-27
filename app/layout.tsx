@@ -18,7 +18,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "InvoiceFlow",
+  title: "QuotationToCash",
   description: "Quotations and invoices for small businesses, built for Indian GST.",
 };
 

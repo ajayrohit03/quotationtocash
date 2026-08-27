@@ -13,36 +13,67 @@ quotations, and invoices from a dashboard.
 ## 2. Roles & auth
 
 - **Business (tenant)** — created at signup/onboarding. Owns all data below.
-- **User** — belongs to one or more businesses, with a role:
-  - `owner` — full access, billing, can invite/remove staff
-  - `staff` — can create/edit documents, customers, products; cannot change business/tax settings or billing
-- Auth provider: Clerk (recommended) or Auth.js — email/password + Google OAuth at minimum.
+- **User** — belongs to one or more businesses, via a `BusinessMember` row with a role:
+  - `owner` — full access, billing, tax settings; can manage members and invite
+    admins/staff; exactly one per business
+  - `admin` — everything staff can do, plus managing members/invitations and every
+    Settings tab except Tax/Billing; sees every document unconditionally
+  - `staff` — can create/edit documents, customers, products; cannot change
+    business/tax settings, billing, or manage members
+- **Manager** — not a stored role. Derived live from whether a staff member has
+  active direct reports (`reportsToId` on other members pointing at them). Adds one
+  extra permission (`reports.view`); every other manager-vs-staff difference is a
+  wider *scope* on a permission staff already has (they can see their reports'
+  documents too), not a new permission — see
+  [`docs/permission-layer-design.md`](./docs/permission-layer-design.md).
+- **Document-visibility hierarchy** — orthogonal to `role`. Owner/Admin see every
+  document. Staff see documents they created, plus (if they're a Manager) documents
+  created by their direct reports — see
+  [`docs/hierarchy-access-control-design.md`](./docs/hierarchy-access-control-design.md).
+- New members join by accepting an emailed invitation, never by ad hoc "add by
+  email" — see [`docs/invitation-onboarding-design.md`](./docs/invitation-onboarding-design.md).
+- Auth provider: Clerk — email/password + Google OAuth at minimum.
 - All data queries scoped by `businessId`; no cross-tenant reads.
 
 ## 3. Core data model
 
 ```
 Business
-  id, name, email, phone, address, city, state, country, website, logoUrl
+  id, name, slug (unique, auto-generated, powers the public-share subdomain)
+  email, phone, address, city, state, country, website, logoUrl
   gstEnabled: boolean
   gstin, gstDefaultRate, placeOfSupply, registrationType   (nullable if gstEnabled=false)
   documentTemplate: enum(classic, modern, minimal)
   accentColor: string
-  createdAt
+  defaultPaymentTerms, defaultValidityTerms, defaultNotes, defaultTermsText
+  onboardingCompletedAt
+  createdAt, updatedAt
 
 User
   id, email, name, avatarUrl, authProviderId
 
 BusinessMember
-  businessId, userId, role: enum(owner, staff)
+  businessId, userId, role: enum(owner, admin, staff)
+  reportsToId (nullable, self-relation — document-visibility hierarchy, see §2)
+  title (free text, display-only), isActive (soft-delete for departing members)
+  createdAt, updatedAt
+
+Invitation
+  id, businessId, email, role: enum(admin, staff)   -- never owner
+  title, reportsToId (pre-fills the invitee's hierarchy position)
+  tokenHash (SHA-256 of the raw token; raw value never persisted)
+  status: enum(pending, accepted, revoked, expired)
+  invitedByUserId, acceptedByUserId, expiresAt
+  createdAt, updatedAt
 
 Customer
   id, businessId, name, company, email, phone, address, city, state
-  createdAt
+  createdAt, updatedAt
 
 Product
   id, businessId, name, description, sku, unit (project/month/hour/...), price
   gstRate (nullable if business gstEnabled=false)
+  createdAt, updatedAt
 
 Document  (covers both Quotation and Invoice)
   id, businessId, type: enum(quotation, invoice)
@@ -50,15 +81,25 @@ Document  (covers both Quotation and Invoice)
   issueDate, dueDate (invoice) / validUntil (quotation)
   paymentTerms / validityTerms
   status: enum(draft, sent, accepted/paid, overdue, declined)  -- differs slightly by type
-  subtotal, discountTotal, taxableAmount, cgst, sgst, igst, total
+  subtotal, discountTotal, taxableAmount, cgst, sgst, igst, total, currency
   template, accentColor, showLogo, showGstinRow, showTax, showPayment, showNotes, showTerms
   notes, termsText
+  customerSnapshot, businessSnapshot (frozen at creation, never re-derived)
   convertedFromQuotationId (nullable, for quote→invoice conversion)
+  shareToken (nullable, public share link), sentAt, viewedAt
+  createdByUserId (nullable — document-visibility hierarchy key, never backfilled
+  for documents created before the hierarchy feature existed)
   createdAt, updatedAt
 
 LineItem
   id, documentId, productId (nullable — can be a free-text line), name, description
-  qty, rate, discountPct, amount (computed)
+  qty, rate, discountPct, gstRate, amount (computed), sortOrder
+
+DocumentCounter (concurrency-safe per-business/type/year numbering)
+  id, businessId, type, year, lastNumber
+
+RateLimitHit (Postgres-backed fixed-window rate limiting — invitations)
+  id, bucketKey, windowStart, count
 
 Payment (Phase 2)
   id, invoiceId, amount, method, paidAt
@@ -104,8 +145,17 @@ Payment (Phase 2)
 - Actions: Save, Download PDF, Share link, Mark as paid (invoice), Convert to invoice (quotation)
 
 **Settings**
-- Tabs: Business profile, Tax, Documents (numbering/templates), Appearance, Account
-- Mirrors onboarding fields, always editable
+- Tabs: Business profile, Tax, Documents (numbering/templates), Appearance, Team, Account
+- Business profile/Documents/Appearance mirror onboarding fields, always editable
+- Tax tab: Owner only
+- Team tab: manage members (role, hierarchy position, deactivate) and pending
+  invitations; visible to Owner/Admin
+
+**Invitations & onboarding**
+- `/invitations` — a signed-in user's list of pending invitations across businesses
+- `/invite/[token]` — accept/decline an invitation via its emailed link
+- Accepting creates the `BusinessMember` row (role + hierarchy position from the
+  invitation) and, if the invitee has no completed business yet, skips onboarding
 
 ## 5. Tax logic (GST)
 
@@ -152,14 +202,29 @@ POST   /api/documents/:id/convert    quotation -> invoice
 POST   /api/documents/:id/mark-paid
 POST   /api/documents/:id/send       email the document via Resend, sets status=sent
 POST   /api/documents/:id/share      (re)generate the public share token
+POST   /api/documents/:id/reassign   change createdByUserId (hierarchy reassignment)
 GET    /public/documents/:token      unauthenticated public view, sets status=viewed
+
+GET    /api/business/members         list members (+ hierarchy)
+PATCH  /api/business/members/:id     update role/reportsTo/title/isActive
+
+POST   /api/business/invitations             create + email an invitation
+GET    /api/business/invitations              list pending/past invitations
+PATCH  /api/business/invitations/:id          revoke
+GET    /api/invitations                       current user's own pending invitations
+POST   /api/invitations/accept                accept by token
+POST   /api/invitations/decline               decline by token
 ```
 
 `status = "sent"` is only ever set by the send endpoint; downloading a PDF does not change status. `status = "viewed"` is only ever set when the public share link is opened.
 
 ## 8. Phased roadmap
 
-- **Phase 1 (MVP)**: auth, onboarding, business settings, customers, products, quotations, invoices, document builder + preview + PDF export + email sending + public share view, dashboard.
+- **Phase 1 (MVP) — shipped**: auth, onboarding, business settings, customers, products, quotations, invoices, document builder + preview + PDF export + email sending + public share view, dashboard.
+- **Phase 1.5 — shipped**: admin role, member hierarchy (manager/report tree),
+  document-visibility scoping by hierarchy, permission layer (`lib/auth/permissions.ts`),
+  invitation-based onboarding (replacing ad hoc "add member by email"), public
+  share links on business-slug subdomains, Postgres-backed rate limiting.
 - **Phase 2**: payments/reminders, quote e-signatures/acceptance.
 - **Phase 3**: mobile — Capacitor wrap of the web app first; native rebuild only if needed.
 
@@ -169,7 +234,14 @@ GET    /public/documents/:token      unauthenticated public view, sets status=vi
 - **Database + storage**: Supabase Postgres + Supabase Storage (single vendor).
 - **Email**: Resend, via a dedicated `POST /api/documents/:id/send` endpoint — "sent" means actually emailed through the app, not just downloaded.
 - **`status` field**: stored as `String` in Prisma, validated in application code (`lib/documents/status.ts`) against a type-specific allowed set — not a DB-level enum, since quotations and invoices have different valid statuses.
+- **Staff permissions**: resolved via a two-axis model (permission catalog +
+  hierarchy-based scope) rather than a fixed owner/staff split — see
+  [`docs/permission-layer-design.md`](./docs/permission-layer-design.md) and
+  [`docs/hierarchy-access-control-design.md`](./docs/hierarchy-access-control-design.md).
+- **Membership**: invitation-only (emailed token, expiring), not ad hoc "add by
+  email" — see [`docs/invitation-onboarding-design.md`](./docs/invitation-onboarding-design.md).
 
 ## 10. Still open
 
-- Whether staff roles need finer-grained permissions beyond owner/staff at MVP
+- Payments/reminders and quote e-signatures (Phase 2) remain undesigned beyond the
+  `Payment` table placeholder.

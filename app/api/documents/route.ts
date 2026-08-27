@@ -1,20 +1,35 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { DocumentType } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { errorResponse } from "@/lib/api/respond";
 import { requireBusiness } from "@/lib/auth/session";
+import { hasPermission, requirePermission, type Permission } from "@/lib/auth/permissions";
+import { todayInIST } from "@/lib/dates";
 import { documentCreateSchema } from "@/lib/validation/document";
 import { getNextDocumentNumber } from "@/lib/documents/numbering";
 import {
   buildBusinessSnapshot,
   buildCustomerSnapshot,
 } from "@/lib/documents/snapshots";
+import { documentScopeWhere } from "@/lib/documents/visibility";
+
+const VIEW_PERMISSION: Record<DocumentType, Permission> = {
+  quotation: "quotations.view",
+  invoice: "invoices.view",
+};
+
+const CREATE_PERMISSION: Record<DocumentType, Permission> = {
+  quotation: "quotations.create",
+  invoice: "invoices.create",
+};
 
 const DOCUMENT_TYPES: readonly DocumentType[] = ["quotation", "invoice"];
 
 export async function GET(request: NextRequest) {
   try {
-    const { business } = await requireBusiness();
+    const context = await requireBusiness();
+    const { business } = context;
     const params = request.nextUrl.searchParams;
     const type = params.get("type");
     const status = params.get("status");
@@ -23,20 +38,35 @@ export async function GET(request: NextRequest) {
     if (type && !DOCUMENT_TYPES.includes(type as DocumentType)) {
       return NextResponse.json({ error: "Invalid type filter" }, { status: 400 });
     }
+    // A specific type filter has a specific permission to check; an
+    // unfiltered list spans both types, which every fixed role that can
+    // reach this endpoint already has view access to either way (see
+    // docs/permission-layer-design.md §2 — quotations.view/invoices.view
+    // are always granted as a pair for every current role).
+    if (type && !(await hasPermission(context, VIEW_PERMISSION[type as DocumentType]))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Combined via AND, not spread — scopeWhere and the search filter can
+    // each independently produce an `OR` key, and spreading both into the
+    // same object would let the second silently clobber the first rather
+    // than actually applying both conditions.
+    const conditions: Prisma.DocumentWhereInput[] = [await documentScopeWhere("view")];
+    if (search) {
+      conditions.push({
+        OR: [
+          { number: { contains: search, mode: "insensitive" } },
+          { customer: { name: { contains: search, mode: "insensitive" } } },
+        ],
+      });
+    }
 
     const documents = await prisma.document.findMany({
       where: {
         businessId: business.id,
         ...(type ? { type: type as DocumentType } : {}),
         ...(status ? { status } : {}),
-        ...(search
-          ? {
-              OR: [
-                { number: { contains: search, mode: "insensitive" } },
-                { customer: { name: { contains: search, mode: "insensitive" } } },
-              ],
-            }
-          : {}),
+        AND: conditions,
       },
       orderBy: { createdAt: "desc" },
       include: { customer: { select: { id: true, name: true, company: true } } },
@@ -54,8 +84,9 @@ export async function GET(request: NextRequest) {
 // a real id to save against.
 export async function POST(request: NextRequest) {
   try {
-    const { business } = await requireBusiness();
+    const { business, user } = await requireBusiness();
     const input = documentCreateSchema.parse(await request.json());
+    await requirePermission(CREATE_PERMISSION[input.type]);
 
     const customer = await prisma.customer.findFirst({
       where: { id: input.customerId, businessId: business.id },
@@ -72,10 +103,16 @@ export async function POST(request: NextRequest) {
         type: input.type,
         number,
         customerId: customer.id,
-        issueDate: new Date(),
+        issueDate: todayInIST(),
+        createdByUserId: user.id,
         template: business.documentTemplate,
         accentColor: business.accentColor,
         showTax: business.gstEnabled,
+        notes: business.defaultNotes,
+        termsText: business.defaultTermsText,
+        ...(input.type === "quotation"
+          ? { validityTerms: business.defaultValidityTerms }
+          : { paymentTerms: business.defaultPaymentTerms }),
         customerSnapshot: buildCustomerSnapshot(customer),
         businessSnapshot: buildBusinessSnapshot(business),
       },

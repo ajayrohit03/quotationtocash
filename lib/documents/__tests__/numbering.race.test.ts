@@ -2,6 +2,7 @@ import "dotenv/config";
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
+import { getISTYear } from "@/lib/dates";
 import { getNextDocumentNumber } from "@/lib/documents/numbering";
 
 // Runs against the real database (see lib/auth/__tests__/session.race.test.ts
@@ -22,6 +23,7 @@ async function createTestBusiness() {
   const business = await prisma.business.create({
     data: {
       name: `Numbering Test ${randomUUID()}`,
+      slug: `numbering-test-${randomUUID()}`,
       email: `numbering-test-${randomUUID()}@example.invalid`,
     },
   });
@@ -43,7 +45,7 @@ describe("getNextDocumentNumber", () => {
     // All ten must be distinct — the whole point of the atomic increment.
     expect(new Set(numbers).size).toBe(10);
 
-    const year = now.getFullYear();
+    const year = getISTYear(now);
     const suffixes = numbers
       .map((n) => Number(n.split("-")[2]))
       .sort((a, b) => a - b);

@@ -23,20 +23,13 @@ export const documentCreateSchema = z.object({
 
 export type DocumentCreateInput = z.infer<typeof documentCreateSchema>;
 
-export const documentUpdateSchema = z.object({
-  // Auto-suggested at creation, but the spec calls it editable — unique
-  // constraint violations are caught and surfaced as a clear error in the
-  // route handler rather than a raw P2002.
-  number: z.string().trim().min(1, "Number can't be empty").max(50).optional(),
-  customerId: z.string().min(1).optional(),
-  issueDate: z.coerce.date().optional(),
-  dueDate: z.coerce.date().nullable().optional(),
-  validUntil: z.coerce.date().nullable().optional(),
-  paymentTerms: z.string().trim().max(500).nullable().optional(),
-  validityTerms: z.string().trim().max(500).nullable().optional(),
-  notes: z.string().trim().max(2000).nullable().optional(),
-  termsText: z.string().trim().max(2000).nullable().optional(),
-
+// Shared with the PDF route (POST /api/documents/:id/pdf accepts an
+// optional appearance override so a download taken mid-edit — before the
+// customize sidebar's debounced autosave lands — still matches what's on
+// screen, per spec: "changes apply live to the preview and the exported
+// PDF"). That override is render-only, never persisted, but still needs
+// the same validation so a malformed value can't reach react-pdf.
+export const appearanceUpdateSchema = z.object({
   template: z.enum(["classic", "modern", "minimal"]).optional(),
   accentColor: z
     .string()
@@ -49,6 +42,23 @@ export const documentUpdateSchema = z.object({
   showPayment: z.boolean().optional(),
   showNotes: z.boolean().optional(),
   showTerms: z.boolean().optional(),
+});
+
+export type AppearanceUpdateInput = z.infer<typeof appearanceUpdateSchema>;
+
+export const documentUpdateSchema = appearanceUpdateSchema.extend({
+  // Auto-suggested at creation, but the spec calls it editable — unique
+  // constraint violations are caught and surfaced as a clear error in the
+  // route handler rather than a raw P2002.
+  number: z.string().trim().min(1, "Number can't be empty").max(50).optional(),
+  customerId: z.string().min(1).optional(),
+  issueDate: z.coerce.date().optional(),
+  dueDate: z.coerce.date().nullable().optional(),
+  validUntil: z.coerce.date().nullable().optional(),
+  paymentTerms: z.string().trim().max(500).nullable().optional(),
+  validityTerms: z.string().trim().max(500).nullable().optional(),
+  notes: z.string().trim().max(2000).nullable().optional(),
+  termsText: z.string().trim().max(2000).nullable().optional(),
 
   // Validated against isManuallySettableStatus() in the route handler,
   // not here — that check needs the document's type, which this schema

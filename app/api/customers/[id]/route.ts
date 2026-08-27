@@ -1,16 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { errorResponse } from "@/lib/api/respond";
-import { requireBusiness } from "@/lib/auth/session";
+import { requirePermission } from "@/lib/auth/permissions";
 import { customerUpdateSchema } from "@/lib/validation/customer";
 import { getCustomerBillingSummary } from "@/lib/documents/aggregates";
+import { documentScopeWhere } from "@/lib/documents/visibility";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { business } = await requireBusiness();
+    const { business } = await requirePermission("customers.view");
     const { id } = await params;
 
     // Scoped by businessId, not just id — a customer id from another
@@ -24,7 +25,11 @@ export async function GET(
 
     const [documents, summary] = await Promise.all([
       prisma.document.findMany({
-        where: { businessId: business.id, customerId: id },
+        where: {
+          businessId: business.id,
+          customerId: id,
+          ...(await documentScopeWhere("view")),
+        },
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
@@ -54,7 +59,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { business } = await requireBusiness();
+    const { business } = await requirePermission("customers.edit");
     const { id } = await params;
 
     const existing = await prisma.customer.findFirst({

@@ -1,13 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { errorResponse } from "@/lib/api/respond";
-import { requireBusiness } from "@/lib/auth/session";
+import { requirePermission } from "@/lib/auth/permissions";
 import { customerCreateSchema } from "@/lib/validation/customer";
 import { getCustomersBillingSummaries } from "@/lib/documents/aggregates";
 
 export async function GET(request: NextRequest) {
   try {
-    const { business } = await requireBusiness();
+    const { business } = await requirePermission("customers.view");
     const search = request.nextUrl.searchParams.get("q")?.trim();
 
     const customers = await prisma.customer.findMany({
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { business } = await requireBusiness();
+    const { business } = await requirePermission("customers.create");
     const input = customerCreateSchema.parse(await request.json());
 
     const customer = await prisma.customer.create({

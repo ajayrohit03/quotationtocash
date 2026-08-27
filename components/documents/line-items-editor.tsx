@@ -33,12 +33,14 @@ export function LineItemsEditor({
   gstEnabled,
   gstDefaultRate,
   onChange,
+  disabled = false,
 }: {
   items: LocalLineItem[];
   products: BuilderProduct[];
   gstEnabled: boolean;
   gstDefaultRate: number | null;
   onChange: (items: LocalLineItem[]) => void;
+  disabled?: boolean;
 }) {
   const productsById = new Map(products.map((p) => [p.id, p]));
 
@@ -151,6 +153,7 @@ export function LineItemsEditor({
                           onChange={(e) =>
                             updateItem(item.key, { name: e.target.value })
                           }
+                          disabled={disabled}
                         />
                         <Input
                           placeholder="Description (optional)"
@@ -160,6 +163,7 @@ export function LineItemsEditor({
                             updateItem(item.key, { description: e.target.value })
                           }
                           className="h-8 text-xs text-muted-foreground"
+                          disabled={disabled}
                         />
                       </div>
                     </TableCell>
@@ -176,6 +180,7 @@ export function LineItemsEditor({
                           })
                         }
                         className="text-right"
+                        disabled={disabled}
                       />
                     </TableCell>
                     <TableCell className="align-top">
@@ -191,6 +196,7 @@ export function LineItemsEditor({
                           })
                         }
                         className="text-right"
+                        disabled={disabled}
                       />
                     </TableCell>
                     <TableCell className="align-top">
@@ -207,6 +213,7 @@ export function LineItemsEditor({
                           })
                         }
                         className="text-right"
+                        disabled={disabled}
                       />
                     </TableCell>
                     {gstEnabled && (
@@ -228,6 +235,7 @@ export function LineItemsEditor({
                             })
                           }
                           className="text-right"
+                          disabled={disabled}
                         />
                       </TableCell>
                     )}
@@ -242,6 +250,7 @@ export function LineItemsEditor({
                           size="icon-sm"
                           aria-label="Duplicate item"
                           onClick={() => duplicateItem(item.key)}
+                          disabled={disabled}
                         >
                           <CopyIcon />
                         </Button>
@@ -251,6 +260,7 @@ export function LineItemsEditor({
                           size="icon-sm"
                           aria-label="Remove item"
                           onClick={() => removeItem(item.key)}
+                          disabled={disabled}
                         >
                           <XIcon />
                         </Button>
@@ -267,6 +277,7 @@ export function LineItemsEditor({
         products={products}
         onSelectProduct={addFromProduct}
         onAddCustom={addCustom}
+        disabled={disabled}
       />
     </div>
   );

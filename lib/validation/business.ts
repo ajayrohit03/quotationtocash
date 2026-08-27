@@ -39,6 +39,13 @@ export const businessUpdateSchema = z.object({
     .trim()
     .regex(/^#[0-9a-fA-F]{6}$/, "Must be a hex color like #4F46E5")
     .optional(),
+
+  // Pre-fill defaults for new documents only — never applied
+  // retroactively (see the field comments in schema.prisma).
+  defaultPaymentTerms: z.string().trim().max(500).nullable().optional(),
+  defaultValidityTerms: z.string().trim().max(500).nullable().optional(),
+  defaultNotes: z.string().trim().max(2000).nullable().optional(),
+  defaultTermsText: z.string().trim().max(2000).nullable().optional(),
 });
 
 export type BusinessUpdateInput = z.infer<typeof businessUpdateSchema>;

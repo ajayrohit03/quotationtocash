@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { DocumentType } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { requireBusinessForPage } from "@/lib/auth/page";
+import { documentScopeWhere } from "@/lib/documents/visibility";
 import {
   DocumentBuilder,
   type BuilderBusiness,
@@ -18,8 +19,15 @@ export async function DocumentEditorPage({
 }) {
   const { business } = await requireBusinessForPage();
 
+  // "mutate" scope, not "view" — the builder is where edits happen
+  // (autosave PATCHes from here). Using view-scope would let a Manager
+  // open a subordinate's document into an editable builder whose
+  // autosave then silently 403s in the background the moment they type
+  // anything; mutate-scope here means they're routed to the read-only
+  // preview instead, consistent with what they can actually do. See
+  // docs/permission-layer-design.md §6.
   const document = await prisma.document.findFirst({
-    where: { id, businessId: business.id, type },
+    where: { id, businessId: business.id, type, ...(await documentScopeWhere("mutate")) },
     include: {
       customer: true,
       lineItems: { orderBy: { sortOrder: "asc" } },
@@ -65,6 +73,15 @@ export async function DocumentEditorPage({
       discountPct: Number(item.discountPct),
       gstRate: item.gstRate == null ? null : Number(item.gstRate),
     })),
+    totals: {
+      subtotal: Number(document.subtotal),
+      discountTotal: Number(document.discountTotal),
+      taxableAmount: Number(document.taxableAmount),
+      cgst: Number(document.cgst),
+      sgst: Number(document.sgst),
+      igst: Number(document.igst),
+      total: Number(document.total),
+    },
   };
 
   const builderBusiness: BuilderBusiness = {
@@ -85,7 +102,15 @@ export async function DocumentEditorPage({
   }));
 
   return (
+    // Keyed on the document id for the same reason as DocumentPreview
+    // (see document-preview-page.tsx): without it, a client-side
+    // navigation straight from one document's builder to another's would
+    // let React reuse this instance and carry over the *previous*
+    // document's unsaved line items/customer/dates into the new one —
+    // and here that's real content, not just appearance, so autosave
+    // could silently overwrite the new document with stale data.
     <DocumentBuilder
+      key={builderDocument.id}
       document={builderDocument}
       business={builderBusiness}
       customers={customers}

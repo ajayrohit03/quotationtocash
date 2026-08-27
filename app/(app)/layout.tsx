@@ -1,14 +1,8 @@
-import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { requireBusinessForPage } from "@/lib/auth/page";
-
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/quotations", label: "Quotations" },
-  { href: "/invoices", label: "Invoices" },
-  { href: "/customers", label: "Customers" },
-  { href: "/products", label: "Products" },
-];
+import { InitialsAvatar } from "@/components/ui/initials-avatar";
+import { SidebarNav } from "@/components/layout/sidebar-nav";
+import { CreateNewMenu } from "@/components/layout/create-new-menu";
 
 export default async function AppLayout({
   children,
@@ -19,22 +13,31 @@ export default async function AppLayout({
 
   return (
     <div className="flex flex-1">
-      <aside className="flex w-56 flex-none flex-col border-r border-border p-4">
-        <p className="truncate text-sm font-medium">{business.name}</p>
-        <p className="font-mono text-xs text-muted-foreground capitalize">
-          {membership.role}
-        </p>
-        <nav className="mt-6 flex flex-col gap-1">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="rounded-md px-3 py-2 text-sm text-foreground/80 hover:bg-muted hover:text-foreground"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+      <aside className="sticky top-0 flex h-screen w-60 flex-none flex-col gap-5 border-r border-sidebar-border bg-sidebar p-3.5">
+        <div className="flex items-center gap-2.5 px-1.5">
+          <div className="flex size-7 flex-none items-center justify-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground">
+            QC
+          </div>
+          <span className="text-[15px] font-semibold tracking-tight text-sidebar-foreground">
+            QuotationToCash
+          </span>
+        </div>
+
+        <CreateNewMenu />
+
+        <SidebarNav />
+
+        <div className="mt-auto flex items-center gap-2.5 border-t border-sidebar-border pt-3.5">
+          <InitialsAvatar name={business.name} size="sm" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-medium text-sidebar-foreground">
+              {business.name}
+            </p>
+            <p className="truncate text-xs text-muted-foreground capitalize">
+              {membership.role}
+            </p>
+          </div>
+        </div>
       </aside>
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-end border-b border-border px-6 py-3">
