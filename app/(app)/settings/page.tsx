@@ -13,33 +13,38 @@ export default async function SettingsPage() {
   const isAdmin = isOwner || membership.role === "admin";
 
   // Only fetched for an owner/admin — matches the underlying APIs, which
-  // 403 for anyone else.
-  const members: SettingsMember[] | null = isAdmin
-    ? await prisma.businessMember.findMany({
-        where: { businessId: business.id },
-        select: {
-          id: true,
-          role: true,
-          title: true,
-          reportsToId: true,
-          isActive: true,
-          user: { select: { id: true, name: true, email: true } },
-        },
-        orderBy: { createdAt: "asc" },
-      })
-    : null;
+  // 403 for anyone else. Independent of each other, so run concurrently
+  // rather than one after the other.
+  const [rawMembers, rawInvitations] = await Promise.all([
+    isAdmin
+      ? prisma.businessMember.findMany({
+          where: { businessId: business.id },
+          select: {
+            id: true,
+            role: true,
+            title: true,
+            reportsToId: true,
+            isActive: true,
+            user: { select: { id: true, name: true, email: true } },
+          },
+          orderBy: { createdAt: "asc" },
+        })
+      : Promise.resolve(null),
+    isAdmin ? listInvitationsForBusiness(business.id) : Promise.resolve(null),
+  ]);
 
-  const invitations: SettingsInvitation[] | null = isAdmin
-    ? (await listInvitationsForBusiness(business.id)).map((invitation) => ({
-        id: invitation.id,
-        email: invitation.email,
-        role: invitation.role,
-        title: invitation.title,
-        status: invitation.status,
-        createdAt: invitation.createdAt,
-        expiresAt: invitation.expiresAt,
-      }))
-    : null;
+  const members: SettingsMember[] | null = rawMembers;
+
+  const invitations: SettingsInvitation[] | null =
+    rawInvitations?.map((invitation) => ({
+      id: invitation.id,
+      email: invitation.email,
+      role: invitation.role,
+      title: invitation.title,
+      status: invitation.status,
+      createdAt: invitation.createdAt,
+      expiresAt: invitation.expiresAt,
+    })) ?? null;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">

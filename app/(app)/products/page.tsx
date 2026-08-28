@@ -2,6 +2,7 @@ import { Package } from "lucide-react";
 import { prisma } from "@/lib/db/prisma";
 import { requireBusinessForPage } from "@/lib/auth/page";
 import { formatCurrency } from "@/lib/format";
+import { TutorialBanner } from "@/components/tutorial-banner";
 import {
   Table,
   TableBody,
@@ -15,7 +16,7 @@ import { AddProductDialog } from "./add-product-dialog";
 const HEAD_CLASS = "bg-muted/40 text-xs font-semibold tracking-wide text-muted-foreground";
 
 export default async function ProductsPage() {
-  const { business } = await requireBusinessForPage();
+  const { business, user } = await requireBusinessForPage();
 
   const products = await prisma.product.findMany({
     where: { businessId: business.id },
@@ -30,6 +31,13 @@ export default async function ProductsPage() {
         </h1>
         <AddProductDialog gstEnabled={business.gstEnabled} />
       </div>
+
+      <TutorialBanner
+        tutorialKey="products"
+        title="Save what you bill often."
+        description="Add a product or service once here, then pull it into a document in one click instead of typing the same line item every time."
+        initiallyDismissed={user.dismissedTutorials.includes("products")}
+      />
 
       {products.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-border py-16 text-center">

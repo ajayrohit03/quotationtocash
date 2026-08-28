@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { requireBusiness } from "@/lib/auth/session";
@@ -48,7 +49,13 @@ export async function getDocumentVisibility(): Promise<DocumentVisibility> {
 // "active" ones) — a deactivated member's historical documents must stay
 // visible to whoever now sits above their old position (§5); excluding
 // them here would silently break that.
-async function resolveVisibleUserIds(
+//
+// Wrapped in React's cache() — same reasoning as requireBusiness() in
+// lib/auth/session.ts: multiple documentScopeWhere("view") calls within
+// one request (e.g. dashboard's metrics + recent-documents, run in
+// parallel) would otherwise each independently re-fetch every
+// BusinessMember row for the business.
+const resolveVisibleUserIds = cache(async function resolveVisibleUserIds(
   businessId: string,
   viewerUserId: string,
 ): Promise<Set<string>> {
@@ -65,7 +72,7 @@ async function resolveVisibleUserIds(
   }
 
   return resolveSubtreeUserIds(members, viewer.id);
-}
+});
 
 // Two scope tiers, not one shared tier — see
 // docs/permission-layer-design.md §5. "view" is the original hierarchy

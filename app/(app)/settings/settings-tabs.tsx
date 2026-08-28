@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Building2, Percent, FileText, Palette, CircleUser, Users } from "lucide-react";
 import {
   Tabs,
@@ -8,13 +9,27 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { BusinessProfileTab } from "./business-profile-tab";
-import { TaxTab } from "./tax-tab";
-import { DocumentsTab } from "./documents-tab";
-import { AppearanceTab } from "./appearance-tab";
-import { AccountTab } from "./account-tab";
-import { TeamTab } from "./team-tab";
 import type { SettingsBusiness, SettingsMember, SettingsInvitation } from "./types";
+
+// Each tab is its own chunk, fetched only when actually selected — base-ui's
+// Tabs.Panel doesn't keep inactive panels mounted (keepMounted defaults to
+// false), so before this change every tab's code, including react-hook-form
+// + zod-heavy ones like BusinessProfileTab and DocumentsTab, loaded and
+// parsed up front regardless of which tab (if any) the user opened.
+const BusinessProfileTab = dynamic(() =>
+  import("./business-profile-tab").then((m) => m.BusinessProfileTab),
+);
+const TaxTab = dynamic(() => import("./tax-tab").then((m) => m.TaxTab));
+const DocumentsTab = dynamic(() =>
+  import("./documents-tab").then((m) => m.DocumentsTab),
+);
+const AppearanceTab = dynamic(() =>
+  import("./appearance-tab").then((m) => m.AppearanceTab),
+);
+const AccountTab = dynamic(() =>
+  import("./account-tab").then((m) => m.AccountTab),
+);
+const TeamTab = dynamic(() => import("./team-tab").then((m) => m.TeamTab));
 
 const TABS = [
   { value: "business", label: "Business profile", icon: Building2 },

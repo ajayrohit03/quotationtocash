@@ -34,6 +34,13 @@ export async function GET(request: NextRequest) {
     const type = params.get("type");
     const status = params.get("status");
     const search = params.get("q")?.trim();
+    const skip = Number(params.get("skip") ?? "0");
+    const takeParam = Number(params.get("take") ?? "25");
+    // Bounded regardless of what's requested — this endpoint backs the
+    // list pages' "Load more" button, not a bulk export.
+    const take = Number.isFinite(takeParam)
+      ? Math.min(Math.max(takeParam, 1), 100)
+      : 25;
 
     if (type && !DOCUMENT_TYPES.includes(type as DocumentType)) {
       return NextResponse.json({ error: "Invalid type filter" }, { status: 400 });
@@ -61,18 +68,25 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const documents = await prisma.document.findMany({
+    // Fetch one extra row to know whether another page exists without a
+    // separate count query.
+    const rows = await prisma.document.findMany({
       where: {
         businessId: business.id,
         ...(type ? { type: type as DocumentType } : {}),
         ...(status ? { status } : {}),
         AND: conditions,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       include: { customer: { select: { id: true, name: true, company: true } } },
+      skip,
+      take: take + 1,
     });
 
-    return NextResponse.json({ documents });
+    const hasMore = rows.length > take;
+    const documents = hasMore ? rows.slice(0, take) : rows;
+
+    return NextResponse.json({ documents, hasMore });
   } catch (error) {
     return errorResponse(error);
   }

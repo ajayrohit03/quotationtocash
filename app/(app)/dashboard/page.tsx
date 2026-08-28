@@ -17,6 +17,7 @@ import {
 import { formatDateIST } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
 import { StatusBadge } from "@/components/documents/status-badge";
+import { TutorialBanner } from "@/components/tutorial-banner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -37,7 +38,7 @@ const QUICK_ACTIONS = [
 const HEAD_CLASS = "bg-muted/40 text-xs font-semibold tracking-wide text-muted-foreground";
 
 export default async function DashboardPage() {
-  const { business } = await requireBusinessForPage();
+  const { business, user } = await requireBusinessForPage();
 
   const [metrics, recentDocuments] = await Promise.all([
     getDashboardMetrics(business.id),
@@ -54,6 +55,13 @@ export default async function DashboardPage() {
           Quotations, invoices, and revenue at a glance.
         </p>
       </div>
+
+      <TutorialBanner
+        tutorialKey="dashboard"
+        title="Your business at a glance."
+        description="Revenue, outstanding amounts, and your most recent quotations and invoices — everything else lives one click away in the sidebar."
+        initiallyDismissed={user.dismissedTutorials.includes("dashboard")}
+      />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card>

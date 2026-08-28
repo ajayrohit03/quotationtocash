@@ -3,22 +3,12 @@ import { FileText, Receipt } from "lucide-react";
 import type { DocumentType, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { requireBusinessForPage } from "@/lib/auth/page";
-import { formatDateIST } from "@/lib/dates";
-import { formatCurrency } from "@/lib/format";
 import { documentScopeWhere } from "@/lib/documents/visibility";
-import { StatusBadge } from "@/components/documents/status-badge";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { TutorialBanner } from "@/components/tutorial-banner";
 import { DocumentSearch } from "./document-search";
-
-const HEAD_CLASS = "bg-muted/40 text-xs font-semibold tracking-wide text-muted-foreground";
+import { DocumentTable } from "./document-table";
+import { DOCUMENT_PAGE_SIZE } from "./document-list-constants";
 
 const COPY: Record<
   DocumentType,
@@ -35,6 +25,19 @@ const COPY: Record<
     newLabel: "New invoice",
     dateLabel: "Due date",
     icon: Receipt,
+  },
+};
+
+const TUTORIAL_COPY: Record<DocumentType, { key: string; title: string; description: string }> = {
+  quotation: {
+    key: "quotations",
+    title: "Quotations are for before the sale.",
+    description: "Send one to a customer, then convert it to an invoice in one click once they accept.",
+  },
+  invoice: {
+    key: "invoices",
+    title: "Invoices track what's owed.",
+    description: "Mark one paid as money comes in and its status updates everywhere it appears.",
   },
 };
 
@@ -71,16 +74,22 @@ export async function DocumentListPage({
     });
   }
 
-  const documents = await prisma.document.findMany({
+  // Fetch one extra row to know whether a "Load more" page exists,
+  // without a separate count query. Same shape as GET /api/documents,
+  // which DocumentTable calls for subsequent pages.
+  const rows = await prisma.document.findMany({
     where: {
       businessId: business.id,
       type,
       ...(status ? { status } : {}),
       AND: conditions,
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     include: { customer: { select: { name: true } } },
+    take: DOCUMENT_PAGE_SIZE + 1,
   });
+  const hasMore = rows.length > DOCUMENT_PAGE_SIZE;
+  const documents = hasMore ? rows.slice(0, DOCUMENT_PAGE_SIZE) : rows;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
@@ -90,6 +99,13 @@ export async function DocumentListPage({
           {copy.newLabel}
         </Button>
       </div>
+
+      <TutorialBanner
+        tutorialKey={TUTORIAL_COPY[type].key}
+        title={TUTORIAL_COPY[type].title}
+        description={TUTORIAL_COPY[type].description}
+        initiallyDismissed={user.dismissedTutorials.includes(TUTORIAL_COPY[type].key)}
+      />
 
       <DocumentSearch basePath={basePath} defaultQuery={q} defaultStatus={status} />
 
@@ -110,61 +126,17 @@ export async function DocumentListPage({
           )}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border shadow-xs">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className={HEAD_CLASS}>Number</TableHead>
-                <TableHead className={HEAD_CLASS}>Customer</TableHead>
-                <TableHead className={HEAD_CLASS}>Date</TableHead>
-                <TableHead className={HEAD_CLASS}>{copy.dateLabel}</TableHead>
-                <TableHead className={HEAD_CLASS}>Status</TableHead>
-                <TableHead className={`${HEAD_CLASS} text-right`}>
-                  Amount
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {documents.map((doc) => {
-                const secondaryDate =
-                  type === "quotation" ? doc.validUntil : doc.dueDate;
-                // Own documents open in the editor; a Manager viewing a
-                // subordinate's document (view-scope only, not
-                // mutate-scope — see docs/permission-layer-design.md §5,
-                // §6) is routed to the read-only preview instead, so this
-                // link never points at a route that would 404 for them.
-                const isOwnDocument =
-                  hasUnrestrictedMutateScope || doc.createdByUserId === user.id;
-                const href = isOwnDocument
-                  ? `${basePath}/${doc.id}`
-                  : `${basePath}/${doc.id}/preview`;
-                return (
-                  <TableRow key={doc.id} className="cursor-pointer">
-                    <TableCell className="p-0">
-                      <Link
-                        href={href}
-                        className="block px-4 py-2.5 font-mono text-sm"
-                      >
-                        {doc.number}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{doc.customer.name}</TableCell>
-                    <TableCell>{formatDateIST(doc.issueDate)}</TableCell>
-                    <TableCell>
-                      {secondaryDate ? formatDateIST(secondaryDate) : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={doc.status} />
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-sm">
-                      {formatCurrency(doc.total)}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+        <DocumentTable
+          type={type}
+          basePath={basePath}
+          dateLabel={copy.dateLabel}
+          initialDocuments={documents}
+          initialHasMore={hasMore}
+          currentUserId={user.id}
+          hasUnrestrictedMutateScope={hasUnrestrictedMutateScope}
+          query={q}
+          status={status}
+        />
       )}
     </div>
   );

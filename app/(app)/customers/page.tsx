@@ -5,6 +5,7 @@ import { requireBusinessForPage } from "@/lib/auth/page";
 import { getCustomersBillingSummaries } from "@/lib/documents/aggregates";
 import { formatCurrency } from "@/lib/format";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
+import { TutorialBanner } from "@/components/tutorial-banner";
 import {
   Table,
   TableBody,
@@ -21,7 +22,7 @@ const HEAD_CLASS = "bg-muted/40 text-xs font-semibold tracking-wide text-muted-f
 export default async function CustomersPage({
   searchParams,
 }: PageProps<"/customers">) {
-  const { business } = await requireBusinessForPage();
+  const { business, user } = await requireBusinessForPage();
   const { q } = await searchParams;
   const search = typeof q === "string" ? q.trim() : "";
 
@@ -52,6 +53,13 @@ export default async function CustomersPage({
         <h1 className="text-xl font-semibold tracking-tight">Customers</h1>
         <AddCustomerDialog />
       </div>
+
+      <TutorialBanner
+        tutorialKey="customers"
+        title="Your customer list."
+        description="Saved details prefill new quotations and invoices — documents you've already sent keep whatever details they were created with."
+        initiallyDismissed={user.dismissedTutorials.includes("customers")}
+      />
 
       <CustomerSearch defaultValue={search} />
 

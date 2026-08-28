@@ -105,6 +105,12 @@ model User {
   avatarUrl      String? @map("avatar_url")
   authProviderId String  @unique @map("auth_provider_id")
 
+  // Keys of first-time-user guidance banners this user has dismissed
+  // (e.g. "dashboard", "quotations") — tied to the user, not
+  // BusinessMember, since it's about having seen the product's UI, not
+  // something that should differ per business a user belongs to.
+  dismissedTutorials String[] @default([]) @map("dismissed_tutorials")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -286,6 +292,10 @@ model Document {
   @@index([businessId, status])
   @@index([businessId, customerId])
   @@index([businessId, createdByUserId])
+  // Covers the list/dashboard pages' `orderBy: { createdAt: "desc" }` —
+  // without createdAt in the index, Postgres can use (businessId, type)
+  // to filter but must still sort the full matching set afterward.
+  @@index([businessId, type, createdAt])
   @@map("documents")
 }
 
