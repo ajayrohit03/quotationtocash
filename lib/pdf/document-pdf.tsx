@@ -199,6 +199,12 @@ export function DocumentPdf({
               {isQuotation ? "Validity" : "Payment terms"}: {terms || "—"}
               {"\n"}
               Currency: {document.currency}
+              {document.showReferenceNumber && document.referenceNumber && (
+                <>
+                  {"\n"}
+                  Reference number: {document.referenceNumber}
+                </>
+              )}
             </Text>
           </View>
         </View>

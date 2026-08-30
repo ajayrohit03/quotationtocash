@@ -254,9 +254,11 @@ model Document {
   showPayment  Boolean @default(true) @map("show_payment")
   showNotes    Boolean @default(true) @map("show_notes")
   showTerms    Boolean @default(true) @map("show_terms")
+  showReferenceNumber Boolean @default(false) @map("show_reference_number")
 
-  notes     String?
-  termsText String? @map("terms_text")
+  notes           String?
+  termsText       String? @map("terms_text")
+  referenceNumber String? @map("reference_number")
 
   // Frozen copies of the business/customer data used to render this
   // document — must never be re-derived from the live rows.

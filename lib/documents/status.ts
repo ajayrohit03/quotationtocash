@@ -45,6 +45,7 @@ export function isValidStatus(type: DocumentType, status: string): boolean {
 //   sent      -> POST /api/documents/:id/send            (Phase 8)
 //   viewed    -> GET  /public/documents/:token            (Phase 8)
 //   paid      -> POST /api/documents/:id/mark-paid         (Phase 9)
+//             <- POST /api/documents/:id/mark-unpaid        (Phase 9, reverse)
 //   accepted  -> the public share view's accept action     (Phase 8/9)
 //   converted -> POST /api/documents/:id/convert            (Phase 9)
 const RESTRICTED_STATUSES = new Set<string>([
@@ -161,6 +162,22 @@ export function requireMarkPayableInvoice(status: string): void {
   if (!canMarkPaid(status)) {
     throw new ForbiddenError(
       `This invoice can't be marked paid in its current status ("${status}").`,
+    );
+  }
+}
+
+// The reverse of the above — only a currently-paid invoice can be
+// reverted. Anything else (draft, sent, cancelled, ...) is rejected
+// rather than silently no-op'd, since "mark unpaid" implies there was a
+// paid state to undo.
+export function canMarkUnpaid(status: string): boolean {
+  return status === "paid";
+}
+
+export function requireMarkUnpaidInvoice(status: string): void {
+  if (!canMarkUnpaid(status)) {
+    throw new ForbiddenError(
+      `This invoice can't be marked unpaid in its current status ("${status}").`,
     );
   }
 }

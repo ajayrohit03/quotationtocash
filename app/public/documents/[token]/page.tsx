@@ -60,6 +60,7 @@ export default async function PublicDocumentPage({
           validityTerms={previewDocument.validityTerms}
           notes={previewDocument.notes}
           termsText={previewDocument.termsText}
+          referenceNumber={previewDocument.referenceNumber}
           currency={previewDocument.currency}
           business={previewDocument.business}
           customer={previewDocument.customer}
@@ -75,6 +76,7 @@ export default async function PublicDocumentPage({
             showPayment: previewDocument.showPayment,
             showNotes: previewDocument.showNotes,
             showTerms: previewDocument.showTerms,
+            showReferenceNumber: previewDocument.showReferenceNumber,
           }}
         />
       </div>

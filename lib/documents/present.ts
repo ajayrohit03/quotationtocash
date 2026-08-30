@@ -31,6 +31,7 @@ export function toPreviewDocument(
     validityTerms: document.validityTerms,
     notes: document.notes,
     termsText: document.termsText,
+    referenceNumber: document.referenceNumber,
     currency: document.currency,
     template: document.template,
     accentColor: document.accentColor,
@@ -40,6 +41,7 @@ export function toPreviewDocument(
     showPayment: document.showPayment,
     showNotes: document.showNotes,
     showTerms: document.showTerms,
+    showReferenceNumber: document.showReferenceNumber,
     // Snapshots are stored as Json — cast back to the shape they were
     // always written in (see lib/documents/snapshots.ts).
     business: document.businessSnapshot as unknown as BusinessSnapshot,

@@ -8,6 +8,7 @@ import type { DocumentTemplate } from "@prisma/client";
 import {
   canConvertQuotation,
   canMarkPaid,
+  canMarkUnpaid,
   canSendDocument,
   isEditableStatus,
 } from "@/lib/documents/status";
@@ -36,7 +37,13 @@ const SWATCHES = ["#4F46E5", "#0F766E", "#1D4ED8", "#C2410C", "#111827"];
 
 type ToggleKey = keyof Pick<
   PreviewAppearance,
-  "showLogo" | "showGstinRow" | "showTax" | "showPayment" | "showNotes" | "showTerms"
+  | "showLogo"
+  | "showGstinRow"
+  | "showTax"
+  | "showPayment"
+  | "showNotes"
+  | "showTerms"
+  | "showReferenceNumber"
 >;
 
 const AUTOSAVE_DELAY_MS = 800;
@@ -71,12 +78,15 @@ export function DocumentPreview({
   const convertible = canEdit && isQuotation && canConvertQuotation(document.status);
   const markPayable =
     canEdit && !isQuotation && document.status !== "paid" && canMarkPaid(document.status);
+  const markUnpayable =
+    canEdit && !isQuotation && canMarkUnpaid(document.status);
 
   const [downloading, setDownloading] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [sending, setSending] = useState(false);
   const [converting, setConverting] = useState(false);
   const [markingPaid, setMarkingPaid] = useState(false);
+  const [markingUnpaid, setMarkingUnpaid] = useState(false);
   const [reassigning, setReassigning] = useState(false);
 
   const [appearance, setAppearance] = useState<PreviewAppearance>({
@@ -88,6 +98,7 @@ export function DocumentPreview({
     showPayment: document.showPayment,
     showNotes: document.showNotes,
     showTerms: document.showTerms,
+    showReferenceNumber: document.showReferenceNumber,
   });
 
   const lastSaved = useRef(appearance);
@@ -259,6 +270,26 @@ export function DocumentPreview({
     }
   }
 
+  async function handleMarkUnpaid() {
+    setMarkingUnpaid(true);
+    try {
+      const response = await fetch(`/api/documents/${document.id}/mark-unpaid`, {
+        method: "POST",
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        toast.error(body?.error ?? "Couldn't mark this invoice as unpaid. Try again.");
+        return;
+      }
+      toast.success("Invoice reverted to draft.");
+      router.push(`${basePath}/${document.id}`);
+    } catch {
+      toast.error("Couldn't mark this invoice as unpaid. Try again.");
+    } finally {
+      setMarkingUnpaid(false);
+    }
+  }
+
   const toggles: { key: ToggleKey; label: string }[] = [
     { key: "showLogo", label: "Logo" },
     ...(gstEnabled
@@ -270,6 +301,7 @@ export function DocumentPreview({
     { key: "showPayment", label: "Payment details" },
     { key: "showNotes", label: "Notes" },
     { key: "showTerms", label: "Terms & conditions" },
+    { key: "showReferenceNumber", label: "Reference number" },
   ];
 
   return (
@@ -331,6 +363,15 @@ export function DocumentPreview({
                   : "Mark as paid"}
             </Button>
           )}
+          {!isQuotation && document.status === "paid" && (
+            <Button
+              variant="outline"
+              disabled={markingUnpaid || !markUnpayable}
+              onClick={handleMarkUnpaid}
+            >
+              {markingUnpaid ? "Marking unpaid…" : "Mark as unpaid"}
+            </Button>
+          )}
           <Button variant="outline" disabled={sharing || !canEdit} onClick={handleShare}>
             {sharing ? "Sharing…" : "Share"}
           </Button>
@@ -383,6 +424,7 @@ export function DocumentPreview({
             validityTerms={document.validityTerms}
             notes={document.notes}
             termsText={document.termsText}
+            referenceNumber={document.referenceNumber}
             currency={document.currency}
             business={document.business}
             customer={document.customer}

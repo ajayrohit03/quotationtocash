@@ -64,6 +64,7 @@ export async function DocumentEditorPage({
     validityTerms: document.validityTerms,
     notes: document.notes,
     termsText: document.termsText,
+    referenceNumber: document.referenceNumber,
     lineItems: document.lineItems.map((item) => ({
       productId: item.productId,
       name: item.name,

@@ -21,3 +21,4 @@ export const productUpdateSchema = z.object({
 });
 
 export type ProductUpdateInput = z.infer<typeof productUpdateSchema>;
+export type ProductUpdateFormValues = z.input<typeof productUpdateSchema>;

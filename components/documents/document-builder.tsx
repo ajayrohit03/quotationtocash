@@ -64,6 +64,7 @@ export type BuilderDocument = {
   validityTerms: string | null;
   notes: string | null;
   termsText: string | null;
+  referenceNumber: string | null;
   lineItems: BuilderLineItem[];
   // The document's actual, currently-persisted totals — including which
   // of CGST+SGST vs IGST applies. Shown as-is until the user makes a
@@ -113,6 +114,9 @@ export function DocumentBuilder({
   );
   const [notes, setNotes] = useState(document.notes ?? "");
   const [termsText, setTermsText] = useState(document.termsText ?? "");
+  const [referenceNumber, setReferenceNumber] = useState(
+    document.referenceNumber ?? "",
+  );
   const [lineItems, setLineItems] = useState<LocalLineItem[]>(() =>
     document.lineItems.map((item) => ({ ...item, key: newLineItemKey() })),
   );
@@ -169,9 +173,20 @@ export function DocumentBuilder({
         terms,
         notes,
         termsText,
+        referenceNumber,
         lineItems,
       }),
-    [customer.id, number, issueDate, secondaryDate, terms, notes, termsText, lineItems],
+    [
+      customer.id,
+      number,
+      issueDate,
+      secondaryDate,
+      terms,
+      notes,
+      termsText,
+      referenceNumber,
+      lineItems,
+    ],
   );
 
   async function save() {
@@ -208,6 +223,7 @@ export function DocumentBuilder({
               }),
           notes: notes || null,
           termsText: termsText || null,
+          referenceNumber: referenceNumber || null,
           lineItems: lineItems.map((item) => ({
             productId: item.productId,
             name: item.name,
@@ -394,6 +410,16 @@ export function DocumentBuilder({
                     }
                     value={terms}
                     onChange={(e) => setTerms(e.target.value)}
+                    disabled={!editable}
+                  />
+                </div>
+                <div className="col-span-2 grid gap-1.5 sm:col-span-3">
+                  <Label htmlFor="doc-reference-number">Reference number</Label>
+                  <Input
+                    id="doc-reference-number"
+                    placeholder="e.g. a PO number or project code"
+                    value={referenceNumber}
+                    onChange={(e) => setReferenceNumber(e.target.value)}
                     disabled={!editable}
                   />
                 </div>

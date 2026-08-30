@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AddProductDialog } from "./add-product-dialog";
+import { EditProductDialog } from "./edit-product-dialog";
 
 const HEAD_CLASS = "bg-muted/40 text-xs font-semibold tracking-wide text-muted-foreground";
 
@@ -67,6 +68,9 @@ export default async function ProductsPage() {
                     GST rate
                   </TableHead>
                 )}
+                <TableHead className={`${HEAD_CLASS} text-right`}>
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -88,6 +92,9 @@ export default async function ProductsPage() {
                       {product.gstRate ? `${product.gstRate}%` : "—"}
                     </TableCell>
                   )}
+                  <TableCell className="text-right">
+                    <EditProductDialog product={product} gstEnabled={business.gstEnabled} />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

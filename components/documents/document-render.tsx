@@ -40,6 +40,7 @@ export function DocumentRender({
   validityTerms,
   notes,
   termsText,
+  referenceNumber,
   currency,
   business,
   customer,
@@ -57,6 +58,7 @@ export function DocumentRender({
   validityTerms: string | null;
   notes: string | null;
   termsText: string | null;
+  referenceNumber: string | null;
   currency: string;
   business: BusinessSnapshot;
   customer: CustomerSnapshot;
@@ -157,6 +159,9 @@ export function DocumentRender({
                 {isQuotation ? "Validity" : "Payment terms"}: {terms || "—"}
               </div>
               <div>Currency: {currency}</div>
+              {appearance.showReferenceNumber && referenceNumber && (
+                <div>Reference number: {referenceNumber}</div>
+              )}
             </div>
           </div>
         </div>

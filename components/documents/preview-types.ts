@@ -37,6 +37,7 @@ export type PreviewAppearance = {
   showPayment: boolean;
   showNotes: boolean;
   showTerms: boolean;
+  showReferenceNumber: boolean;
 };
 
 export type PreviewDocument = PreviewAppearance & {
@@ -51,6 +52,7 @@ export type PreviewDocument = PreviewAppearance & {
   validityTerms: string | null;
   notes: string | null;
   termsText: string | null;
+  referenceNumber: string | null;
   currency: string;
   business: BusinessSnapshot;
   customer: CustomerSnapshot;
