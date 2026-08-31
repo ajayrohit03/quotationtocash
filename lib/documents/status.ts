@@ -1,4 +1,4 @@
-import type { DocumentType } from "@prisma/client";
+import type { DocumentType, Prisma } from "@prisma/client";
 import { ForbiddenError } from "@/lib/auth/errors";
 
 // Document.status is a plain String column (see schema.prisma), not a DB
@@ -42,16 +42,20 @@ export function isValidStatus(type: DocumentType, status: string): boolean {
 
 // Statuses that must never be set through a general-purpose update — each
 // has exactly one legitimate code path elsewhere in the app:
-//   sent      -> POST /api/documents/:id/send            (Phase 8)
-//   viewed    -> GET  /public/documents/:token            (Phase 8)
-//   paid      -> POST /api/documents/:id/mark-paid         (Phase 9)
-//             <- POST /api/documents/:id/mark-unpaid        (Phase 9, reverse)
-//   accepted  -> the public share view's accept action     (Phase 8/9)
-//   converted -> POST /api/documents/:id/convert            (Phase 9)
+//   sent           -> POST /api/documents/:id/send                 (Phase 8)
+//   viewed         -> GET  /public/documents/:token                 (Phase 8)
+//   paid/partially_paid
+//                  -> derived by deriveInvoiceStatus() below, written
+//                     only by POST /api/documents/:id/payments and
+//                     POST /api/documents/:id/payments/reverse-last
+//                     (see docs/payment-tracking-design.md)
+//   accepted       -> the public share view's accept action         (Phase 8/9)
+//   converted      -> POST /api/documents/:id/convert                (Phase 9)
 const RESTRICTED_STATUSES = new Set<string>([
   "sent",
   "viewed",
   "paid",
+  "partially_paid",
   "accepted",
   "converted",
 ]);
@@ -152,32 +156,88 @@ export function requireConvertibleQuotation(status: string): void {
   }
 }
 
-// A cancelled invoice shouldn't be marked paid; every other status
-// (including an already-paid invoice, harmlessly idempotent) is allowed.
-export function canMarkPaid(status: string): boolean {
-  return status !== "cancelled";
+// See docs/payment-tracking-design.md §2. A draft invoice was never
+// sent to the customer, so there's nothing real to record a payment
+// against yet; a cancelled one is a dead end. Every other status
+// (including an already-fully-paid invoice — overpayment becomes
+// credit, see creditBalance() below) is fair game.
+export function canRecordPayment(status: string): boolean {
+  return status !== "draft" && status !== "cancelled";
 }
 
-export function requireMarkPayableInvoice(status: string): void {
-  if (!canMarkPaid(status)) {
+export function requireRecordablePaymentInvoice(status: string): void {
+  if (!canRecordPayment(status)) {
     throw new ForbiddenError(
-      `This invoice can't be marked paid in its current status ("${status}").`,
+      `Payments can't be recorded on this invoice in its current status ("${status}").`,
     );
   }
 }
 
-// The reverse of the above — only a currently-paid invoice can be
-// reverted. Anything else (draft, sent, cancelled, ...) is rejected
-// rather than silently no-op'd, since "mark unpaid" implies there was a
-// paid state to undo.
-export function canMarkUnpaid(status: string): boolean {
-  return status === "paid";
+// §3 of the design doc. Called inside the same transaction as every
+// payment create/reverse — status only ever changes in response to a
+// payment mutation, never recomputed lazily at read time.
+export function deriveInvoiceStatus(
+  currentStatus: string,
+  total: number,
+  amountPaid: number,
+): InvoiceStatus {
+  if (currentStatus === "draft" || currentStatus === "cancelled") {
+    return currentStatus as InvoiceStatus;
+  }
+  if (amountPaid >= total) return "paid"; // includes the overpaid case
+  if (amountPaid > 0) return "partially_paid";
+  // Reversing every payment lands here — "sent", not "draft". Draft
+  // would silently reopen line-item editing on an invoice that already
+  // went out; "sent" is the correct "billed, currently unpaid" state
+  // and isn't editable (see isEditableStatus above).
+  return "sent";
 }
 
-export function requireMarkUnpaidInvoice(status: string): void {
-  if (!canMarkUnpaid(status)) {
-    throw new ForbiddenError(
-      `This invoice can't be marked unpaid in its current status ("${status}").`,
-    );
+// Never negative — an invoice can't owe less than nothing.
+export function remainingBalance(total: number, amountPaid: number): number {
+  return Math.max(0, total - amountPaid);
+}
+
+// The amount paid in excess of the invoice's total. Purely an
+// informational tracked-balance figure — NOT a document, NOT applied
+// automatically to any future invoice, and NOT a GST credit note
+// (a distinct, separately-regulated document type under Indian GST
+// law). See docs/payment-tracking-design.md §3 for the explicit
+// boundary; nothing here should be read as satisfying that need.
+export function creditBalance(total: number, amountPaid: number): number {
+  return Math.max(0, amountPaid - total);
+}
+
+// Builds the WHERE clause for a status filter from the document list
+// pages / GET /api/documents — "overdue" isn't a stored value (see
+// isOverdue() below), so filtering by it means the date/amount overlay
+// condition instead of a plain status match. Everything else is a plain
+// `{ status }` as before.
+export function documentStatusFilterWhere(
+  status: string,
+): Prisma.DocumentWhereInput {
+  if (status !== "overdue") {
+    return status ? { status } : {};
   }
+  return {
+    status: { in: ["sent", "partially_paid"] },
+    dueDate: { lt: new Date() },
+  };
+}
+
+// Display/filter-only — never written to the `status` column. Nothing
+// in this app runs a background job, so "overdue" is computed fresh
+// wherever it's shown or queried rather than persisted and left to go
+// stale. See docs/payment-tracking-design.md §3.
+export function isOverdue(
+  status: string,
+  dueDate: Date | null,
+  remaining: number,
+): boolean {
+  return (
+    (status === "sent" || status === "partially_paid") &&
+    dueDate !== null &&
+    dueDate.getTime() < Date.now() &&
+    remaining > 0
+  );
 }

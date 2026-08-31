@@ -289,13 +289,61 @@ export function DocumentPdf({
           </View>
           {!isQuotation && (
             <View style={[styles.totalRow, { paddingTop: 6 }]}>
-              <Text style={styles.totalLabel}>Balance due</Text>
+              <Text style={styles.totalLabel}>
+                {document.creditBalance > 0 ? "Credit balance" : "Balance due"}
+              </Text>
               <Text style={{ fontFamily: "Helvetica-Bold" }}>
-                {formatCurrency(document.totals.total, document.currency)}
+                {formatCurrency(
+                  document.creditBalance > 0
+                    ? document.creditBalance
+                    : document.remainingBalance,
+                  document.currency,
+                )}
               </Text>
             </View>
           )}
         </View>
+
+        {!isQuotation && document.payments.length > 0 && (
+          <View style={styles.noteBlock}>
+            <Text style={styles.sectionLabel}>PAYMENTS</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
+              <Text style={styles.noteBody}>
+                Amount paid: {formatCurrency(document.amountPaid, document.currency)}
+              </Text>
+              <Text style={styles.noteBody}>
+                {document.creditBalance > 0
+                  ? `Credit balance: ${formatCurrency(document.creditBalance, document.currency)}`
+                  : document.remainingBalance > 0
+                    ? `Remaining: ${formatCurrency(document.remainingBalance, document.currency)}`
+                    : "Fully paid"}
+              </Text>
+            </View>
+            {document.payments.map((payment) => (
+              <View
+                key={payment.id}
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  paddingVertical: 3,
+                  borderTopWidth: 0.5,
+                  borderTopColor: COLORS.rowBorder,
+                }}
+              >
+                <Text style={{ fontSize: 8.5, color: COLORS.body }}>
+                  {formatDateIST(payment.paidAt)}
+                </Text>
+                <Text style={{ fontSize: 8.5, color: COLORS.body, flex: 1 }}>
+                  {payment.note}
+                </Text>
+                <Text style={{ fontSize: 8.5, fontFamily: "Courier" }}>
+                  {formatCurrency(payment.amount, document.currency)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {document.showNotes && document.notes && (
           <View style={styles.noteBlock}>

@@ -16,7 +16,7 @@ const EDIT_PERMISSION: Record<DocumentType, Permission> = {
 // outside your own mutate-scope (see docs/permission-layer-design.md §5)
 // — sets createdByUserId to the caller's own id. After this single
 // write, the document is the caller's own document under every existing
-// rule; PATCH/DELETE/convert/mark-paid/send/share need zero
+// rule; PATCH/DELETE/convert/payments/send/share need zero
 // special-casing to then allow editing it.
 //
 // Deliberately no shared multi-editor access, no team-wide mutate scope:

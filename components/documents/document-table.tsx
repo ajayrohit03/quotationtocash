@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { DocumentType, Prisma } from "@prisma/client";
 import { formatDateIST } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
+import { isOverdue, remainingBalance } from "@/lib/documents/status";
 import { StatusBadge } from "@/components/documents/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,7 @@ export type DocumentRow = {
   number: string;
   status: string;
   total: Prisma.Decimal | string;
+  amountPaid: Prisma.Decimal | string;
   issueDate: Date | string;
   validUntil: Date | string | null;
   dueDate: Date | string | null;
@@ -119,7 +121,20 @@ export function DocumentTable({
                   <TableCell>{formatDateIST(doc.issueDate)}</TableCell>
                   <TableCell>{secondaryDate ? formatDateIST(secondaryDate) : "—"}</TableCell>
                   <TableCell>
-                    <StatusBadge status={doc.status} />
+                    <StatusBadge
+                      status={
+                        // "overdue" is a display-only overlay, never a
+                        // stored status — see
+                        // docs/payment-tracking-design.md §3.
+                        isOverdue(
+                          doc.status,
+                          doc.dueDate ? new Date(doc.dueDate) : null,
+                          remainingBalance(Number(doc.total), Number(doc.amountPaid)),
+                        )
+                          ? "overdue"
+                          : doc.status
+                      }
+                    />
                   </TableCell>
                   <TableCell className="text-right font-mono text-sm">
                     {formatCurrency(doc.total)}

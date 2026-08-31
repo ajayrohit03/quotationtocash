@@ -85,7 +85,7 @@ const resolveVisibleUserIds = cache(async function resolveVisibleUserIds(
 // visible, single act of taking ownership, never an ambient grant. This
 // fixes a real gap: every mutating document route used to share this
 // exact function with the view routes, which silently gave anyone with a
-// direct report full edit/delete/mark-paid/send/convert access to their
+// direct report full edit/delete/payments/send/convert access to their
 // entire subtree — never a reviewed decision, just a side effect of
 // reusing one function everywhere.
 export type ScopeAction = "view" | "mutate";

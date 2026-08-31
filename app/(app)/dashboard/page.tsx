@@ -16,6 +16,7 @@ import {
 } from "@/lib/documents/aggregates";
 import { formatDateIST } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
+import { isOverdue, remainingBalance } from "@/lib/documents/status";
 import { StatusBadge } from "@/components/documents/status-badge";
 import { TutorialBanner } from "@/components/tutorial-banner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -198,7 +199,17 @@ export default async function DashboardPage() {
                       {formatCurrency(doc.total)}
                     </TableCell>
                     <TableCell>
-                      <StatusBadge status={doc.status} />
+                      <StatusBadge
+                        status={
+                          isOverdue(
+                            doc.status,
+                            doc.dueDate,
+                            remainingBalance(Number(doc.total), Number(doc.amountPaid)),
+                          )
+                            ? "overdue"
+                            : doc.status
+                        }
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

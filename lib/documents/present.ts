@@ -1,4 +1,5 @@
-import type { Document, LineItem } from "@prisma/client";
+import type { Document, LineItem, Payment, User } from "@prisma/client";
+import { creditBalance, remainingBalance } from "@/lib/documents/status";
 import type {
   BusinessSnapshot,
   CustomerSnapshot,
@@ -17,8 +18,14 @@ export function toPreviewDocument(
     // Optional: only the in-app preview page's query includes this
     // relation (PDF/send/public routes don't need it) — defaults to null.
     convertedToInvoice?: { id: string; number: string } | null;
+    // Optional: defaults to [] for callers that don't need payment
+    // history (e.g. a route only reading totals). Always sorted newest
+    // first by the caller — see docs/payment-tracking-design.md §1/§6.
+    payments?: (Payment & { recordedBy: User | null })[];
   },
 ): PreviewDocument {
+  const total = Number(document.total);
+  const amountPaid = Number(document.amountPaid);
   return {
     id: document.id,
     type: document.type,
@@ -63,6 +70,16 @@ export function toPreviewDocument(
       igst: Number(document.igst),
       total: Number(document.total),
     },
+    payments: (document.payments ?? []).map((payment) => ({
+      id: payment.id,
+      amount: Number(payment.amount),
+      paidAt: payment.paidAt.toISOString(),
+      note: payment.note,
+      recordedByName: payment.recordedBy?.name ?? payment.recordedBy?.email ?? null,
+    })),
+    amountPaid,
+    remainingBalance: remainingBalance(total, amountPaid),
+    creditBalance: creditBalance(total, amountPaid),
     convertedToInvoice: document.convertedToInvoice ?? null,
   };
 }

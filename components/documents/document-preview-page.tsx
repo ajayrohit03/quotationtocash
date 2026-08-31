@@ -20,6 +20,11 @@ export async function DocumentPreviewPage({
     include: {
       lineItems: { orderBy: { sortOrder: "asc" } },
       convertedToInvoice: { select: { id: true, number: true } },
+      // Newest first — see docs/payment-tracking-design.md §6.
+      payments: {
+        orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }],
+        include: { recordedBy: true },
+      },
     },
   });
   if (!document) {

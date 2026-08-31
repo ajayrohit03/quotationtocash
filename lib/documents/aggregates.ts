@@ -9,14 +9,11 @@ type Decimal = Prisma.Decimal;
 
 // "Invoiced" / "outstanding" only make sense once an invoice has actually
 // gone out — a draft isn't billed yet, and a cancelled one never was.
-const INVOICED_STATUSES = [
-  "sent",
-  "viewed",
-  "partially_paid",
-  "paid",
-  "overdue",
-];
-const OUTSTANDING_STATUSES = ["sent", "viewed", "partially_paid", "overdue"];
+// No "overdue" here — see docs/payment-tracking-design.md §3: it's never
+// a real stored status value, so a document that's actually overdue is
+// still sitting at "sent" or "partially_paid" and is already covered.
+const INVOICED_STATUSES = ["sent", "viewed", "partially_paid", "paid"];
+const OUTSTANDING_STATUSES = ["sent", "viewed", "partially_paid"];
 
 export type CustomerBillingSummary = {
   totalInvoiced: Decimal;
@@ -65,7 +62,10 @@ export async function getCustomersBillingSummaries(
         status: { in: OUTSTANDING_STATUSES },
         ...visibility,
       },
-      _sum: { total: true },
+      // Sum both sides and subtract below — outstanding is the
+      // remaining balance, not the full invoice total, now that partial
+      // payments exist. See docs/payment-tracking-design.md §1.
+      _sum: { total: true, amountPaid: true },
     }),
   ]);
 
@@ -75,7 +75,11 @@ export async function getCustomersBillingSummaries(
   }
   for (const row of outstandingRows) {
     const summary = summaries.get(row.customerId);
-    if (summary) summary.outstanding = row._sum.total ?? new Decimal(0);
+    if (summary) {
+      const total = row._sum.total ?? new Decimal(0);
+      const amountPaid = row._sum.amountPaid ?? new Decimal(0);
+      summary.outstanding = total.sub(amountPaid);
+    }
   }
 
   return summaries;
@@ -130,10 +134,23 @@ export async function getDashboardMetrics(
           status: { in: OUTSTANDING_STATUSES },
           ...visibility,
         },
-        _sum: { total: true },
+        // Sum both sides and subtract below — same reason as
+        // getCustomersBillingSummaries above.
+        _sum: { total: true, amountPaid: true },
       }),
+      // "Overdue" is never a stored status (see docs/payment-tracking-design.md
+      // §3) — a document past its due date with money still owed is still
+      // sitting at "sent"/"partially_paid", which already guarantees
+      // amountPaid < total by construction (deriveInvoiceStatus never
+      // leaves a fully-paid invoice at either status).
       prisma.document.count({
-        where: { businessId, type: "invoice", status: "overdue", ...visibility },
+        where: {
+          businessId,
+          type: "invoice",
+          status: { in: ["sent", "partially_paid"] },
+          dueDate: { lt: new Date() },
+          ...visibility,
+        },
       }),
       prisma.document.aggregate({
         where: { businessId, type: "invoice", status: "paid", ...visibility },
@@ -147,7 +164,9 @@ export async function getDashboardMetrics(
 
   return {
     totalRevenue: revenueAgg._sum.total ?? new Decimal(0),
-    outstanding: outstandingAgg._sum.total ?? new Decimal(0),
+    outstanding: (outstandingAgg._sum.total ?? new Decimal(0)).sub(
+      outstandingAgg._sum.amountPaid ?? new Decimal(0),
+    ),
     overdueCount,
     paid: paidAgg._sum.total ?? new Decimal(0),
     paidCount: paidAgg._count,
@@ -161,7 +180,9 @@ export type RecentDocument = {
   type: "quotation" | "invoice";
   status: string;
   issueDate: Date;
+  dueDate: Date | null;
   total: Decimal;
+  amountPaid: Decimal;
   customer: { name: string };
 };
 
@@ -181,7 +202,9 @@ export async function getRecentDocuments(
       type: true,
       status: true,
       issueDate: true,
+      dueDate: true,
       total: true,
+      amountPaid: true,
       customer: { select: { name: true } },
     },
   });

@@ -163,15 +163,19 @@ describe("PATCH /api/documents/[id] — Manager over a subordinate's document", 
   });
 });
 
-describe("POST /api/documents/[id]/mark-paid — Manager over a subordinate's invoice", () => {
-  it("rejects marking it paid before reassignment", async () => {
+describe("POST /api/documents/[id]/payments — Manager over a subordinate's invoice", () => {
+  it("rejects recording a payment before reassignment", async () => {
     const { invoice, manager } = await setupOrg();
     await mockedAuthAs(manager.authProviderId);
 
-    const { POST } = await import("@/app/api/documents/[id]/mark-paid/route");
+    const { POST } = await import("@/app/api/documents/[id]/payments/route");
     const request = new NextRequest(
-      `http://localhost/api/documents/${invoice.id}/mark-paid`,
-      { method: "POST" },
+      `http://localhost/api/documents/${invoice.id}/payments`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: 100 }),
+      },
     );
     const response = await POST(request, {
       params: Promise.resolve({ id: invoice.id }),
@@ -182,9 +186,10 @@ describe("POST /api/documents/[id]/mark-paid — Manager over a subordinate's in
       where: { id: invoice.id },
     });
     expect(unchanged.status).toBe("draft");
+    expect(Number(unchanged.amountPaid)).toBe(0);
   });
 
-  it("still rejects mark-paid directly after reassignment (a draft can't be paid) but succeeds once sent", async () => {
+  it("still rejects recording a payment directly after reassignment (a draft can't take payments) but succeeds once sent", async () => {
     const { invoice, manager } = await setupOrg();
     await mockedAuthAs(manager.authProviderId);
 
@@ -199,21 +204,23 @@ describe("POST /api/documents/[id]/mark-paid — Manager over a subordinate's in
     );
 
     // Move it to a payable status directly in the DB — this test is about
-    // the scope/permission gate, not requireMarkPayableInvoice()'s own
-    // status rules (covered elsewhere).
+    // the scope/permission gate, not requireRecordablePaymentInvoice()'s
+    // own status rules (covered in status.test.ts).
     await prisma.document.update({
       where: { id: invoice.id },
-      data: { status: "sent" },
+      data: { status: "sent", total: 100 },
     });
 
-    const { POST } = await import("@/app/api/documents/[id]/mark-paid/route");
+    const { POST } = await import("@/app/api/documents/[id]/payments/route");
     const response = await POST(
-      new NextRequest(`http://localhost/api/documents/${invoice.id}/mark-paid`, {
+      new NextRequest(`http://localhost/api/documents/${invoice.id}/payments`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: 100 }),
       }),
       { params: Promise.resolve({ id: invoice.id }) },
     );
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(201);
   });
 });
 

@@ -7,14 +7,35 @@ import { toast } from "sonner";
 import type { DocumentTemplate } from "@prisma/client";
 import {
   canConvertQuotation,
-  canMarkPaid,
-  canMarkUnpaid,
+  canRecordPayment,
   canSendDocument,
   isEditableStatus,
 } from "@/lib/documents/status";
+import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { DocumentRender } from "./document-render";
 import type { PreviewAppearance, PreviewDocument } from "./preview-types";
 
@@ -76,18 +97,28 @@ export function DocumentPreview({
     canSendDocument(document.type, document.status) &&
     Boolean(document.customer.email);
   const convertible = canEdit && isQuotation && canConvertQuotation(document.status);
-  const markPayable =
-    canEdit && !isQuotation && document.status !== "paid" && canMarkPaid(document.status);
-  const markUnpayable =
-    canEdit && !isQuotation && canMarkUnpaid(document.status);
+  // Not gated on remainingBalance > 0 — overpayment is allowed and
+  // becomes a credit balance, so a fully-paid invoice can still take
+  // another payment. See docs/payment-tracking-design.md §2.
+  const recordable = canEdit && !isQuotation && canRecordPayment(document.status);
+  const reversible = canEdit && !isQuotation && document.payments.length > 0;
+  const lastPayment = document.payments[0] ?? null;
 
   const [downloading, setDownloading] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [sending, setSending] = useState(false);
   const [converting, setConverting] = useState(false);
-  const [markingPaid, setMarkingPaid] = useState(false);
-  const [markingUnpaid, setMarkingUnpaid] = useState(false);
   const [reassigning, setReassigning] = useState(false);
+
+  const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
+  const [recordingPayment, setRecordingPayment] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(
+    document.remainingBalance > 0 ? String(document.remainingBalance) : "",
+  );
+  const [paymentNote, setPaymentNote] = useState("");
+
+  const [reverseConfirmOpen, setReverseConfirmOpen] = useState(false);
+  const [reversingPayment, setReversingPayment] = useState(false);
 
   const [appearance, setAppearance] = useState<PreviewAppearance>({
     template: document.template,
@@ -250,43 +281,54 @@ export function DocumentPreview({
     }
   }
 
-  async function handleMarkPaid() {
-    setMarkingPaid(true);
+  async function handleRecordPayment() {
+    const amount = Number(paymentAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error("Enter an amount greater than 0.");
+      return;
+    }
+    setRecordingPayment(true);
     try {
-      const response = await fetch(`/api/documents/${document.id}/mark-paid`, {
+      const response = await fetch(`/api/documents/${document.id}/payments`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, note: paymentNote || undefined }),
       });
       const body = await response.json().catch(() => null);
       if (!response.ok) {
-        toast.error(body?.error ?? "Couldn't mark this invoice as paid. Try again.");
+        toast.error(body?.error ?? "Couldn't record this payment. Try again.");
         return;
       }
-      toast.success("Invoice marked as paid.");
+      toast.success("Payment recorded.");
+      setRecordPaymentOpen(false);
+      setPaymentNote("");
       router.refresh();
     } catch {
-      toast.error("Couldn't mark this invoice as paid. Try again.");
+      toast.error("Couldn't record this payment. Try again.");
     } finally {
-      setMarkingPaid(false);
+      setRecordingPayment(false);
     }
   }
 
-  async function handleMarkUnpaid() {
-    setMarkingUnpaid(true);
+  async function handleReverseLastPayment() {
+    setReversingPayment(true);
     try {
-      const response = await fetch(`/api/documents/${document.id}/mark-unpaid`, {
-        method: "POST",
-      });
+      const response = await fetch(
+        `/api/documents/${document.id}/payments/reverse-last`,
+        { method: "POST" },
+      );
       const body = await response.json().catch(() => null);
       if (!response.ok) {
-        toast.error(body?.error ?? "Couldn't mark this invoice as unpaid. Try again.");
+        toast.error(body?.error ?? "Couldn't reverse this payment. Try again.");
         return;
       }
-      toast.success("Invoice reverted to draft.");
-      router.push(`${basePath}/${document.id}`);
+      toast.success("Payment reversed.");
+      setReverseConfirmOpen(false);
+      router.refresh();
     } catch {
-      toast.error("Couldn't mark this invoice as unpaid. Try again.");
+      toast.error("Couldn't reverse this payment. Try again.");
     } finally {
-      setMarkingUnpaid(false);
+      setReversingPayment(false);
     }
   }
 
@@ -353,23 +395,24 @@ export function DocumentPreview({
           {!isQuotation && (
             <Button
               variant="outline"
-              disabled={markingPaid || !markPayable}
-              onClick={handleMarkPaid}
+              disabled={!recordable}
+              title={
+                !recordable
+                  ? "This invoice can't take a payment in its current status"
+                  : undefined
+              }
+              onClick={() => setRecordPaymentOpen(true)}
             >
-              {document.status === "paid"
-                ? "Paid ✓"
-                : markingPaid
-                  ? "Marking paid…"
-                  : "Mark as paid"}
+              Record payment
             </Button>
           )}
-          {!isQuotation && document.status === "paid" && (
+          {!isQuotation && (
             <Button
-              variant="outline"
-              disabled={markingUnpaid || !markUnpayable}
-              onClick={handleMarkUnpaid}
+              variant="ghost"
+              disabled={!reversible}
+              onClick={() => setReverseConfirmOpen(true)}
             >
-              {markingUnpaid ? "Marking unpaid…" : "Mark as unpaid"}
+              Reverse last payment
             </Button>
           )}
           <Button variant="outline" disabled={sharing || !canEdit} onClick={handleShare}>
@@ -425,6 +468,11 @@ export function DocumentPreview({
             notes={document.notes}
             termsText={document.termsText}
             referenceNumber={document.referenceNumber}
+            payments={document.payments}
+            amountPaid={document.amountPaid}
+            remainingBalance={document.remainingBalance}
+            creditBalance={document.creditBalance}
+            showRecordedBy
             currency={document.currency}
             business={document.business}
             customer={document.customer}
@@ -534,6 +582,68 @@ export function DocumentPreview({
           </fieldset>
         </div>
       </div>
+
+      <Dialog open={recordPaymentOpen} onOpenChange={setRecordPaymentOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Record payment</DialogTitle>
+            <DialogDescription>
+              {document.remainingBalance > 0
+                ? `Defaults to the remaining balance of ${formatCurrency(document.remainingBalance, document.currency)} — edit for a partial amount.`
+                : "This invoice is already fully paid — recording another payment here becomes a credit balance, not a rejection."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="payment-amount">Amount</Label>
+              <Input
+                id="payment-amount"
+                type="number"
+                min={0}
+                step={0.01}
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="payment-note">Note / reference (optional)</Label>
+              <Input
+                id="payment-note"
+                placeholder="e.g. Advance, cheque #1234"
+                value={paymentNote}
+                onChange={(e) => setPaymentNote(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter className="mt-2">
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              Cancel
+            </DialogClose>
+            <Button disabled={recordingPayment} onClick={handleRecordPayment}>
+              {recordingPayment ? "Recording…" : "Record payment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={reverseConfirmOpen} onOpenChange={setReverseConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reverse the last payment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {lastPayment
+                ? `This removes the ${formatCurrency(lastPayment.amount, document.currency)} payment recorded on ${new Date(lastPayment.paidAt).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}${document.creditBalance > 0 ? ` — this will also remove the ${formatCurrency(document.creditBalance, document.currency)} credit balance it created` : ""}. This can't be undone; a note recording the reversal is added to Notes.`
+                : "This can't be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={reversingPayment} onClick={handleReverseLastPayment}>
+              {reversingPayment ? "Reversing…" : "Reverse payment"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

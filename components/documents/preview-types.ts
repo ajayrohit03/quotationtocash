@@ -28,6 +28,21 @@ export type PreviewTotals = {
   total: number;
 };
 
+// See docs/payment-tracking-design.md §1/§3. `amountPaid` is read
+// directly off the Document row (maintained, not summed live);
+// `remainingBalance`/`creditBalance` are cheap arithmetic derived from
+// it and `total` at the same conversion point (toPreviewDocument), so
+// every consuming surface reads identical numbers.
+export type PreviewPayment = {
+  id: string;
+  amount: number;
+  paidAt: string;
+  note: string | null;
+  // Resolved name, in-app only — never sent to the public
+  // share/PDF surfaces. See §6's customer-facing-visibility boundary.
+  recordedByName: string | null;
+};
+
 export type PreviewAppearance = {
   template: DocumentTemplate;
   accentColor: string;
@@ -58,6 +73,11 @@ export type PreviewDocument = PreviewAppearance & {
   customer: CustomerSnapshot;
   lineItems: PreviewLineItem[];
   totals: PreviewTotals;
+  // Empty for quotations — always [] there, never null.
+  payments: PreviewPayment[];
+  amountPaid: number;
+  remainingBalance: number;
+  creditBalance: number;
   // Set only for a converted quotation — lets the preview link straight
   // to the invoice it became instead of dead-ending at "converted".
   convertedToInvoice: { id: string; number: string } | null;

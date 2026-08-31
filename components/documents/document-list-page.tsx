@@ -3,6 +3,7 @@ import { FileText, Receipt } from "lucide-react";
 import type { DocumentType, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { requireBusinessForPage } from "@/lib/auth/page";
+import { documentStatusFilterWhere } from "@/lib/documents/status";
 import { documentScopeWhere } from "@/lib/documents/visibility";
 import { Button } from "@/components/ui/button";
 import { TutorialBanner } from "@/components/tutorial-banner";
@@ -81,7 +82,7 @@ export async function DocumentListPage({
     where: {
       businessId: business.id,
       type,
-      ...(status ? { status } : {}),
+      ...documentStatusFilterWhere(status),
       AND: conditions,
     },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],

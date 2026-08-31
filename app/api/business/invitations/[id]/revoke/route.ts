@@ -3,7 +3,7 @@ import { errorResponse } from "@/lib/api/respond";
 import { requireBusinessAdmin } from "@/lib/auth/session";
 import { revokeInvitation } from "@/lib/invitations/service";
 
-// Dedicated action-verb endpoint, matching the existing mark-paid/send/
+// Dedicated action-verb endpoint, matching the existing payments/send/
 // share convention rather than a generic PATCH-with-status-body.
 export async function POST(
   _request: NextRequest,

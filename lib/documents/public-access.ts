@@ -27,6 +27,14 @@ const PUBLIC_DOCUMENT_INCLUDE = {
   lineItems: { orderBy: { sortOrder: "asc" as const } },
   convertedToInvoice: { select: { id: true, number: true } },
   business: { select: { slug: true } },
+  // Newest first — see docs/payment-tracking-design.md §6. recordedBy
+  // is fetched here too (present.ts computes recordedByName from it)
+  // even though the public-facing renderer never displays it, so the
+  // one conversion point stays the same regardless of caller.
+  payments: {
+    orderBy: [{ paidAt: "desc" as const }, { createdAt: "desc" as const }],
+    include: { recordedBy: true },
+  },
 };
 
 export type PublicDocument = NonNullable<

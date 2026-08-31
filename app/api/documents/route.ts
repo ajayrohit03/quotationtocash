@@ -8,6 +8,7 @@ import { hasPermission, requirePermission, type Permission } from "@/lib/auth/pe
 import { todayInIST } from "@/lib/dates";
 import { documentCreateSchema } from "@/lib/validation/document";
 import { getNextDocumentNumber } from "@/lib/documents/numbering";
+import { documentStatusFilterWhere } from "@/lib/documents/status";
 import {
   buildBusinessSnapshot,
   buildCustomerSnapshot,
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
       where: {
         businessId: business.id,
         ...(type ? { type: type as DocumentType } : {}),
-        ...(status ? { status } : {}),
+        ...documentStatusFilterWhere(status ?? ""),
         AND: conditions,
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],

@@ -4,14 +4,18 @@ import {
   INVOICE_STATUSES,
   QUOTATION_STATUSES,
   canConvertQuotation,
-  canMarkPaid,
+  canRecordPayment,
   canSendDocument,
+  creditBalance,
+  deriveInvoiceStatus,
   isEditableStatus,
   isManuallySettableStatus,
+  isOverdue,
   isValidStatus,
+  remainingBalance,
   requireConvertibleQuotation,
   requireEditableDocument,
-  requireMarkPayableInvoice,
+  requireRecordablePaymentInvoice,
   requireSendableDocument,
   shouldMarkViewed,
 } from "@/lib/documents/status";
@@ -63,7 +67,14 @@ describe("isValidStatus", () => {
 
 describe("isManuallySettableStatus", () => {
   it("blocks every status with its own dedicated endpoint, for both types", () => {
-    const restricted = ["sent", "viewed", "paid", "accepted", "converted"];
+    const restricted = [
+      "sent",
+      "viewed",
+      "paid",
+      "partially_paid",
+      "accepted",
+      "converted",
+    ];
     for (const status of restricted) {
       expect(isManuallySettableStatus("quotation", status)).toBe(false);
       expect(isManuallySettableStatus("invoice", status)).toBe(false);
@@ -184,17 +195,93 @@ describe("canConvertQuotation / requireConvertibleQuotation", () => {
   });
 });
 
-describe("canMarkPaid / requireMarkPayableInvoice", () => {
-  it("blocks cancelled invoices", () => {
-    expect(canMarkPaid("cancelled")).toBe(false);
-    expect(() => requireMarkPayableInvoice("cancelled")).toThrow(ForbiddenError);
+describe("canRecordPayment / requireRecordablePaymentInvoice", () => {
+  it("blocks draft and cancelled invoices", () => {
+    for (const status of ["draft", "cancelled"]) {
+      expect(canRecordPayment(status)).toBe(false);
+      expect(() => requireRecordablePaymentInvoice(status)).toThrow(
+        ForbiddenError,
+      );
+    }
   });
 
-  it("allows every other invoice status, including an already-paid one (idempotent)", () => {
-    const markable = INVOICE_STATUSES.filter((status) => status !== "cancelled");
-    for (const status of markable) {
-      expect(canMarkPaid(status)).toBe(true);
-      expect(() => requireMarkPayableInvoice(status)).not.toThrow();
+  it("allows every other invoice status, including an already-paid one (overpayment becomes credit)", () => {
+    const recordable = INVOICE_STATUSES.filter(
+      (status) => status !== "draft" && status !== "cancelled",
+    );
+    for (const status of recordable) {
+      expect(canRecordPayment(status)).toBe(true);
+      expect(() => requireRecordablePaymentInvoice(status)).not.toThrow();
+    }
+  });
+});
+
+describe("deriveInvoiceStatus", () => {
+  it("leaves draft and cancelled untouched regardless of amountPaid", () => {
+    expect(deriveInvoiceStatus("draft", 100, 100)).toBe("draft");
+    expect(deriveInvoiceStatus("cancelled", 100, 100)).toBe("cancelled");
+  });
+
+  it("is paid once amountPaid reaches or exceeds total, including overpayment", () => {
+    expect(deriveInvoiceStatus("sent", 100, 100)).toBe("paid");
+    expect(deriveInvoiceStatus("sent", 100, 150)).toBe("paid");
+  });
+
+  it("is partially_paid for any positive amount short of total", () => {
+    expect(deriveInvoiceStatus("sent", 100, 1)).toBe("partially_paid");
+    expect(deriveInvoiceStatus("paid", 100, 99)).toBe("partially_paid");
+  });
+
+  it("resolves to sent, not draft, once amountPaid returns to zero", () => {
+    expect(deriveInvoiceStatus("paid", 100, 0)).toBe("sent");
+    expect(deriveInvoiceStatus("partially_paid", 100, 0)).toBe("sent");
+  });
+});
+
+describe("remainingBalance / creditBalance", () => {
+  it("remainingBalance is total minus amountPaid, never negative", () => {
+    expect(remainingBalance(100, 40)).toBe(60);
+    expect(remainingBalance(100, 100)).toBe(0);
+    expect(remainingBalance(100, 150)).toBe(0);
+  });
+
+  it("creditBalance is the excess over total, zero otherwise", () => {
+    expect(creditBalance(100, 150)).toBe(50);
+    expect(creditBalance(100, 100)).toBe(0);
+    expect(creditBalance(100, 40)).toBe(0);
+  });
+
+  it("are complementary — exactly one is nonzero at a time", () => {
+    expect(remainingBalance(100, 150)).toBe(0);
+    expect(creditBalance(100, 40)).toBe(0);
+  });
+});
+
+describe("isOverdue", () => {
+  const past = new Date(Date.now() - 86_400_000);
+  const future = new Date(Date.now() + 86_400_000);
+
+  it("is true only for sent/partially_paid, past due date, with a remaining balance", () => {
+    expect(isOverdue("sent", past, 50)).toBe(true);
+    expect(isOverdue("partially_paid", past, 50)).toBe(true);
+  });
+
+  it("is false once fully paid even if the due date has passed", () => {
+    expect(isOverdue("paid", past, 0)).toBe(false);
+    expect(isOverdue("sent", past, 0)).toBe(false);
+  });
+
+  it("is false before the due date", () => {
+    expect(isOverdue("sent", future, 50)).toBe(false);
+  });
+
+  it("is false with no due date at all", () => {
+    expect(isOverdue("sent", null, 50)).toBe(false);
+  });
+
+  it("is false for draft/cancelled/paid/converted/etc.", () => {
+    for (const status of ["draft", "cancelled", "paid", "viewed"]) {
+      expect(isOverdue(status, past, 50)).toBe(false);
     }
   });
 });

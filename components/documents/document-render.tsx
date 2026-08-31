@@ -8,6 +8,7 @@ import type {
 import type {
   PreviewAppearance,
   PreviewLineItem,
+  PreviewPayment,
   PreviewTotals,
 } from "./preview-types";
 
@@ -46,8 +47,15 @@ export function DocumentRender({
   customer,
   lineItems,
   totals,
+  payments,
+  amountPaid,
+  remainingBalance,
+  creditBalance,
   gstEnabled,
   appearance,
+  // In-app only — never passed true from the public share page or the
+  // PDF renderer. See docs/payment-tracking-design.md §6.
+  showRecordedBy = false,
 }: {
   type: DocumentType;
   number: string;
@@ -64,8 +72,13 @@ export function DocumentRender({
   customer: CustomerSnapshot;
   lineItems: PreviewLineItem[];
   totals: PreviewTotals;
+  payments: PreviewPayment[];
+  amountPaid: number;
+  remainingBalance: number;
+  creditBalance: number;
   gstEnabled: boolean;
   appearance: PreviewAppearance;
+  showRecordedBy?: boolean;
 }) {
   const isQuotation = type === "quotation";
   const style = templateStyle(appearance.template, appearance.accentColor);
@@ -247,14 +260,56 @@ export function DocumentRender({
             </div>
             {!isQuotation && (
               <div className="flex justify-between px-3 pt-2 text-[13px]">
-                <span className="text-[#565E72]">Balance due</span>
+                <span className="text-[#565E72]">
+                  {creditBalance > 0 ? "Credit balance" : "Balance due"}
+                </span>
                 <span className="font-semibold">
-                  {formatCurrency(totals.total, currency)}
+                  {formatCurrency(
+                    creditBalance > 0 ? creditBalance : remainingBalance,
+                    currency,
+                  )}
                 </span>
               </div>
             )}
           </div>
         </div>
+
+        {!isQuotation && payments.length > 0 && (
+          <div className="mt-8">
+            <div className="text-[10.5px] font-bold tracking-[0.1em] text-[#8A92A6]">
+              PAYMENTS
+            </div>
+            <div className="mt-1.5 flex justify-between text-[12.5px] leading-relaxed text-[#3D4453]">
+              <span>Amount paid: {formatCurrency(amountPaid, currency)}</span>
+              <span>
+                {creditBalance > 0
+                  ? `Credit balance: ${formatCurrency(creditBalance, currency)}`
+                  : remainingBalance > 0
+                    ? `Remaining: ${formatCurrency(remainingBalance, currency)}`
+                    : "Fully paid"}
+              </span>
+            </div>
+            <div className="mt-2 divide-y divide-[#E7E9EF] border-y border-[#E7E9EF]">
+              {payments.map((payment) => (
+                <div
+                  key={payment.id}
+                  className="flex justify-between gap-4 py-1.5 text-[12px] text-[#565E72]"
+                >
+                  <span>{formatDate(payment.paidAt)}</span>
+                  <span className="flex-1 truncate">
+                    {payment.note}
+                    {showRecordedBy && payment.recordedByName
+                      ? ` — ${payment.recordedByName}`
+                      : ""}
+                  </span>
+                  <span className="font-mono">
+                    {formatCurrency(payment.amount, currency)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {appearance.showNotes && notes && (
           <div className="mt-8">

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import { requireBusinessForPage } from "@/lib/auth/page";
 import { formatDateIST } from "@/lib/dates";
 import { getCustomerBillingSummary } from "@/lib/documents/aggregates";
+import { isOverdue, remainingBalance } from "@/lib/documents/status";
 import { documentScopeWhere } from "@/lib/documents/visibility";
 import { formatCurrency } from "@/lib/format";
 import { StatusBadge } from "@/components/documents/status-badge";
@@ -183,7 +184,17 @@ export default async function CustomerDetailPage({
                       {formatDateIST(doc.issueDate)}
                     </TableCell>
                     <TableCell>
-                      <StatusBadge status={doc.status} />
+                      <StatusBadge
+                        status={
+                          isOverdue(
+                            doc.status,
+                            doc.dueDate,
+                            remainingBalance(Number(doc.total), Number(doc.amountPaid)),
+                          )
+                            ? "overdue"
+                            : doc.status
+                        }
+                      />
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm">
                       {formatCurrency(doc.total)}

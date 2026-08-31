@@ -52,20 +52,20 @@ enum DocumentTemplate {
 }
 
 model Business {
-  id       String @id @default(uuid())
-  name     String
+  id      String  @id @default(uuid())
+  name    String
   // Auto-generated from name at creation, never a UI-editable field —
   // see docs/public-share-subdomains-design.md §1. Powers the public
   // share-link subdomain ({slug}.{apex domain}), nothing else.
-  slug     String @unique
-  email    String
-  phone    String?
-  address  String?
-  city     String?
-  state    String?
-  country  String?
-  website  String?
-  logoUrl  String? @map("logo_url")
+  slug    String  @unique
+  email   String
+  phone   String?
+  address String?
+  city    String?
+  state   String?
+  country String?
+  website String?
+  logoUrl String? @map("logo_url")
 
   gstEnabled       Boolean  @default(false) @map("gst_enabled")
   gstin            String?
@@ -119,6 +119,8 @@ model User {
   // hierarchy position (that's per-business, on BusinessMember). SetNull
   // on delete so a User row disappearing never breaks a document.
   createdDocuments Document[]
+  // Historical attribution only, same rationale as createdDocuments above.
+  recordedPayments Payment[]
 
   // Historical attribution only, same rationale as createdDocuments above
   // — see docs/invitation-onboarding-design.md §2.
@@ -211,8 +213,8 @@ model Product {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  business   Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  lineItems  LineItem[]
+  business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  lineItems LineItem[]
 
   @@index([businessId])
   @@map("products")
@@ -224,13 +226,13 @@ model Document {
   type       DocumentType
 
   number     String
-  customerId String   @map("customer_id")
+  customerId String @map("customer_id")
 
-  issueDate      DateTime  @map("issue_date")
-  dueDate        DateTime? @map("due_date")
-  validUntil     DateTime? @map("valid_until")
-  paymentTerms   String?   @map("payment_terms")
-  validityTerms  String?   @map("validity_terms")
+  issueDate     DateTime  @map("issue_date")
+  dueDate       DateTime? @map("due_date")
+  validUntil    DateTime? @map("valid_until")
+  paymentTerms  String?   @map("payment_terms")
+  validityTerms String?   @map("validity_terms")
 
   // String, not a DB enum — validated against QUOTATION_STATUSES /
   // INVOICE_STATUSES in lib/documents/status.ts based on `type`.
@@ -245,15 +247,22 @@ model Document {
   total         Decimal @default(0) @db.Decimal(12, 2)
   currency      String  @default("INR")
 
+  // Maintained running total of this invoice's Payment rows — updated
+  // transactionally alongside every payment create/reverse, never
+  // live-summed from `payments` on read. See
+  // docs/payment-tracking-design.md §1. Quotations never have payments;
+  // stays 0 for them.
+  amountPaid Decimal @default(0) @map("amount_paid") @db.Decimal(12, 2)
+
   template    DocumentTemplate @default(classic)
   accentColor String           @default("#4F46E5") @map("accent_color")
 
-  showLogo     Boolean @default(true) @map("show_logo")
-  showGstinRow Boolean @default(true) @map("show_gstin_row")
-  showTax      Boolean @default(true) @map("show_tax")
-  showPayment  Boolean @default(true) @map("show_payment")
-  showNotes    Boolean @default(true) @map("show_notes")
-  showTerms    Boolean @default(true) @map("show_terms")
+  showLogo            Boolean @default(true) @map("show_logo")
+  showGstinRow        Boolean @default(true) @map("show_gstin_row")
+  showTax             Boolean @default(true) @map("show_tax")
+  showPayment         Boolean @default(true) @map("show_payment")
+  showNotes           Boolean @default(true) @map("show_notes")
+  showTerms           Boolean @default(true) @map("show_terms")
   showReferenceNumber Boolean @default(false) @map("show_reference_number")
 
   notes           String?
@@ -308,18 +317,18 @@ model LineItem {
 
   name        String
   description String?
-  qty         Decimal @db.Decimal(12, 2)
-  rate        Decimal @db.Decimal(12, 2)
-  discountPct Decimal @default(0) @map("discount_pct") @db.Decimal(5, 2)
+  qty         Decimal  @db.Decimal(12, 2)
+  rate        Decimal  @db.Decimal(12, 2)
+  discountPct Decimal  @default(0) @map("discount_pct") @db.Decimal(5, 2)
   gstRate     Decimal? @map("gst_rate") @db.Decimal(5, 2)
-  amount      Decimal @db.Decimal(12, 2)
-  sortOrder   Int     @default(0) @map("sort_order")
+  amount      Decimal  @db.Decimal(12, 2)
+  sortOrder   Int      @default(0) @map("sort_order")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  product  Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  product  Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
   @@index([documentId])
   @@map("line_items")
@@ -342,20 +351,32 @@ model DocumentCounter {
   @@map("document_counters")
 }
 
-// Phase 2 — full payment tracking against invoices. Table is modeled now
-// so the schema doesn't need a disruptive migration later; no API/UI yet.
+// See docs/payment-tracking-design.md. The auditable ledger — one row
+// per real transaction, including backfilled rows from that doc's §4
+// migration (recordedByUserId null, note explaining the approximation).
+// Document.amountPaid is a maintained running total kept in sync with
+// this table in the same transaction as every insert/delete here —
+// same "frozen, not live-recomputed" shape as Document.total itself.
 model Payment {
   id        String   @id @default(uuid())
   invoiceId String   @map("invoice_id")
   amount    Decimal  @db.Decimal(12, 2)
   method    String?
   paidAt    DateTime @map("paid_at")
+  note      String?
+
+  // Null for backfilled/pre-tracking rows (see design doc §4) — never
+  // backfilled with a guessed user, onDelete: SetNull like
+  // Document.createdByUserId so a removed user doesn't take payment
+  // history down with them.
+  recordedByUserId String? @map("recorded_by_user_id")
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  invoice Document @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice    Document @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  recordedBy User?    @relation(fields: [recordedByUserId], references: [id], onDelete: SetNull)
 
-  @@index([invoiceId])
+  @@index([invoiceId, paidAt])
   @@map("payments")
 }
 

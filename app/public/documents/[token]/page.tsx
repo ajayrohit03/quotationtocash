@@ -61,6 +61,10 @@ export default async function PublicDocumentPage({
           notes={previewDocument.notes}
           termsText={previewDocument.termsText}
           referenceNumber={previewDocument.referenceNumber}
+          payments={previewDocument.payments}
+          amountPaid={previewDocument.amountPaid}
+          remainingBalance={previewDocument.remainingBalance}
+          creditBalance={previewDocument.creditBalance}
           currency={previewDocument.currency}
           business={previewDocument.business}
           customer={previewDocument.customer}

@@ -23,7 +23,13 @@ export async function POST(
     // first. See docs/permission-layer-design.md §6.
     const document = await prisma.document.findFirst({
       where: { id, businessId: business.id, ...(await documentScopeWhere("view")) },
-      include: { lineItems: { orderBy: { sortOrder: "asc" } } },
+      include: {
+        lineItems: { orderBy: { sortOrder: "asc" } },
+        payments: {
+          orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }],
+          include: { recordedBy: true },
+        },
+      },
     });
     if (!document) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
