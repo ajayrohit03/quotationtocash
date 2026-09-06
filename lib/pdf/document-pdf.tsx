@@ -2,7 +2,7 @@ import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/render
 import { formatDateIST } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
 import type { PreviewDocument } from "@/components/documents/preview-types";
-import { bankDetailsLine } from "@/lib/documents/payment-details";
+import { paymentDetailsLines } from "@/lib/documents/payment-details";
 
 // Mirrors components/documents/document-render.tsx section-for-section —
 // same data, same conditionals — but react-pdf can't render arbitrary
@@ -133,7 +133,7 @@ export function DocumentPdf({
   const secondaryDate = isQuotation ? document.validUntil : document.dueDate;
   const terms = isQuotation ? document.validityTerms : document.paymentTerms;
   const { business, customer } = document;
-  const bankLine = bankDetailsLine(business);
+  const bankLines = paymentDetailsLines(business);
 
   return (
     <Document title={`${document.number}.pdf`}>
@@ -363,13 +363,16 @@ export function DocumentPdf({
           <View style={styles.paymentBlock}>
             <Text style={styles.sectionLabel}>PAYMENT DETAILS</Text>
             <Text style={[styles.noteBody, { fontFamily: "Courier" }]}>
-              {[business.name, business.email, business.phone].filter(Boolean).join("  ·  ")}
+              {business.name}
             </Text>
-            {bankLine && (
-              <Text style={[styles.noteBody, { fontFamily: "Courier" }]}>
-                {bankLine}
+            {bankLines.map((line) => (
+              <Text
+                key={line.label}
+                style={[styles.noteBody, { fontFamily: "Courier", marginTop: 1 }]}
+              >
+                {line.label}: {line.value}
               </Text>
-            )}
+            ))}
           </View>
         )}
 
