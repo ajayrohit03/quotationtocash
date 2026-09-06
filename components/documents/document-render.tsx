@@ -5,6 +5,7 @@ import type {
   BusinessSnapshot,
   CustomerSnapshot,
 } from "@/lib/documents/snapshots";
+import { bankDetailsLine } from "@/lib/documents/payment-details";
 import type {
   PreviewAppearance,
   PreviewLineItem,
@@ -86,6 +87,7 @@ export function DocumentRender({
   const showTax = gstEnabled && appearance.showTax;
   const secondaryDate = isQuotation ? validUntil : dueDate;
   const terms = isQuotation ? validityTerms : paymentTerms;
+  const bankLine = bankDetailsLine(business);
 
   return (
     <div
@@ -339,6 +341,11 @@ export function DocumentRender({
             <div className="mt-1.5 font-mono text-[11.5px] leading-loose text-[#3D4453]">
               {[business.name, business.email, business.phone].filter(Boolean).join(" · ")}
             </div>
+            {bankLine && (
+              <div className="mt-1.5 font-mono text-[11.5px] leading-loose text-[#3D4453]">
+                {bankLine}
+              </div>
+            )}
           </div>
         )}
 

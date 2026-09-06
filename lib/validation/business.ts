@@ -72,6 +72,24 @@ export const gstSetupSchema = z.discriminatedUnion("gstEnabled", [
 
 export type GstSetupInput = z.infer<typeof gstSetupSchema>;
 
+// Bank/payment details — same "financial weight" tier as GST, so this
+// stays on its own owner-only route (app/api/business/payment-details/
+// route.ts) rather than folding into businessUpdateSchema's Admin-
+// delegable PATCH. All fields optional: filling in zero of them must
+// never block creating or sending a document. IFSC's 11-character format
+// is a soft UI hint only (see payment-tab.tsx) — deliberately not
+// enforced here, since a formatting quibble shouldn't block saving real
+// account details a business already has correct.
+export const paymentDetailsSchema = z.object({
+  bankName: z.string().trim().max(200).nullable().optional(),
+  accountHolderName: z.string().trim().max(200).nullable().optional(),
+  accountNumber: z.string().trim().max(50).nullable().optional(),
+  ifscCode: z.string().trim().max(20).nullable().optional(),
+  upiId: z.string().trim().max(100).nullable().optional(),
+});
+
+export type PaymentDetailsInput = z.infer<typeof paymentDetailsSchema>;
+
 export const templateSetupSchema = z.object({
   documentTemplate: z.enum(["classic", "modern", "minimal"]),
 });

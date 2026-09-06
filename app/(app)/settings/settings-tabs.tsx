@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Building2, Percent, FileText, Palette, CircleUser, Users } from "lucide-react";
+import { Building2, Percent, Landmark, FileText, Palette, CircleUser, Users } from "lucide-react";
 import {
   Tabs,
   TabsContent,
@@ -20,6 +20,9 @@ const BusinessProfileTab = dynamic(() =>
   import("./business-profile-tab").then((m) => m.BusinessProfileTab),
 );
 const TaxTab = dynamic(() => import("./tax-tab").then((m) => m.TaxTab));
+const PaymentTab = dynamic(() =>
+  import("./payment-tab").then((m) => m.PaymentTab),
+);
 const DocumentsTab = dynamic(() =>
   import("./documents-tab").then((m) => m.DocumentsTab),
 );
@@ -34,6 +37,7 @@ const TeamTab = dynamic(() => import("./team-tab").then((m) => m.TeamTab));
 const TABS = [
   { value: "business", label: "Business profile", icon: Building2 },
   { value: "tax", label: "Tax", icon: Percent },
+  { value: "payment", label: "Payment details", icon: Landmark },
   { value: "documents", label: "Documents", icon: FileText },
   { value: "appearance", label: "Appearance", icon: Palette },
   { value: "account", label: "Account", icon: CircleUser },
@@ -93,6 +97,9 @@ export function SettingsTabs({
         </TabsContent>
         <TabsContent value="tax">
           <TaxTab business={current} readOnly={!isOwner} onUpdated={setCurrent} />
+        </TabsContent>
+        <TabsContent value="payment">
+          <PaymentTab business={current} readOnly={!isOwner} onUpdated={setCurrent} />
         </TabsContent>
         <TabsContent value="documents">
           <DocumentsTab

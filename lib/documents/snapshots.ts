@@ -43,6 +43,11 @@ export type BusinessSnapshot = {
   gstin: string | null;
   placeOfSupply: string | null;
   registrationType: string | null;
+  bankName: string | null;
+  accountHolderName: string | null;
+  accountNumber: string | null;
+  ifscCode: string | null;
+  upiId: string | null;
 };
 
 export function buildBusinessSnapshot(business: Business): BusinessSnapshot {
@@ -60,5 +65,10 @@ export function buildBusinessSnapshot(business: Business): BusinessSnapshot {
     gstin: business.gstin,
     placeOfSupply: business.placeOfSupply,
     registrationType: business.registrationType,
+    bankName: business.bankName,
+    accountHolderName: business.accountHolderName,
+    accountNumber: business.accountNumber,
+    ifscCode: business.ifscCode,
+    upiId: business.upiId,
   };
 }

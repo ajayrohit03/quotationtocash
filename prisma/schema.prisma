@@ -73,6 +73,18 @@ model Business {
   placeOfSupply    String?  @map("place_of_supply")
   registrationType String?  @map("registration_type")
 
+  // Bank/payment details shown in documents' PAYMENT DETAILS block — all
+  // optional, same "financial weight" tier as GST (owner-only route, see
+  // app/api/business/payment-details/route.ts), never required to create
+  // or send a document. accountHolderName falls back to `name` at render
+  // time when blank (see document-render.tsx/document-pdf.tsx), not
+  // stored redundantly here.
+  bankName          String?
+  accountHolderName String? @map("account_holder_name")
+  accountNumber     String? @map("account_number")
+  ifscCode          String? @map("ifsc_code")
+  upiId             String? @map("upi_id")
+
   documentTemplate DocumentTemplate @default(classic) @map("document_template")
   accentColor      String           @default("#4F46E5") @map("accent_color")
 
