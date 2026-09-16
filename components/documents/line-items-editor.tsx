@@ -21,6 +21,7 @@ import type {
   LocalLineItem,
   BuilderCustomFieldDefinition,
 } from "./types";
+import { resolveForeignCurrencyRateLabel } from "@/lib/documents/line-item-columns";
 
 let keyCounter = 0;
 function nextKey() {
@@ -53,12 +54,44 @@ export function LineItemsEditor({
     (a, b) => a.sortOrder - b.sortOrder,
   );
   const productsById = new Map(products.map((p) => [p.id, p]));
-  // Rows with the foreign-currency inputs visible — separate from
-  // whether foreignCurrency actually has a value, so opening the block
-  // to start typing doesn't require a value to already exist. A row
-  // that already has foreignCurrency set (loaded from a saved document)
-  // is always shown expanded regardless of this set's contents.
-  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  // Table-wide toggle for the two foreign-currency columns — separate
+  // from whether any row actually has foreignCurrency set yet, so
+  // turning the columns on to start entering a value doesn't require
+  // one to already exist. A document loaded with existing
+  // foreign-currency data shows the columns immediately regardless of
+  // this flag (see showFxColumns below) — this only covers the "user
+  // just clicked the toggle, nothing typed yet" case.
+  const [fxColumnsToggled, setFxColumnsToggled] = useState(false);
+  const hasAnyForeignCurrency = items.some(
+    (item) => item.foreignCurrency || item.foreignRate != null || item.exchangeRate != null,
+  );
+  const showFxColumns = fxColumnsToggled || hasAnyForeignCurrency;
+  // Reuses the exact same function document-render.tsx/document-pdf.tsx
+  // call on the frozen, saved version of this data (§ shared
+  // column-schema approach) — here it's fed live local state instead,
+  // so the header label updates immediately as currencies are typed.
+  // Falls back to a generic label once the columns are shown but no row
+  // has a currency code yet (resolveForeignCurrencyRateLabel itself
+  // returns null in that case, by design, for the read-only renderers).
+  const fxRateLabel = resolveForeignCurrencyRateLabel(items) ?? "Foreign Rate";
+
+  function toggleFxColumns() {
+    if (showFxColumns) {
+      // Removing clears every row's foreign-currency data too — same
+      // semantics as the old per-row "Remove" link, just table-wide now.
+      onChange(
+        items.map((item) => ({
+          ...item,
+          foreignCurrency: null,
+          foreignRate: null,
+          exchangeRate: null,
+        })),
+      );
+      setFxColumnsToggled(false);
+    } else {
+      setFxColumnsToggled(true);
+    }
+  }
 
   function updateItem(key: string, patch: Partial<LocalLineItem>) {
     onChange(items.map((item) => (item.key === key ? { ...item, ...patch } : item)));
@@ -83,15 +116,6 @@ export function LineItemsEditor({
         return merged;
       }),
     );
-  }
-
-  function removeForeignCurrency(key: string) {
-    setExpandedKeys((prev) => {
-      const next = new Set(prev);
-      next.delete(key);
-      return next;
-    });
-    updateItem(key, { foreignCurrency: null, foreignRate: null, exchangeRate: null });
   }
 
   // Upserts (or removes, if blanked) one definition's value within a
@@ -194,6 +218,12 @@ export function LineItemsEditor({
                   {def.label}
                 </TableHead>
               ))}
+              {showFxColumns && (
+                <>
+                  <TableHead className="w-28 text-right">{fxRateLabel}</TableHead>
+                  <TableHead className="w-24 text-right">Exch. Rate</TableHead>
+                </>
+              )}
               <TableHead className="w-20 text-right">Qty</TableHead>
               <TableHead className="w-28 text-right">Rate</TableHead>
               <TableHead className="w-24 text-right">Discount %</TableHead>
@@ -209,7 +239,9 @@ export function LineItemsEditor({
               <TableRow>
                 <TableCell
                   colSpan={
-                    (gstEnabled ? 7 : 6) + sortedCustomFieldDefinitions.length
+                    (gstEnabled ? 7 : 6) +
+                    sortedCustomFieldDefinitions.length +
+                    (showFxColumns ? 2 : 0)
                   }
                   className="py-8 text-center text-sm text-muted-foreground"
                 >
@@ -290,6 +322,60 @@ export function LineItemsEditor({
                         </TableCell>
                       );
                     })}
+                    {showFxColumns && (
+                      <>
+                        <TableCell className="align-top">
+                          <div className="flex flex-col gap-1">
+                            <Input
+                              placeholder="USD"
+                              autoComplete="off"
+                              value={item.foreignCurrency ?? ""}
+                              onChange={(e) =>
+                                updateForeignFields(item.key, {
+                                  foreignCurrency: e.target.value.toUpperCase() || null,
+                                })
+                              }
+                              className="h-7 text-right text-xs uppercase"
+                              disabled={disabled}
+                            />
+                            <Input
+                              type="number"
+                              min={0}
+                              step="any"
+                              placeholder="Rate"
+                              autoComplete="off"
+                              value={item.foreignRate ?? ""}
+                              onChange={(e) =>
+                                updateForeignFields(item.key, {
+                                  foreignRate:
+                                    e.target.value === "" ? null : e.target.valueAsNumber,
+                                })
+                              }
+                              className="text-right"
+                              disabled={disabled}
+                            />
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <Input
+                            type="number"
+                            min={0}
+                            step="any"
+                            placeholder="Exchange rate"
+                            autoComplete="off"
+                            value={item.exchangeRate ?? ""}
+                            onChange={(e) =>
+                              updateForeignFields(item.key, {
+                                exchangeRate:
+                                  e.target.value === "" ? null : e.target.valueAsNumber,
+                              })
+                            }
+                            className="text-right"
+                            disabled={disabled}
+                          />
+                        </TableCell>
+                      </>
+                    )}
                     <TableCell className="align-top">
                       <Input
                         type="number"
@@ -321,77 +407,6 @@ export function LineItemsEditor({
                         className="text-right"
                         disabled={disabled}
                       />
-                      {expandedKeys.has(item.key) || item.foreignCurrency != null ? (
-                        <div className="mt-1.5 flex flex-col gap-1">
-                          <Input
-                            placeholder="USD"
-                            autoComplete="off"
-                            value={item.foreignCurrency ?? ""}
-                            onChange={(e) =>
-                              updateForeignFields(item.key, {
-                                foreignCurrency: e.target.value.toUpperCase() || null,
-                              })
-                            }
-                            className="h-7 text-right text-xs uppercase"
-                            disabled={disabled}
-                          />
-                          <Input
-                            type="number"
-                            min={0}
-                            step="any"
-                            placeholder="Foreign rate"
-                            autoComplete="off"
-                            value={item.foreignRate ?? ""}
-                            onChange={(e) =>
-                              updateForeignFields(item.key, {
-                                foreignRate:
-                                  e.target.value === "" ? null : e.target.valueAsNumber,
-                              })
-                            }
-                            className="h-7 text-right text-xs"
-                            disabled={disabled}
-                          />
-                          <Input
-                            type="number"
-                            min={0}
-                            step="any"
-                            placeholder="Exchange rate"
-                            autoComplete="off"
-                            value={item.exchangeRate ?? ""}
-                            onChange={(e) =>
-                              updateForeignFields(item.key, {
-                                exchangeRate:
-                                  e.target.value === "" ? null : e.target.valueAsNumber,
-                              })
-                            }
-                            className="h-7 text-right text-xs"
-                            disabled={disabled}
-                          />
-                          {!disabled && (
-                            <button
-                              type="button"
-                              onClick={() => removeForeignCurrency(item.key)}
-                              className="text-right text-xs text-muted-foreground underline"
-                            >
-                              Remove
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        !disabled && (
-                          <div className="mt-1 flex justify-end">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setExpandedKeys((prev) => new Set(prev).add(item.key))
-                              }
-                              className="text-xs text-muted-foreground underline"
-                            >
-                              + Foreign currency
-                            </button>
-                          </div>
-                        )
-                      )}
                     </TableCell>
                     <TableCell className="align-top">
                       <Input
@@ -467,12 +482,25 @@ export function LineItemsEditor({
           </TableBody>
         </Table>
       </div>
-      <AddLineItemMenu
-        products={products}
-        onSelectProduct={addFromProduct}
-        onAddCustom={addCustom}
-        disabled={disabled}
-      />
+      <div className="flex items-center justify-between">
+        <AddLineItemMenu
+          products={products}
+          onSelectProduct={addFromProduct}
+          onAddCustom={addCustom}
+          disabled={disabled}
+        />
+        {!disabled && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="mr-4 text-muted-foreground"
+            onClick={toggleFxColumns}
+          >
+            {showFxColumns ? "Remove foreign currency" : "+ Foreign currency"}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

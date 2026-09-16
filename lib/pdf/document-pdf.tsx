@@ -6,7 +6,10 @@ import { paymentDetailsLines } from "@/lib/documents/payment-details";
 import { formatCustomFieldValue } from "@/lib/documents/custom-fields";
 import { isSameState } from "@/lib/tax/calculateGST";
 import { groupTaxByRate } from "@/lib/tax/groupTaxByRate";
-import { resolveLineItemColumns } from "@/lib/documents/line-item-columns";
+import {
+  resolveLineItemColumns,
+  resolveForeignCurrencyRateLabel,
+} from "@/lib/documents/line-item-columns";
 import { businessIdentityLine } from "@/lib/documents/business-identity";
 
 // Mirrors components/documents/document-render.tsx section-for-section —
@@ -142,6 +145,7 @@ export function DocumentPdf({
   const sameState = isSameState(business.placeOfSupply, customer.state);
   const taxBuckets = showTax ? groupTaxByRate(document.lineItems, sameState) : [];
   const lineItemColumns = resolveLineItemColumns(document.lineItems);
+  const fxRateLabel = resolveForeignCurrencyRateLabel(document.lineItems);
   const identityLine = businessIdentityLine(business);
 
   return (
@@ -242,6 +246,16 @@ export function DocumentPdf({
                 {column.label.toUpperCase()}
               </Text>
             ))}
+            {fxRateLabel && (
+              <>
+                <Text style={{ width: 55, textAlign: "right", paddingRight: 6 }}>
+                  {fxRateLabel.toUpperCase()}
+                </Text>
+                <Text style={{ width: 50, textAlign: "right", paddingRight: 6 }}>
+                  EXCH. RATE
+                </Text>
+              </>
+            )}
             <Text style={{ width: 40, textAlign: "right" }}>QTY</Text>
             <Text style={{ width: 65, textAlign: "right" }}>RATE</Text>
             {showTax && <Text style={{ width: 40, textAlign: "right" }}>TAX</Text>}
@@ -263,17 +277,20 @@ export function DocumentPdf({
                   </Text>
                 );
               })}
-              <Text style={{ width: 40, textAlign: "right" }}>{item.qty}</Text>
-              <View style={{ width: 65 }}>
-                <Text style={{ textAlign: "right" }}>
-                  {formatCurrency(item.rate, document.currency)}
-                </Text>
-                {item.foreignCurrency && item.foreignRate != null && item.exchangeRate != null && (
-                  <Text style={{ textAlign: "right", fontSize: 7, color: COLORS.muted, marginTop: 1 }}>
-                    {item.foreignCurrency} {item.foreignRate} @ {item.exchangeRate}
+              {fxRateLabel && (
+                <>
+                  <Text style={{ width: 55, textAlign: "right", paddingRight: 6, color: COLORS.body }}>
+                    {item.foreignCurrency && item.foreignRate != null ? item.foreignRate : "—"}
                   </Text>
-                )}
-              </View>
+                  <Text style={{ width: 50, textAlign: "right", paddingRight: 6, color: COLORS.body }}>
+                    {item.foreignCurrency && item.exchangeRate != null ? item.exchangeRate : "—"}
+                  </Text>
+                </>
+              )}
+              <Text style={{ width: 40, textAlign: "right" }}>{item.qty}</Text>
+              <Text style={{ width: 65, textAlign: "right" }}>
+                {formatCurrency(item.rate, document.currency)}
+              </Text>
               {showTax && (
                 <Text style={{ width: 40, textAlign: "right", color: COLORS.body }}>
                   {item.gstRate != null ? `${item.gstRate}%` : "—"}

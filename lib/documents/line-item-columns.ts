@@ -36,3 +36,20 @@ export function resolveLineItemColumns(
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((entry) => ({ id: entry.id, label: entry.label }));
 }
+
+// Same "one shared function, all three implementations call it" rule as
+// resolveLineItemColumns above — the builder calls this with its live
+// local state (so the columns appear the instant a row's foreignCurrency
+// is set, before any save), the two read-only renderers call it with the
+// document's already-frozen line items. Returns null when no line item
+// has a foreignCurrency at all, so both columns are omitted entirely —
+// per the spec, no empty FX columns on a document that doesn't use them.
+export function resolveForeignCurrencyRateLabel(
+  lineItems: { foreignCurrency: string | null }[],
+): string | null {
+  const currencies = new Set(
+    lineItems.map((item) => item.foreignCurrency).filter((c): c is string => Boolean(c)),
+  );
+  if (currencies.size === 0) return null;
+  return currencies.size === 1 ? `${[...currencies][0]} Rate` : "F.C. Rate";
+}

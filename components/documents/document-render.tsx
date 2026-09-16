@@ -13,7 +13,10 @@ import {
 } from "@/lib/documents/custom-fields";
 import { isSameState } from "@/lib/tax/calculateGST";
 import { groupTaxByRate } from "@/lib/tax/groupTaxByRate";
-import { resolveLineItemColumns } from "@/lib/documents/line-item-columns";
+import {
+  resolveLineItemColumns,
+  resolveForeignCurrencyRateLabel,
+} from "@/lib/documents/line-item-columns";
 import { businessIdentityLine } from "@/lib/documents/business-identity";
 import type {
   PreviewAppearance,
@@ -102,6 +105,7 @@ export function DocumentRender({
   const sameState = isSameState(business.placeOfSupply, customer.state);
   const taxBuckets = showTax ? groupTaxByRate(lineItems, sameState) : [];
   const lineItemColumns = resolveLineItemColumns(lineItems);
+  const fxRateLabel = resolveForeignCurrencyRateLabel(lineItems);
   const identityLine = businessIdentityLine(business);
 
   return (
@@ -219,6 +223,14 @@ export function DocumentRender({
                 {column.label.toUpperCase()}
               </div>
             ))}
+            {fxRateLabel && (
+              <>
+                <div className="w-24 px-2 text-right">
+                  {fxRateLabel.toUpperCase()}
+                </div>
+                <div className="w-20 px-2 text-right">EXCH. RATE</div>
+              </>
+            )}
             <div className="w-16 text-right">QTY</div>
             <div className="w-24 text-right">RATE</div>
             {showTax && <div className="w-16 text-right">TAX</div>}
@@ -247,15 +259,22 @@ export function DocumentRender({
                   </div>
                 );
               })}
-              <div className="w-16 text-right">{item.qty}</div>
-              <div className="w-24 text-right">
-                {formatCurrency(item.rate, currency)}
-                {item.foreignCurrency && item.foreignRate != null && item.exchangeRate != null && (
-                  <div className="mt-0.5 text-[10.5px] text-[#8A92A6]">
-                    {item.foreignCurrency} {item.foreignRate} @ {item.exchangeRate}
+              {fxRateLabel && (
+                <>
+                  <div className="w-24 px-2 text-right text-[#3D4453]">
+                    {item.foreignCurrency && item.foreignRate != null
+                      ? item.foreignRate
+                      : "—"}
                   </div>
-                )}
-              </div>
+                  <div className="w-20 px-2 text-right text-[#3D4453]">
+                    {item.foreignCurrency && item.exchangeRate != null
+                      ? item.exchangeRate
+                      : "—"}
+                  </div>
+                </>
+              )}
+              <div className="w-16 text-right">{item.qty}</div>
+              <div className="w-24 text-right">{formatCurrency(item.rate, currency)}</div>
               {showTax && (
                 <div className="w-16 text-right text-[#565E72]">
                   {item.gstRate != null ? `${item.gstRate}%` : "—"}
