@@ -355,11 +355,25 @@ model LineItem {
   name        String
   description String?
   qty         Decimal  @db.Decimal(12, 2)
+  // In Document.currency, always — the single value calculateDocumentTotals
+  // / calculateGST read. See docs/custom-fields-and-multicurrency-design.md
+  // §1b/§2: when foreignCurrency is set, this is *derived* once at entry
+  // time (round(foreignRate × exchangeRate, 2)) and then behaves as an
+  // ordinary editable field, same as always — the tax engine has zero
+  // awareness of the three fields below.
   rate        Decimal  @db.Decimal(12, 2)
   discountPct Decimal  @default(0) @map("discount_pct") @db.Decimal(5, 2)
   gstRate     Decimal? @map("gst_rate") @db.Decimal(5, 2)
   amount      Decimal  @db.Decimal(12, 2)
   sortOrder   Int      @default(0) @map("sort_order")
+
+  // Pure provenance/display — never read by any calculation function.
+  // Deleting them wouldn't change a single total. exchangeRate carries
+  // more precision than `rate` itself (6 vs 2 decimal places) since real
+  // INR exchange rates commonly need 4-6 significant digits.
+  foreignCurrency String?  @map("foreign_currency")
+  foreignRate     Decimal? @map("foreign_rate") @db.Decimal(12, 2)
+  exchangeRate    Decimal? @map("exchange_rate") @db.Decimal(12, 6)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

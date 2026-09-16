@@ -63,6 +63,9 @@ export function toPreviewDocument(
       rate: Number(item.rate),
       gstRate: item.gstRate == null ? null : Number(item.gstRate),
       amount: Number(item.amount),
+      foreignCurrency: item.foreignCurrency,
+      foreignRate: item.foreignRate == null ? null : Number(item.foreignRate),
+      exchangeRate: item.exchangeRate == null ? null : Number(item.exchangeRate),
     })),
     totals: {
       subtotal: Number(document.subtotal),

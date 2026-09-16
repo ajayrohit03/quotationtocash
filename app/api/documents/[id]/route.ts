@@ -194,6 +194,9 @@ export async function PATCH(
               gstRate: item.resolvedGstRate,
               amount: calculateLineAmount(item),
               sortOrder: index,
+              foreignCurrency: item.foreignCurrency ?? null,
+              foreignRate: item.foreignRate ?? null,
+              exchangeRate: item.exchangeRate ?? null,
             })),
           });
         }

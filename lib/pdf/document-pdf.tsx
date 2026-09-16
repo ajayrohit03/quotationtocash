@@ -244,9 +244,16 @@ export function DocumentPdf({
                 {item.description && <Text style={styles.itemDesc}>{item.description}</Text>}
               </View>
               <Text style={{ width: 40, textAlign: "right" }}>{item.qty}</Text>
-              <Text style={{ width: 65, textAlign: "right" }}>
-                {formatCurrency(item.rate, document.currency)}
-              </Text>
+              <View style={{ width: 65 }}>
+                <Text style={{ textAlign: "right" }}>
+                  {formatCurrency(item.rate, document.currency)}
+                </Text>
+                {item.foreignCurrency && item.foreignRate != null && item.exchangeRate != null && (
+                  <Text style={{ textAlign: "right", fontSize: 7, color: COLORS.muted, marginTop: 1 }}>
+                    {item.foreignCurrency} {item.foreignRate} @ {item.exchangeRate}
+                  </Text>
+                )}
+              </View>
               {showTax && (
                 <Text style={{ width: 40, textAlign: "right", color: COLORS.body }}>
                   {item.gstRate != null ? `${item.gstRate}%` : "—"}

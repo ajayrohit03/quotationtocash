@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { CopyIcon, XIcon } from "lucide-react";
 import { calculateLineAmount } from "@/lib/documents/calculations";
 import { resolveGstRate } from "@/lib/tax/resolveGstRate";
@@ -43,9 +44,45 @@ export function LineItemsEditor({
   disabled?: boolean;
 }) {
   const productsById = new Map(products.map((p) => [p.id, p]));
+  // Rows with the foreign-currency inputs visible — separate from
+  // whether foreignCurrency actually has a value, so opening the block
+  // to start typing doesn't require a value to already exist. A row
+  // that already has foreignCurrency set (loaded from a saved document)
+  // is always shown expanded regardless of this set's contents.
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
 
   function updateItem(key: string, patch: Partial<LocalLineItem>) {
     onChange(items.map((item) => (item.key === key ? { ...item, ...patch } : item)));
+  }
+
+  // §2: editing foreignRate or exchangeRate recomputes rate =
+  // round(foreignRate × exchangeRate, 2) once, synchronously — the only
+  // trigger. Editing foreignCurrency alone never touches rate.
+  function updateForeignFields(
+    key: string,
+    patch: Partial<Pick<LocalLineItem, "foreignCurrency" | "foreignRate" | "exchangeRate">>,
+  ) {
+    onChange(
+      items.map((item) => {
+        if (item.key !== key) return item;
+        const merged = { ...item, ...patch };
+        if ("foreignRate" in patch || "exchangeRate" in patch) {
+          if (merged.foreignRate != null && merged.exchangeRate != null) {
+            merged.rate = Math.round(merged.foreignRate * merged.exchangeRate * 100) / 100;
+          }
+        }
+        return merged;
+      }),
+    );
+  }
+
+  function removeForeignCurrency(key: string) {
+    setExpandedKeys((prev) => {
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+    updateItem(key, { foreignCurrency: null, foreignRate: null, exchangeRate: null });
   }
 
   function removeItem(key: string) {
@@ -71,6 +108,9 @@ export function LineItemsEditor({
         rate: product.price,
         discountPct: 0,
         gstRate: null,
+        foreignCurrency: null,
+        foreignRate: null,
+        exchangeRate: null,
       },
     ]);
   }
@@ -87,6 +127,9 @@ export function LineItemsEditor({
         rate: 0,
         discountPct: 0,
         gstRate: null,
+        foreignCurrency: null,
+        foreignRate: null,
+        exchangeRate: null,
       },
     ]);
   }
@@ -198,6 +241,77 @@ export function LineItemsEditor({
                         className="text-right"
                         disabled={disabled}
                       />
+                      {expandedKeys.has(item.key) || item.foreignCurrency != null ? (
+                        <div className="mt-1.5 flex flex-col gap-1">
+                          <Input
+                            placeholder="USD"
+                            autoComplete="off"
+                            value={item.foreignCurrency ?? ""}
+                            onChange={(e) =>
+                              updateForeignFields(item.key, {
+                                foreignCurrency: e.target.value.toUpperCase() || null,
+                              })
+                            }
+                            className="h-7 text-right text-xs uppercase"
+                            disabled={disabled}
+                          />
+                          <Input
+                            type="number"
+                            min={0}
+                            step="any"
+                            placeholder="Foreign rate"
+                            autoComplete="off"
+                            value={item.foreignRate ?? ""}
+                            onChange={(e) =>
+                              updateForeignFields(item.key, {
+                                foreignRate:
+                                  e.target.value === "" ? null : e.target.valueAsNumber,
+                              })
+                            }
+                            className="h-7 text-right text-xs"
+                            disabled={disabled}
+                          />
+                          <Input
+                            type="number"
+                            min={0}
+                            step="any"
+                            placeholder="Exchange rate"
+                            autoComplete="off"
+                            value={item.exchangeRate ?? ""}
+                            onChange={(e) =>
+                              updateForeignFields(item.key, {
+                                exchangeRate:
+                                  e.target.value === "" ? null : e.target.valueAsNumber,
+                              })
+                            }
+                            className="h-7 text-right text-xs"
+                            disabled={disabled}
+                          />
+                          {!disabled && (
+                            <button
+                              type="button"
+                              onClick={() => removeForeignCurrency(item.key)}
+                              className="text-right text-xs text-muted-foreground underline"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        !disabled && (
+                          <div className="mt-1 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedKeys((prev) => new Set(prev).add(item.key))
+                              }
+                              className="text-xs text-muted-foreground underline"
+                            >
+                              + Foreign currency
+                            </button>
+                          </div>
+                        )
+                      )}
                     </TableCell>
                     <TableCell className="align-top">
                       <Input

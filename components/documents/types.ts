@@ -29,4 +29,10 @@ export type LocalLineItem = {
   rate: number;
   discountPct: number;
   gstRate: number | null;
+  // Pure provenance for multi-currency pricing — see schema.prisma's
+  // LineItem.foreignCurrency comment. `rate` above stays the one field
+  // the tax engine reads; these three are never sent to it.
+  foreignCurrency: string | null;
+  foreignRate: number | null;
+  exchangeRate: number | null;
 };

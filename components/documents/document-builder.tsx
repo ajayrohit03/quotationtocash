@@ -287,6 +287,9 @@ export function DocumentBuilder({
             rate: item.rate,
             discountPct: item.discountPct,
             gstRate: item.gstRate,
+            foreignCurrency: item.foreignCurrency,
+            foreignRate: item.foreignRate,
+            exchangeRate: item.exchangeRate,
           })),
         }),
       });

@@ -88,6 +88,9 @@ export async function DocumentEditorPage({
       rate: Number(item.rate),
       discountPct: Number(item.discountPct),
       gstRate: item.gstRate == null ? null : Number(item.gstRate),
+      foreignCurrency: item.foreignCurrency,
+      foreignRate: item.foreignRate == null ? null : Number(item.foreignRate),
+      exchangeRate: item.exchangeRate == null ? null : Number(item.exchangeRate),
     })),
     totals: {
       subtotal: Number(document.subtotal),

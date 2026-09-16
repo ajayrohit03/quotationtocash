@@ -17,6 +17,11 @@ export type PreviewLineItem = {
   rate: number;
   gstRate: number | null;
   amount: number;
+  // Pure provenance — see schema.prisma's LineItem.foreignCurrency
+  // comment. `rate`/`amount` above are unaffected by these.
+  foreignCurrency: string | null;
+  foreignRate: number | null;
+  exchangeRate: number | null;
 };
 
 export type PreviewTotals = {

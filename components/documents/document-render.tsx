@@ -224,7 +224,14 @@ export function DocumentRender({
                 )}
               </div>
               <div className="w-16 text-right">{item.qty}</div>
-              <div className="w-24 text-right">{formatCurrency(item.rate, currency)}</div>
+              <div className="w-24 text-right">
+                {formatCurrency(item.rate, currency)}
+                {item.foreignCurrency && item.foreignRate != null && item.exchangeRate != null && (
+                  <div className="mt-0.5 text-[10.5px] text-[#8A92A6]">
+                    {item.foreignCurrency} {item.foreignRate} @ {item.exchangeRate}
+                  </div>
+                )}
+              </div>
               {showTax && (
                 <div className="w-16 text-right text-[#565E72]">
                   {item.gstRate != null ? `${item.gstRate}%` : "—"}

@@ -9,6 +9,15 @@ export const lineItemInputSchema = z.object({
   rate: z.number().min(0, "Rate can't be negative"),
   discountPct: z.number().min(0).max(100).optional(),
   gstRate: z.number().min(0).max(100).nullable().optional(),
+
+  // Pure provenance — see lib/documents/custom-fields.ts's sibling
+  // reasoning in schema.prisma. `rate` above is the one value the tax
+  // engine ever reads; these three are never validated against it here
+  // (the builder computes rate = round(foreignRate × exchangeRate, 2)
+  // once, client-side, before this schema ever sees the request).
+  foreignCurrency: z.string().trim().max(10).nullable().optional(),
+  foreignRate: z.number().min(0).nullable().optional(),
+  exchangeRate: z.number().min(0).nullable().optional(),
 });
 
 export type LineItemInput = z.infer<typeof lineItemInputSchema>;
