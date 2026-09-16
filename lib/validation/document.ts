@@ -18,6 +18,10 @@ export const lineItemInputSchema = z.object({
   foreignCurrency: z.string().trim().max(10).nullable().optional(),
   foreignRate: z.number().min(0).nullable().optional(),
   exchangeRate: z.number().min(0).nullable().optional(),
+
+  // Line-item-scope custom field values for this row — same shape and
+  // whole-array-replace semantics as Document.customFieldValues.
+  customFieldValues: z.array(customFieldValueSnapshotSchema).optional(),
 });
 
 export type LineItemInput = z.infer<typeof lineItemInputSchema>;

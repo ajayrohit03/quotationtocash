@@ -101,6 +101,11 @@ export async function POST(
                 foreignCurrency: item.foreignCurrency,
                 foreignRate: item.foreignRate,
                 exchangeRate: item.exchangeRate,
+                // Deliberately not copied — same choice already made for
+                // Document.customFieldValues above (this route doesn't
+                // copy referenceNumber either), kept consistent between
+                // the two custom-field scopes rather than copying one
+                // and not the other.
               })),
             },
           },

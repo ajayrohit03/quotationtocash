@@ -375,6 +375,12 @@ model LineItem {
   foreignRate     Decimal? @map("foreign_rate") @db.Decimal(12, 2)
   exchangeRate    Decimal? @map("exchange_rate") @db.Decimal(12, 6)
 
+  // Line-item-scope custom field values — same snapshot shape and same
+  // freeze-at-save reasoning as Document.customFieldValues (see that
+  // field's comment). Array<CustomFieldValueSnapshot>, see
+  // lib/documents/custom-fields.ts.
+  customFieldValues Json @default("[]") @map("custom_field_values")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

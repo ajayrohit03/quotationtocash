@@ -16,7 +16,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AddLineItemMenu } from "./add-line-item-menu";
-import type { BuilderProduct, LocalLineItem } from "./types";
+import type {
+  BuilderProduct,
+  LocalLineItem,
+  BuilderCustomFieldDefinition,
+} from "./types";
 
 let keyCounter = 0;
 function nextKey() {
@@ -33,6 +37,7 @@ export function LineItemsEditor({
   products,
   gstEnabled,
   gstDefaultRate,
+  customFieldDefinitions,
   onChange,
   disabled = false,
 }: {
@@ -40,9 +45,13 @@ export function LineItemsEditor({
   products: BuilderProduct[];
   gstEnabled: boolean;
   gstDefaultRate: number | null;
+  customFieldDefinitions: BuilderCustomFieldDefinition[];
   onChange: (items: LocalLineItem[]) => void;
   disabled?: boolean;
 }) {
+  const sortedCustomFieldDefinitions = [...customFieldDefinitions].sort(
+    (a, b) => a.sortOrder - b.sortOrder,
+  );
   const productsById = new Map(products.map((p) => [p.id, p]));
   // Rows with the foreign-currency inputs visible — separate from
   // whether foreignCurrency actually has a value, so opening the block
@@ -85,6 +94,43 @@ export function LineItemsEditor({
     updateItem(key, { foreignCurrency: null, foreignRate: null, exchangeRate: null });
   }
 
+  // Upserts (or removes, if blanked) one definition's value within a
+  // row's customFieldValues array — same "skip if blank" rule as the
+  // document-level fields (see document-builder.tsx's customFieldValues
+  // useMemo): a cleared input means that field isn't saved at all for
+  // this row, not saved with an empty value.
+  function updateLineItemCustomField(
+    key: string,
+    def: BuilderCustomFieldDefinition,
+    rawValue: string,
+  ) {
+    onChange(
+      items.map((item) => {
+        if (item.key !== key) return item;
+        const withoutThisField = item.customFieldValues.filter(
+          (v) => v.definitionId !== def.id,
+        );
+        const trimmed = rawValue.trim();
+        if (!trimmed) {
+          return { ...item, customFieldValues: withoutThisField };
+        }
+        return {
+          ...item,
+          customFieldValues: [
+            ...withoutThisField,
+            {
+              definitionId: def.id,
+              label: def.label,
+              type: def.type,
+              value: def.type === "number" ? Number(trimmed) : trimmed,
+              sortOrder: def.sortOrder,
+            },
+          ],
+        };
+      }),
+    );
+  }
+
   function removeItem(key: string) {
     onChange(items.filter((item) => item.key !== key));
   }
@@ -111,6 +157,7 @@ export function LineItemsEditor({
         foreignCurrency: null,
         foreignRate: null,
         exchangeRate: null,
+        customFieldValues: [],
       },
     ]);
   }
@@ -130,6 +177,7 @@ export function LineItemsEditor({
         foreignCurrency: null,
         foreignRate: null,
         exchangeRate: null,
+        customFieldValues: [],
       },
     ]);
   }
@@ -141,6 +189,11 @@ export function LineItemsEditor({
           <TableHeader>
             <TableRow>
               <TableHead className="min-w-56">Item &amp; description</TableHead>
+              {sortedCustomFieldDefinitions.map((def) => (
+                <TableHead key={def.id} className="w-32">
+                  {def.label}
+                </TableHead>
+              ))}
               <TableHead className="w-20 text-right">Qty</TableHead>
               <TableHead className="w-28 text-right">Rate</TableHead>
               <TableHead className="w-24 text-right">Discount %</TableHead>
@@ -155,7 +208,9 @@ export function LineItemsEditor({
             {items.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={gstEnabled ? 7 : 6}
+                  colSpan={
+                    (gstEnabled ? 7 : 6) + sortedCustomFieldDefinitions.length
+                  }
                   className="py-8 text-center text-sm text-muted-foreground"
                 >
                   No items yet — add a product or a custom line below.
@@ -210,6 +265,31 @@ export function LineItemsEditor({
                         />
                       </div>
                     </TableCell>
+                    {sortedCustomFieldDefinitions.map((def) => {
+                      const current = item.customFieldValues.find(
+                        (v) => v.definitionId === def.id,
+                      );
+                      return (
+                        <TableCell key={def.id} className="align-top">
+                          <Input
+                            type={
+                              def.type === "number"
+                                ? "number"
+                                : def.type === "date"
+                                  ? "date"
+                                  : "text"
+                            }
+                            step={def.type === "number" ? "any" : undefined}
+                            autoComplete="off"
+                            value={current?.value ?? ""}
+                            onChange={(e) =>
+                              updateLineItemCustomField(item.key, def, e.target.value)
+                            }
+                            disabled={disabled}
+                          />
+                        </TableCell>
+                      );
+                    })}
                     <TableCell className="align-top">
                       <Input
                         type="number"

@@ -1,3 +1,5 @@
+import type { CustomFieldValueSnapshot } from "@/lib/documents/custom-fields";
+
 // Prisma's Decimal instances don't survive the Server -> Client Component
 // boundary intact (only their internal digit/exponent/sign fields
 // serialize; the prototype methods like .toString()/.greaterThan() are
@@ -35,4 +37,21 @@ export type LocalLineItem = {
   foreignCurrency: string | null;
   foreignRate: number | null;
   exchangeRate: number | null;
+  // Line-item-scope custom field values for this row — same shape as
+  // Document.customFieldValues, see lib/documents/custom-fields.ts.
+  customFieldValues: CustomFieldValueSnapshot[];
+};
+
+// Only what the builder needs to render an input and construct a fresh
+// CustomFieldValueSnapshot on save — already filtered server-side to
+// active and appliesTo this document's type (see
+// document-editor-page.tsx). Shared by document-builder.tsx (document
+// scope) and line-items-editor.tsx (line-item scope) — kept here rather
+// than defined in document-builder.tsx to avoid a circular import
+// between the two.
+export type BuilderCustomFieldDefinition = {
+  id: string;
+  label: string;
+  type: "text" | "number" | "date";
+  sortOrder: number;
 };

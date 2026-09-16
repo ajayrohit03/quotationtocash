@@ -32,7 +32,11 @@ import {
 import { CustomerPicker } from "./customer-picker";
 import { LineItemsEditor, newLineItemKey } from "./line-items-editor";
 import { TotalsSummary } from "./totals-summary";
-import type { BuilderProduct, LocalLineItem } from "./types";
+import type {
+  BuilderProduct,
+  LocalLineItem,
+  BuilderCustomFieldDefinition,
+} from "./types";
 
 export type BuilderBusiness = {
   gstEnabled: boolean;
@@ -40,16 +44,9 @@ export type BuilderBusiness = {
   placeOfSupply: string | null;
 };
 
-// Only what the builder needs to render an input and construct a fresh
-// CustomFieldValueSnapshot on save — already filtered server-side to
-// active, document-scope, and appliesTo this document's type (see
-// document-editor-page.tsx).
-export type BuilderCustomFieldDefinition = {
-  id: string;
-  label: string;
-  type: "text" | "number" | "date";
-  sortOrder: number;
-};
+// Re-exported from ./types (not defined here) so line-items-editor.tsx
+// can use the same type without a circular import between the two.
+export type { BuilderCustomFieldDefinition } from "./types";
 
 export type BuilderLineItem = Omit<LocalLineItem, "key">;
 
@@ -106,12 +103,14 @@ export function DocumentBuilder({
   customers,
   products,
   customFieldDefinitions,
+  lineItemCustomFieldDefinitions,
 }: {
   document: BuilderDocument;
   business: BuilderBusiness;
   customers: Customer[];
   products: BuilderProduct[];
   customFieldDefinitions: BuilderCustomFieldDefinition[];
+  lineItemCustomFieldDefinitions: BuilderCustomFieldDefinition[];
 }) {
   const router = useRouter();
   const isQuotation = document.type === "quotation";
@@ -290,6 +289,7 @@ export function DocumentBuilder({
             foreignCurrency: item.foreignCurrency,
             foreignRate: item.foreignRate,
             exchangeRate: item.exchangeRate,
+            customFieldValues: item.customFieldValues,
           })),
         }),
       });
@@ -553,6 +553,7 @@ export function DocumentBuilder({
                 products={products}
                 gstEnabled={business.gstEnabled}
                 gstDefaultRate={business.gstDefaultRate}
+                customFieldDefinitions={lineItemCustomFieldDefinitions}
                 onChange={setLineItems}
                 disabled={!editable}
               />

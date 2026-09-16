@@ -22,6 +22,7 @@ export type PreviewLineItem = {
   foreignCurrency: string | null;
   foreignRate: number | null;
   exchangeRate: number | null;
+  customFieldValues: CustomFieldValueSnapshot[];
 };
 
 export type PreviewTotals = {

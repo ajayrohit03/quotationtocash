@@ -13,6 +13,7 @@ import {
 } from "@/lib/documents/custom-fields";
 import { isSameState } from "@/lib/tax/calculateGST";
 import { groupTaxByRate } from "@/lib/tax/groupTaxByRate";
+import { resolveLineItemColumns } from "@/lib/documents/line-item-columns";
 import type {
   PreviewAppearance,
   PreviewLineItem,
@@ -99,6 +100,7 @@ export function DocumentRender({
   const bankLines = paymentDetailsLines(business);
   const sameState = isSameState(business.placeOfSupply, customer.state);
   const taxBuckets = showTax ? groupTaxByRate(lineItems, sameState) : [];
+  const lineItemColumns = resolveLineItemColumns(lineItems);
 
   return (
     <div
@@ -205,6 +207,11 @@ export function DocumentRender({
             style={{ background: style.tableHeadBg, color: style.tableHeadColor }}
           >
             <div className="flex-1">DESCRIPTION</div>
+            {lineItemColumns.map((column) => (
+              <div key={column.id} className="w-24 px-2">
+                {column.label.toUpperCase()}
+              </div>
+            ))}
             <div className="w-16 text-right">QTY</div>
             <div className="w-24 text-right">RATE</div>
             {showTax && <div className="w-16 text-right">TAX</div>}
@@ -223,6 +230,16 @@ export function DocumentRender({
                   </div>
                 )}
               </div>
+              {lineItemColumns.map((column) => {
+                const entry = item.customFieldValues.find(
+                  (v) => v.definitionId === column.id,
+                );
+                return (
+                  <div key={column.id} className="w-24 px-2 text-[#3D4453]">
+                    {entry ? formatCustomFieldValue(entry) : "—"}
+                  </div>
+                );
+              })}
               <div className="w-16 text-right">{item.qty}</div>
               <div className="w-24 text-right">
                 {formatCurrency(item.rate, currency)}

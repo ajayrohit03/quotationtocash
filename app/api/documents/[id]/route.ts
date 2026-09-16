@@ -166,6 +166,39 @@ export async function PATCH(
       }
     }
 
+    // Same check as the document-level block above, applied per row —
+    // every definitionId referenced across all line items' custom field
+    // values must be a real line-item-scope definition on this business.
+    if (lineItems && lineItems.length > 0) {
+      const lineItemDefinitionIds = [
+        ...new Set(
+          lineItems.flatMap((item) =>
+            (item.customFieldValues ?? []).map((v) => v.definitionId),
+          ),
+        ),
+      ];
+      if (lineItemDefinitionIds.length > 0) {
+        const validLineItemDefinitions = await prisma.customFieldDefinition.findMany({
+          where: {
+            id: { in: lineItemDefinitionIds },
+            businessId: business.id,
+            scope: "lineItem",
+          },
+          select: { id: true },
+        });
+        const validLineItemIds = new Set(validLineItemDefinitions.map((d) => d.id));
+        const hasInvalidLineItemField = lineItems.some((item) =>
+          (item.customFieldValues ?? []).some((v) => !validLineItemIds.has(v.definitionId)),
+        );
+        if (hasInvalidLineItemField) {
+          return NextResponse.json(
+            { error: "One or more line item custom fields are invalid" },
+            { status: 400 },
+          );
+        }
+      }
+    }
+
     const sameState = isSameState(business.placeOfSupply, customer.state);
     const totals = lineItems
       ? calculateDocumentTotals(
@@ -197,6 +230,7 @@ export async function PATCH(
               foreignCurrency: item.foreignCurrency ?? null,
               foreignRate: item.foreignRate ?? null,
               exchangeRate: item.exchangeRate ?? null,
+              customFieldValues: item.customFieldValues ?? [],
             })),
           });
         }

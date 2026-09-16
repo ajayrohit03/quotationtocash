@@ -6,6 +6,7 @@ import { paymentDetailsLines } from "@/lib/documents/payment-details";
 import { formatCustomFieldValue } from "@/lib/documents/custom-fields";
 import { isSameState } from "@/lib/tax/calculateGST";
 import { groupTaxByRate } from "@/lib/tax/groupTaxByRate";
+import { resolveLineItemColumns } from "@/lib/documents/line-item-columns";
 
 // Mirrors components/documents/document-render.tsx section-for-section —
 // same data, same conditionals — but react-pdf can't render arbitrary
@@ -139,6 +140,7 @@ export function DocumentPdf({
   const bankLines = paymentDetailsLines(business);
   const sameState = isSameState(business.placeOfSupply, customer.state);
   const taxBuckets = showTax ? groupTaxByRate(document.lineItems, sameState) : [];
+  const lineItemColumns = resolveLineItemColumns(document.lineItems);
 
   return (
     <Document title={`${document.number}.pdf`}>
@@ -232,6 +234,11 @@ export function DocumentPdf({
             ]}
           >
             <Text style={{ flex: 1 }}>DESCRIPTION</Text>
+            {lineItemColumns.map((column) => (
+              <Text key={column.id} style={{ width: 60, paddingRight: 6 }}>
+                {column.label.toUpperCase()}
+              </Text>
+            ))}
             <Text style={{ width: 40, textAlign: "right" }}>QTY</Text>
             <Text style={{ width: 65, textAlign: "right" }}>RATE</Text>
             {showTax && <Text style={{ width: 40, textAlign: "right" }}>TAX</Text>}
@@ -243,6 +250,16 @@ export function DocumentPdf({
                 <Text style={styles.itemName}>{item.name}</Text>
                 {item.description && <Text style={styles.itemDesc}>{item.description}</Text>}
               </View>
+              {lineItemColumns.map((column) => {
+                const entry = item.customFieldValues.find(
+                  (v) => v.definitionId === column.id,
+                );
+                return (
+                  <Text key={column.id} style={{ width: 60, paddingRight: 6, color: COLORS.body }}>
+                    {entry ? formatCustomFieldValue(entry) : "—"}
+                  </Text>
+                );
+              })}
               <Text style={{ width: 40, textAlign: "right" }}>{item.qty}</Text>
               <View style={{ width: 65 }}>
                 <Text style={{ textAlign: "right" }}>

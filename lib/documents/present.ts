@@ -66,6 +66,8 @@ export function toPreviewDocument(
       foreignCurrency: item.foreignCurrency,
       foreignRate: item.foreignRate == null ? null : Number(item.foreignRate),
       exchangeRate: item.exchangeRate == null ? null : Number(item.exchangeRate),
+      customFieldValues:
+        item.customFieldValues as unknown as CustomFieldValueSnapshot[],
     })),
     totals: {
       subtotal: Number(document.subtotal),

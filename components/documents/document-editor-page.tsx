@@ -39,27 +39,39 @@ export async function DocumentEditorPage({
     notFound();
   }
 
-  const [customers, products, customFieldDefinitions] = await Promise.all([
-    prisma.customer.findMany({
-      where: { businessId: business.id },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.product.findMany({
-      where: { businessId: business.id },
-      orderBy: { createdAt: "desc" },
-    }),
-    // Document-scope, active, and either applies to both types (null) or
-    // this document's own type specifically.
-    prisma.customFieldDefinition.findMany({
-      where: {
-        businessId: business.id,
-        scope: "document",
-        isActive: true,
-        OR: [{ appliesTo: null }, { appliesTo: type }],
-      },
-      orderBy: { sortOrder: "asc" },
-    }),
-  ]);
+  const [customers, products, customFieldDefinitions, lineItemCustomFieldDefinitions] =
+    await Promise.all([
+      prisma.customer.findMany({
+        where: { businessId: business.id },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.product.findMany({
+        where: { businessId: business.id },
+        orderBy: { createdAt: "desc" },
+      }),
+      // Document-scope, active, and either applies to both types (null) or
+      // this document's own type specifically.
+      prisma.customFieldDefinition.findMany({
+        where: {
+          businessId: business.id,
+          scope: "document",
+          isActive: true,
+          OR: [{ appliesTo: null }, { appliesTo: type }],
+        },
+        orderBy: { sortOrder: "asc" },
+      }),
+      // Same filter, line-item scope — one extra column per active
+      // definition in the builder's line-items table.
+      prisma.customFieldDefinition.findMany({
+        where: {
+          businessId: business.id,
+          scope: "lineItem",
+          isActive: true,
+          OR: [{ appliesTo: null }, { appliesTo: type }],
+        },
+        orderBy: { sortOrder: "asc" },
+      }),
+    ]);
 
   // Decimal instances don't survive the Server -> Client boundary intact
   // (see components/documents/types.ts) — convert every Decimal field to
@@ -91,6 +103,8 @@ export async function DocumentEditorPage({
       foreignCurrency: item.foreignCurrency,
       foreignRate: item.foreignRate == null ? null : Number(item.foreignRate),
       exchangeRate: item.exchangeRate == null ? null : Number(item.exchangeRate),
+      customFieldValues:
+        item.customFieldValues as unknown as CustomFieldValueSnapshot[],
     })),
     totals: {
       subtotal: Number(document.subtotal),
@@ -128,6 +142,14 @@ export async function DocumentEditorPage({
       sortOrder: def.sortOrder,
     }));
 
+  const builderLineItemCustomFieldDefinitions: BuilderCustomFieldDefinition[] =
+    lineItemCustomFieldDefinitions.map((def) => ({
+      id: def.id,
+      label: def.label,
+      type: def.type,
+      sortOrder: def.sortOrder,
+    }));
+
   return (
     // Keyed on the document id for the same reason as DocumentPreview
     // (see document-preview-page.tsx): without it, a client-side
@@ -143,6 +165,7 @@ export async function DocumentEditorPage({
       customers={customers}
       products={builderProducts}
       customFieldDefinitions={builderCustomFieldDefinitions}
+      lineItemCustomFieldDefinitions={builderLineItemCustomFieldDefinitions}
     />
   );
 }
