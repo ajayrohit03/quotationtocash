@@ -1,4 +1,4 @@
-import type { Business, BusinessRole } from "@prisma/client";
+import type { Business, BusinessRole, CustomFieldDefinition } from "@prisma/client";
 
 // Decimal instances don't survive the Server -> Client Component
 // boundary intact (see components/documents/types.ts for the same rule
@@ -43,3 +43,7 @@ export type SettingsInvitation = {
   createdAt: Date;
   expiresAt: Date;
 };
+
+// No Decimal fields — plain enough to pass to a Client Component
+// directly, same as SettingsMember above.
+export type SettingsCustomFieldDefinition = CustomFieldDefinition;

@@ -43,6 +43,22 @@ enum DocumentType {
   @@map("document_type")
 }
 
+// See docs/custom-fields-and-multicurrency-design.md §1a.
+enum CustomFieldType {
+  text
+  number
+  date
+
+  @@map("custom_field_type")
+}
+
+enum CustomFieldScope {
+  document
+  lineItem
+
+  @@map("custom_field_scope")
+}
+
 enum DocumentTemplate {
   classic
   modern
@@ -100,12 +116,13 @@ model Business {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  members          BusinessMember[]
-  customers        Customer[]
-  products         Product[]
-  documents        Document[]
-  documentCounters DocumentCounter[]
-  invitations      Invitation[]
+  members                BusinessMember[]
+  customers              Customer[]
+  products               Product[]
+  documents              Document[]
+  documentCounters       DocumentCounter[]
+  invitations            Invitation[]
+  customFieldDefinitions CustomFieldDefinition[]
 
   @@map("businesses")
 }
@@ -361,6 +378,33 @@ model DocumentCounter {
 
   @@unique([businessId, type, year])
   @@map("document_counters")
+}
+
+// See docs/custom-fields-and-multicurrency-design.md §1a. The
+// management/structural side — CRUD in Settings. Never referenced live
+// by a saved document: every Document/LineItem freezes a snapshot of
+// {definitionId, label, type, value, sortOrder} at save time (its own
+// customFieldValues Json column), so renaming or archiving a definition
+// here never touches a document that already used it.
+model CustomFieldDefinition {
+  id         String           @id @default(uuid())
+  businessId String           @map("business_id")
+  label      String
+  type       CustomFieldType
+  scope      CustomFieldScope
+  // Null = applies to both quotations and invoices.
+  appliesTo  DocumentType?    @map("applies_to")
+  sortOrder  Int              @default(0) @map("sort_order")
+  // Soft-delete only — same rationale as BusinessMember.isActive.
+  isActive   Boolean          @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, scope])
+  @@map("custom_field_definitions")
 }
 
 // See docs/payment-tracking-design.md. The auditable ledger — one row

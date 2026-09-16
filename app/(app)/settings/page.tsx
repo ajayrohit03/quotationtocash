@@ -2,7 +2,11 @@ import { prisma } from "@/lib/db/prisma";
 import { requireBusinessForPage } from "@/lib/auth/page";
 import { listInvitationsForBusiness } from "@/lib/invitations/service";
 import { SettingsTabs } from "./settings-tabs";
-import { toSettingsBusiness, type SettingsMember, type SettingsInvitation } from "./types";
+import {
+  toSettingsBusiness,
+  type SettingsMember,
+  type SettingsInvitation,
+} from "./types";
 
 export default async function SettingsPage() {
   const { business, membership, user } = await requireBusinessForPage();
@@ -15,7 +19,7 @@ export default async function SettingsPage() {
   // Only fetched for an owner/admin — matches the underlying APIs, which
   // 403 for anyone else. Independent of each other, so run concurrently
   // rather than one after the other.
-  const [rawMembers, rawInvitations] = await Promise.all([
+  const [rawMembers, rawInvitations, customFieldDefinitions] = await Promise.all([
     isAdmin
       ? prisma.businessMember.findMany({
           where: { businessId: business.id },
@@ -31,6 +35,14 @@ export default async function SettingsPage() {
         })
       : Promise.resolve(null),
     isAdmin ? listInvitationsForBusiness(business.id) : Promise.resolve(null),
+    // organization.manage grants this to owner + admin, same population
+    // as isAdmin below — see lib/auth/permissions.ts.
+    isAdmin
+      ? prisma.customFieldDefinition.findMany({
+          where: { businessId: business.id },
+          orderBy: [{ scope: "asc" }, { sortOrder: "asc" }],
+        })
+      : Promise.resolve(null),
   ]);
 
   const members: SettingsMember[] | null = rawMembers;
@@ -61,6 +73,7 @@ export default async function SettingsPage() {
         user={{ name: user.name, email: user.email }}
         members={members}
         invitations={invitations}
+        customFieldDefinitions={customFieldDefinitions}
       />
     </div>
   );

@@ -2,14 +2,19 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Building2, Percent, Landmark, FileText, Palette, CircleUser, Users } from "lucide-react";
+import { Building2, Percent, Landmark, FileText, ListPlus, Palette, CircleUser, Users } from "lucide-react";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import type { SettingsBusiness, SettingsMember, SettingsInvitation } from "./types";
+import type {
+  SettingsBusiness,
+  SettingsMember,
+  SettingsInvitation,
+  SettingsCustomFieldDefinition,
+} from "./types";
 
 // Each tab is its own chunk, fetched only when actually selected — base-ui's
 // Tabs.Panel doesn't keep inactive panels mounted (keepMounted defaults to
@@ -26,6 +31,9 @@ const PaymentTab = dynamic(() =>
 const DocumentsTab = dynamic(() =>
   import("./documents-tab").then((m) => m.DocumentsTab),
 );
+const CustomFieldsTab = dynamic(() =>
+  import("./custom-fields-tab").then((m) => m.CustomFieldsTab),
+);
 const AppearanceTab = dynamic(() =>
   import("./appearance-tab").then((m) => m.AppearanceTab),
 );
@@ -34,11 +42,18 @@ const AccountTab = dynamic(() =>
 );
 const TeamTab = dynamic(() => import("./team-tab").then((m) => m.TeamTab));
 
-const TABS = [
+const BASE_TABS = [
   { value: "business", label: "Business profile", icon: Building2 },
   { value: "tax", label: "Tax", icon: Percent },
   { value: "payment", label: "Payment details", icon: Landmark },
   { value: "documents", label: "Documents", icon: FileText },
+];
+const CUSTOM_FIELDS_TAB = {
+  value: "custom-fields",
+  label: "Custom fields",
+  icon: ListPlus,
+};
+const REMAINING_TABS = [
   { value: "appearance", label: "Appearance", icon: Palette },
   { value: "account", label: "Account", icon: CircleUser },
 ];
@@ -50,6 +65,7 @@ export function SettingsTabs({
   user,
   members,
   invitations,
+  customFieldDefinitions,
 }: {
   business: SettingsBusiness;
   isOwner: boolean;
@@ -57,6 +73,7 @@ export function SettingsTabs({
   user: { name: string | null; email: string };
   members: SettingsMember[] | null;
   invitations: SettingsInvitation[] | null;
+  customFieldDefinitions: SettingsCustomFieldDefinition[] | null;
 }) {
   const [current, setCurrent] = useState(business);
   // Team management is Admin-delegable (isAdmin), same as Business
@@ -64,9 +81,16 @@ export function SettingsTabs({
   // underlying APIs 403 for anyone else, so the tab itself is only
   // offered when it'll actually work rather than rendering a form that's
   // guaranteed to fail on submit.
-  const tabs = isAdmin && members && invitations
-    ? [...TABS, { value: "team", label: "Team", icon: Users }]
-    : TABS;
+  const tabs = isAdmin
+    ? [
+        ...BASE_TABS,
+        CUSTOM_FIELDS_TAB,
+        ...REMAINING_TABS,
+        ...(members && invitations
+          ? [{ value: "team", label: "Team", icon: Users }]
+          : []),
+      ]
+    : BASE_TABS.concat(REMAINING_TABS);
 
   return (
     <Tabs
@@ -108,6 +132,11 @@ export function SettingsTabs({
             onUpdated={setCurrent}
           />
         </TabsContent>
+        {isAdmin && customFieldDefinitions && (
+          <TabsContent value="custom-fields">
+            <CustomFieldsTab definitions={customFieldDefinitions} readOnly={false} />
+          </TabsContent>
+        )}
         <TabsContent value="appearance">
           <AppearanceTab
             business={current}
