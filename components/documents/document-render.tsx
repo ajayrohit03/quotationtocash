@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import type { DocumentType } from "@prisma/client";
 import { formatDateIST } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
@@ -10,6 +11,8 @@ import {
   formatCustomFieldValue,
   type CustomFieldValueSnapshot,
 } from "@/lib/documents/custom-fields";
+import { isSameState } from "@/lib/tax/calculateGST";
+import { groupTaxByRate } from "@/lib/tax/groupTaxByRate";
 import type {
   PreviewAppearance,
   PreviewLineItem,
@@ -94,6 +97,8 @@ export function DocumentRender({
   const secondaryDate = isQuotation ? validUntil : dueDate;
   const terms = isQuotation ? validityTerms : paymentTerms;
   const bankLines = paymentDetailsLines(business);
+  const sameState = isSameState(business.placeOfSupply, customer.state);
+  const taxBuckets = showTax ? groupTaxByRate(lineItems, sameState) : [];
 
   return (
     <div
@@ -245,15 +250,35 @@ export function DocumentRender({
                   label="Taxable amount"
                   value={formatCurrency(totals.taxableAmount, currency)}
                 />
-                {totals.cgst > 0 && (
-                  <TotalRow label="CGST" value={formatCurrency(totals.cgst, currency)} />
-                )}
-                {totals.sgst > 0 && (
-                  <TotalRow label="SGST" value={formatCurrency(totals.sgst, currency)} />
-                )}
-                {totals.igst > 0 && (
-                  <TotalRow label="IGST" value={formatCurrency(totals.igst, currency)} />
-                )}
+                {taxBuckets.map((bucket) => {
+                  // Only one rate in use (the overwhelmingly common
+                  // case) renders identically to before this fix — the
+                  // per-rate suffix only appears once there's a second
+                  // bucket to actually distinguish it from.
+                  const suffix = taxBuckets.length > 1 ? ` @${bucket.rate}%` : "";
+                  return (
+                    <Fragment key={bucket.rate}>
+                      {bucket.cgst > 0 && (
+                        <TotalRow
+                          label={`CGST${suffix}`}
+                          value={formatCurrency(bucket.cgst, currency)}
+                        />
+                      )}
+                      {bucket.sgst > 0 && (
+                        <TotalRow
+                          label={`SGST${suffix}`}
+                          value={formatCurrency(bucket.sgst, currency)}
+                        />
+                      )}
+                      {bucket.igst > 0 && (
+                        <TotalRow
+                          label={`IGST${suffix}`}
+                          value={formatCurrency(bucket.igst, currency)}
+                        />
+                      )}
+                    </Fragment>
+                  );
+                })}
               </>
             )}
             <div

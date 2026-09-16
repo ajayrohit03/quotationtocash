@@ -4,6 +4,8 @@ import { formatCurrency } from "@/lib/format";
 import type { PreviewDocument } from "@/components/documents/preview-types";
 import { paymentDetailsLines } from "@/lib/documents/payment-details";
 import { formatCustomFieldValue } from "@/lib/documents/custom-fields";
+import { isSameState } from "@/lib/tax/calculateGST";
+import { groupTaxByRate } from "@/lib/tax/groupTaxByRate";
 
 // Mirrors components/documents/document-render.tsx section-for-section —
 // same data, same conditionals — but react-pdf can't render arbitrary
@@ -135,6 +137,8 @@ export function DocumentPdf({
   const terms = isQuotation ? document.validityTerms : document.paymentTerms;
   const { business, customer } = document;
   const bankLines = paymentDetailsLines(business);
+  const sameState = isSameState(business.placeOfSupply, customer.state);
+  const taxBuckets = showTax ? groupTaxByRate(document.lineItems, sameState) : [];
 
   return (
     <Document title={`${document.number}.pdf`}>
@@ -270,24 +274,31 @@ export function DocumentPdf({
                 <Text style={styles.totalLabel}>Taxable amount</Text>
                 <Text>{formatCurrency(document.totals.taxableAmount, document.currency)}</Text>
               </View>
-              {document.totals.cgst > 0 && (
-                <View style={styles.totalRow}>
-                  <Text style={styles.totalLabel}>CGST</Text>
-                  <Text>{formatCurrency(document.totals.cgst, document.currency)}</Text>
-                </View>
-              )}
-              {document.totals.sgst > 0 && (
-                <View style={styles.totalRow}>
-                  <Text style={styles.totalLabel}>SGST</Text>
-                  <Text>{formatCurrency(document.totals.sgst, document.currency)}</Text>
-                </View>
-              )}
-              {document.totals.igst > 0 && (
-                <View style={styles.totalRow}>
-                  <Text style={styles.totalLabel}>IGST</Text>
-                  <Text>{formatCurrency(document.totals.igst, document.currency)}</Text>
-                </View>
-              )}
+              {taxBuckets.map((bucket) => {
+                const suffix = taxBuckets.length > 1 ? ` @${bucket.rate}%` : "";
+                return (
+                  <View key={bucket.rate}>
+                    {bucket.cgst > 0 && (
+                      <View style={styles.totalRow}>
+                        <Text style={styles.totalLabel}>{`CGST${suffix}`}</Text>
+                        <Text>{formatCurrency(bucket.cgst, document.currency)}</Text>
+                      </View>
+                    )}
+                    {bucket.sgst > 0 && (
+                      <View style={styles.totalRow}>
+                        <Text style={styles.totalLabel}>{`SGST${suffix}`}</Text>
+                        <Text>{formatCurrency(bucket.sgst, document.currency)}</Text>
+                      </View>
+                    )}
+                    {bucket.igst > 0 && (
+                      <View style={styles.totalRow}>
+                        <Text style={styles.totalLabel}>{`IGST${suffix}`}</Text>
+                        <Text>{formatCurrency(bucket.igst, document.currency)}</Text>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
             </>
           )}
           <View style={[styles.grandTotalRow, { backgroundColor: style.totalRowBg }]}>
