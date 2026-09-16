@@ -332,6 +332,34 @@ export function DocumentBuilder({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snapshot, editable]);
 
+  // Real bug this fixes: the effect above's cleanup runs on every
+  // keystroke (correct — it's what makes debouncing work) *and* on
+  // unmount, and previously did the same thing either way: silently
+  // discard the pending timer. On unmount specifically (e.g. clicking
+  // through to Preview, a client-side navigation that unmounts this
+  // component), that meant any edit made within the last
+  // AUTOSAVE_DELAY_MS was lost with no save ever firing for it — found
+  // via a real document where a line item's foreignCurrency went
+  // unsaved while foreignRate/exchangeRate (edited slightly earlier,
+  // already flushed by an earlier debounce cycle) persisted correctly.
+  // This second effect's cleanup runs *only* on unmount ([] deps), and
+  // flushes rather than discards. `saveRef` always holds the latest
+  // render's `save` closure (redefined every render) — an `[]`-deps
+  // cleanup would otherwise close over the very first render's `save`,
+  // which reads stale state.
+  const saveRef = useRef(save);
+  useEffect(() => {
+    saveRef.current = save;
+  });
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+        saveRef.current();
+      }
+    };
+  }, []);
+
   async function handleManualSave() {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     await save();
