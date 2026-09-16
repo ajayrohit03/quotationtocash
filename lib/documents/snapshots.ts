@@ -48,6 +48,10 @@ export type BusinessSnapshot = {
   accountNumber: string | null;
   ifscCode: string | null;
   upiId: string | null;
+  pan: string | null;
+  tan: string | null;
+  cin: string | null;
+  swiftCode: string | null;
 };
 
 export function buildBusinessSnapshot(business: Business): BusinessSnapshot {
@@ -70,5 +74,9 @@ export function buildBusinessSnapshot(business: Business): BusinessSnapshot {
     accountNumber: business.accountNumber,
     ifscCode: business.ifscCode,
     upiId: business.upiId,
+    pan: business.pan,
+    tan: business.tan,
+    cin: business.cin,
+    swiftCode: business.swiftCode,
   };
 }

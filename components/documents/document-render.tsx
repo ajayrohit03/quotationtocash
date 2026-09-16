@@ -14,6 +14,7 @@ import {
 import { isSameState } from "@/lib/tax/calculateGST";
 import { groupTaxByRate } from "@/lib/tax/groupTaxByRate";
 import { resolveLineItemColumns } from "@/lib/documents/line-item-columns";
+import { businessIdentityLine } from "@/lib/documents/business-identity";
 import type {
   PreviewAppearance,
   PreviewLineItem,
@@ -101,6 +102,7 @@ export function DocumentRender({
   const sameState = isSameState(business.placeOfSupply, customer.state);
   const taxBuckets = showTax ? groupTaxByRate(lineItems, sameState) : [];
   const lineItemColumns = resolveLineItemColumns(lineItems);
+  const identityLine = businessIdentityLine(business);
 
   return (
     <div
@@ -136,6 +138,11 @@ export function DocumentRender({
             {showGstinRow && business.gstin && (
               <div className="mt-1.5 font-mono text-[11.5px] text-[#565E72]">
                 GSTIN {business.gstin}
+              </div>
+            )}
+            {identityLine && (
+              <div className="mt-1.5 font-mono text-[11.5px] text-[#565E72]">
+                {identityLine}
               </div>
             )}
           </div>

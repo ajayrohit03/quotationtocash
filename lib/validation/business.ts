@@ -90,6 +90,23 @@ export const paymentDetailsSchema = z.object({
 
 export type PaymentDetailsInput = z.infer<typeof paymentDetailsSchema>;
 
+// Business-identity registration numbers — same tier as GST (owner-only
+// route, app/api/business/identity/route.ts), but deliberately kept
+// independent of gstSetupSchema/gstEnabled: a business can have a
+// PAN/TAN/CIN/SWIFT code with GST off, and toggling GST shouldn't touch
+// these. Soft length hints only (10/10/21/8-11 chars respectively) shown
+// in the UI — not enforced here, same reasoning as IFSC on
+// paymentDetailsSchema: a formatting quibble shouldn't block saving a
+// real registration number the business already has correct.
+export const businessIdentitySchema = z.object({
+  pan: z.string().trim().max(20).nullable().optional(),
+  tan: z.string().trim().max(20).nullable().optional(),
+  cin: z.string().trim().max(30).nullable().optional(),
+  swiftCode: z.string().trim().max(20).nullable().optional(),
+});
+
+export type BusinessIdentityInput = z.infer<typeof businessIdentitySchema>;
+
 export const templateSetupSchema = z.object({
   documentTemplate: z.enum(["classic", "modern", "minimal"]),
 });

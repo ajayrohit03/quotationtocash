@@ -89,6 +89,15 @@ model Business {
   placeOfSupply    String?  @map("place_of_supply")
   registrationType String?  @map("registration_type")
 
+  // Business-identity registration numbers — same tier as gstin above
+  // (owner-only route, see app/api/business/identity/route.ts),
+  // independent of gstEnabled: a business can have these without GST
+  // being on. All optional; never required to create or send a document.
+  pan       String?
+  tan       String?
+  cin       String?
+  swiftCode String? @map("swift_code")
+
   // Bank/payment details shown in documents' PAYMENT DETAILS block — all
   // optional, same "financial weight" tier as GST (owner-only route, see
   // app/api/business/payment-details/route.ts), never required to create

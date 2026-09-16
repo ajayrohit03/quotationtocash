@@ -7,6 +7,7 @@ import { formatCustomFieldValue } from "@/lib/documents/custom-fields";
 import { isSameState } from "@/lib/tax/calculateGST";
 import { groupTaxByRate } from "@/lib/tax/groupTaxByRate";
 import { resolveLineItemColumns } from "@/lib/documents/line-item-columns";
+import { businessIdentityLine } from "@/lib/documents/business-identity";
 
 // Mirrors components/documents/document-render.tsx section-for-section —
 // same data, same conditionals — but react-pdf can't render arbitrary
@@ -141,6 +142,7 @@ export function DocumentPdf({
   const sameState = isSameState(business.placeOfSupply, customer.state);
   const taxBuckets = showTax ? groupTaxByRate(document.lineItems, sameState) : [];
   const lineItemColumns = resolveLineItemColumns(document.lineItems);
+  const identityLine = businessIdentityLine(business);
 
   return (
     <Document title={`${document.number}.pdf`}>
@@ -168,6 +170,7 @@ export function DocumentPdf({
             {showGstinRow && business.gstin && (
               <Text style={styles.gstinLine}>GSTIN {business.gstin}</Text>
             )}
+            {identityLine && <Text style={styles.gstinLine}>{identityLine}</Text>}
           </View>
           <View style={{ alignItems: "flex-end" }}>
             <Text style={[styles.docTitle, { color: style.docTitleColor }]}>

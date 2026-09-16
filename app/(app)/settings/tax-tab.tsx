@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { gstSetupSchema } from "@/lib/validation/business";
+import { gstSetupSchema, businessIdentitySchema } from "@/lib/validation/business";
 import { toSettingsBusiness, type SettingsBusiness } from "./types";
 import {
   GST_REGISTRATION_TYPES,
@@ -42,6 +42,15 @@ export function TaxTab({
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+
+  // Independent of GST — see businessIdentitySchema's own comment for
+  // why these live on their own PATCH /api/business/identity rather
+  // than folding into gstSetupSchema's discriminated union above.
+  const [pan, setPan] = useState(business.pan ?? "");
+  const [tan, setTan] = useState(business.tan ?? "");
+  const [cin, setCin] = useState(business.cin ?? "");
+  const [swiftCode, setSwiftCode] = useState(business.swiftCode ?? "");
+  const [identitySubmitting, setIdentitySubmitting] = useState(false);
 
   async function handleSave() {
     // Belt-and-suspenders alongside the disabled inputs and the server's
@@ -85,6 +94,36 @@ export function TaxTab({
       toast.success("Tax settings updated");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleIdentitySave() {
+    if (readOnly) return;
+
+    const parsed = businessIdentitySchema.safeParse({
+      pan: pan || null,
+      tan: tan || null,
+      cin: cin || null,
+      swiftCode: swiftCode || null,
+    });
+    if (!parsed.success) return;
+
+    setIdentitySubmitting(true);
+    try {
+      const response = await fetch("/api/business/identity", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        toast.error(body?.error ?? "Couldn't save. Try again.");
+        return;
+      }
+      onUpdated(toSettingsBusiness(body.business));
+      toast.success("Identity details updated");
+    } finally {
+      setIdentitySubmitting(false);
     }
   }
 
@@ -202,6 +241,74 @@ export function TaxTab({
             {submitting ? "Saving…" : "Save changes"}
           </Button>
         )}
+
+        <div className="mt-8 border-t border-border pt-6">
+          <div className="text-sm font-semibold">Identity registration numbers</div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Shown in the document header, below GSTIN, when filled in —
+            independent of whether GST is on.
+          </p>
+          <div className="mt-5 grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="pan">PAN</Label>
+              <Input
+                id="pan"
+                placeholder="ABCDE1234F"
+                className="font-mono uppercase"
+                value={pan}
+                onChange={(e) => setPan(e.target.value.toUpperCase())}
+                disabled={readOnly}
+              />
+              <p className="text-xs text-muted-foreground">10 characters.</p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="tan">TAN</Label>
+              <Input
+                id="tan"
+                placeholder="ABCD12345E"
+                className="font-mono uppercase"
+                value={tan}
+                onChange={(e) => setTan(e.target.value.toUpperCase())}
+                disabled={readOnly}
+              />
+              <p className="text-xs text-muted-foreground">10 characters.</p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="cin">CIN</Label>
+              <Input
+                id="cin"
+                placeholder="U12345MH2020PTC123456"
+                className="font-mono uppercase"
+                value={cin}
+                onChange={(e) => setCin(e.target.value.toUpperCase())}
+                disabled={readOnly}
+              />
+              <p className="text-xs text-muted-foreground">21 characters.</p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="swift-code">SWIFT code</Label>
+              <Input
+                id="swift-code"
+                placeholder="ABCDINBBXXX"
+                className="font-mono uppercase"
+                value={swiftCode}
+                onChange={(e) => setSwiftCode(e.target.value.toUpperCase())}
+                disabled={readOnly}
+              />
+              <p className="text-xs text-muted-foreground">8–11 characters.</p>
+            </div>
+          </div>
+          {!readOnly && (
+            <Button
+              type="button"
+              className="mt-6"
+              disabled={identitySubmitting}
+              onClick={handleIdentitySave}
+            >
+              {identitySubmitting ? "Saving…" : "Save changes"}
+            </Button>
+          )}
+        </div>
       </fieldset>
     </div>
   );
