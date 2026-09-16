@@ -3,6 +3,7 @@ import type {
   BusinessSnapshot,
   CustomerSnapshot,
 } from "@/lib/documents/snapshots";
+import type { CustomFieldValueSnapshot } from "@/lib/documents/custom-fields";
 
 // Client-safe shape for the preview screen. Like BuilderProduct/BuilderDocument
 // (see types.ts), every Decimal field is converted to a plain number before
@@ -71,6 +72,7 @@ export type PreviewDocument = PreviewAppearance & {
   currency: string;
   business: BusinessSnapshot;
   customer: CustomerSnapshot;
+  customFieldValues: CustomFieldValueSnapshot[];
   lineItems: PreviewLineItem[];
   totals: PreviewTotals;
   // Empty for quotations — always [] there, never null.

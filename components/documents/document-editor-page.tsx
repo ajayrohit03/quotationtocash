@@ -7,8 +7,10 @@ import {
   DocumentBuilder,
   type BuilderBusiness,
   type BuilderDocument,
+  type BuilderCustomFieldDefinition,
 } from "./document-builder";
 import type { BuilderProduct } from "./types";
+import type { CustomFieldValueSnapshot } from "@/lib/documents/custom-fields";
 
 export async function DocumentEditorPage({
   type,
@@ -37,7 +39,7 @@ export async function DocumentEditorPage({
     notFound();
   }
 
-  const [customers, products] = await Promise.all([
+  const [customers, products, customFieldDefinitions] = await Promise.all([
     prisma.customer.findMany({
       where: { businessId: business.id },
       orderBy: { createdAt: "desc" },
@@ -45,6 +47,17 @@ export async function DocumentEditorPage({
     prisma.product.findMany({
       where: { businessId: business.id },
       orderBy: { createdAt: "desc" },
+    }),
+    // Document-scope, active, and either applies to both types (null) or
+    // this document's own type specifically.
+    prisma.customFieldDefinition.findMany({
+      where: {
+        businessId: business.id,
+        scope: "document",
+        isActive: true,
+        OR: [{ appliesTo: null }, { appliesTo: type }],
+      },
+      orderBy: { sortOrder: "asc" },
     }),
   ]);
 
@@ -65,6 +78,8 @@ export async function DocumentEditorPage({
     notes: document.notes,
     termsText: document.termsText,
     referenceNumber: document.referenceNumber,
+    customFieldValues:
+      document.customFieldValues as unknown as CustomFieldValueSnapshot[],
     lineItems: document.lineItems.map((item) => ({
       productId: item.productId,
       name: item.name,
@@ -102,6 +117,14 @@ export async function DocumentEditorPage({
     gstRate: product.gstRate == null ? null : Number(product.gstRate),
   }));
 
+  const builderCustomFieldDefinitions: BuilderCustomFieldDefinition[] =
+    customFieldDefinitions.map((def) => ({
+      id: def.id,
+      label: def.label,
+      type: def.type,
+      sortOrder: def.sortOrder,
+    }));
+
   return (
     // Keyed on the document id for the same reason as DocumentPreview
     // (see document-preview-page.tsx): without it, a client-side
@@ -116,6 +139,7 @@ export async function DocumentEditorPage({
       business={builderBusiness}
       customers={customers}
       products={builderProducts}
+      customFieldDefinitions={builderCustomFieldDefinitions}
     />
   );
 }

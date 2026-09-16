@@ -476,6 +476,7 @@ export function DocumentPreview({
             currency={document.currency}
             business={document.business}
             customer={document.customer}
+            customFieldValues={document.customFieldValues}
             lineItems={document.lineItems}
             totals={document.totals}
             gstEnabled={gstEnabled}

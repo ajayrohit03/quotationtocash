@@ -4,6 +4,7 @@ import type {
   BusinessSnapshot,
   CustomerSnapshot,
 } from "@/lib/documents/snapshots";
+import type { CustomFieldValueSnapshot } from "@/lib/documents/custom-fields";
 import type { PreviewDocument } from "@/components/documents/preview-types";
 
 // The single place that turns a Document row (+ its lineItems, sorted by
@@ -53,6 +54,8 @@ export function toPreviewDocument(
     // always written in (see lib/documents/snapshots.ts).
     business: document.businessSnapshot as unknown as BusinessSnapshot,
     customer: document.customerSnapshot as unknown as CustomerSnapshot,
+    customFieldValues:
+      document.customFieldValues as unknown as CustomFieldValueSnapshot[],
     lineItems: document.lineItems.map((item) => ({
       name: item.name,
       description: item.description ?? "",

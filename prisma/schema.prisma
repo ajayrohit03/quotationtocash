@@ -303,6 +303,14 @@ model Document {
   customerSnapshot Json @map("customer_snapshot")
   businessSnapshot Json @map("business_snapshot")
 
+  // Document-scope custom field values, snapshotting both value AND
+  // definition metadata (label/type/sortOrder) as of save time — see
+  // docs/custom-fields-and-multicurrency-design.md §1a. Never re-derived
+  // from the live CustomFieldDefinition row: a later rename or archive
+  // must never touch a document that already recorded a value here.
+  // Array<CustomFieldValueSnapshot>, see lib/documents/custom-fields.ts.
+  customFieldValues Json @default("[]") @map("custom_field_values")
+
   convertedFromQuotationId String?   @unique @map("converted_from_quotation_id")
   convertedFromQuotation   Document? @relation("QuotationConversion", fields: [convertedFromQuotationId], references: [id])
   convertedToInvoice       Document? @relation("QuotationConversion")

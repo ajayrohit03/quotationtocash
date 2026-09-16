@@ -3,6 +3,7 @@ import { formatDateIST } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
 import type { PreviewDocument } from "@/components/documents/preview-types";
 import { paymentDetailsLines } from "@/lib/documents/payment-details";
+import { formatCustomFieldValue } from "@/lib/documents/custom-fields";
 
 // Mirrors components/documents/document-render.tsx section-for-section —
 // same data, same conditionals — but react-pdf can't render arbitrary
@@ -207,6 +208,14 @@ export function DocumentPdf({
                   Reference number: {document.referenceNumber}
                 </>
               )}
+              {[...document.customFieldValues]
+                .sort((a, b) => a.sortOrder - b.sortOrder)
+                .map((entry) => (
+                  <Text key={entry.definitionId}>
+                    {"\n"}
+                    {entry.label}: {formatCustomFieldValue(entry)}
+                  </Text>
+                ))}
             </Text>
           </View>
         </View>

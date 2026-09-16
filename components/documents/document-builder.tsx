@@ -12,6 +12,7 @@ import {
 import { isSameState } from "@/lib/tax/calculateGST";
 import { resolveGstRate } from "@/lib/tax/resolveGstRate";
 import { isEditableStatus } from "@/lib/documents/status";
+import type { CustomFieldValueSnapshot } from "@/lib/documents/custom-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +38,17 @@ export type BuilderBusiness = {
   gstEnabled: boolean;
   gstDefaultRate: number | null;
   placeOfSupply: string | null;
+};
+
+// Only what the builder needs to render an input and construct a fresh
+// CustomFieldValueSnapshot on save — already filtered server-side to
+// active, document-scope, and appliesTo this document's type (see
+// document-editor-page.tsx).
+export type BuilderCustomFieldDefinition = {
+  id: string;
+  label: string;
+  type: "text" | "number" | "date";
+  sortOrder: number;
 };
 
 export type BuilderLineItem = Omit<LocalLineItem, "key">;
@@ -65,6 +77,7 @@ export type BuilderDocument = {
   notes: string | null;
   termsText: string | null;
   referenceNumber: string | null;
+  customFieldValues: CustomFieldValueSnapshot[];
   lineItems: BuilderLineItem[];
   // The document's actual, currently-persisted totals — including which
   // of CGST+SGST vs IGST applies. Shown as-is until the user makes a
@@ -92,11 +105,13 @@ export function DocumentBuilder({
   business,
   customers,
   products,
+  customFieldDefinitions,
 }: {
   document: BuilderDocument;
   business: BuilderBusiness;
   customers: Customer[];
   products: BuilderProduct[];
+  customFieldDefinitions: BuilderCustomFieldDefinition[];
 }) {
   const router = useRouter();
   const isQuotation = document.type === "quotation";
@@ -117,6 +132,22 @@ export function DocumentBuilder({
   const [referenceNumber, setReferenceNumber] = useState(
     document.referenceNumber ?? "",
   );
+  // Keyed by definitionId, always a string in local state (including for
+  // number/date types) — converted to the snapshot's real value type only
+  // when constructing customFieldValues on save, below.
+  const [customFieldInputs, setCustomFieldInputs] = useState<
+    Record<string, string>
+  >(() => {
+    const savedById = new Map(
+      document.customFieldValues.map((entry) => [entry.definitionId, entry.value]),
+    );
+    return Object.fromEntries(
+      customFieldDefinitions.map((def) => {
+        const saved = savedById.get(def.id);
+        return [def.id, saved == null ? "" : String(saved)];
+      }),
+    );
+  });
   const [lineItems, setLineItems] = useState<LocalLineItem[]>(() =>
     document.lineItems.map((item) => ({ ...item, key: newLineItemKey() })),
   );
@@ -163,6 +194,27 @@ export function DocumentBuilder({
 
   const totals = edited ? liveTotals : storedTotals;
 
+  // Constructed fresh from the currently-loaded definitions on every
+  // save — snapshotting label/type/sortOrder as they are *right now*
+  // (§1a), never re-read from customFieldDefinitions after this point.
+  // Blank inputs are omitted entirely rather than saved as an empty
+  // value, so document-render.tsx/document-pdf.tsx never need their own
+  // "skip if blank" check for these.
+  const customFieldValues: CustomFieldValueSnapshot[] = useMemo(() => {
+    return customFieldDefinitions
+      .filter((def) => customFieldInputs[def.id]?.trim())
+      .map((def) => {
+        const raw = customFieldInputs[def.id].trim();
+        return {
+          definitionId: def.id,
+          label: def.label,
+          type: def.type,
+          value: def.type === "number" ? Number(raw) : raw,
+          sortOrder: def.sortOrder,
+        };
+      });
+  }, [customFieldDefinitions, customFieldInputs]);
+
   const snapshot = useMemo(
     () =>
       JSON.stringify({
@@ -175,6 +227,7 @@ export function DocumentBuilder({
         termsText,
         referenceNumber,
         lineItems,
+        customFieldValues,
       }),
     [
       customer.id,
@@ -186,6 +239,7 @@ export function DocumentBuilder({
       termsText,
       referenceNumber,
       lineItems,
+      customFieldValues,
     ],
   );
 
@@ -224,6 +278,7 @@ export function DocumentBuilder({
           notes: notes || null,
           termsText: termsText || null,
           referenceNumber: referenceNumber || null,
+          customFieldValues,
           lineItems: lineItems.map((item) => ({
             productId: item.productId,
             name: item.name,
@@ -425,6 +480,40 @@ export function DocumentBuilder({
                 </div>
               </div>
             </div>
+
+            {customFieldDefinitions.length > 0 && (
+              <div className="rounded-lg border border-border bg-card p-5">
+                <h2 className="mb-4 text-sm font-semibold">Custom fields</h2>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                  {[...customFieldDefinitions]
+                    .sort((a, b) => a.sortOrder - b.sortOrder)
+                    .map((def) => (
+                      <div key={def.id} className="grid gap-1.5">
+                        <Label htmlFor={`custom-field-${def.id}`}>{def.label}</Label>
+                        <Input
+                          id={`custom-field-${def.id}`}
+                          type={
+                            def.type === "number"
+                              ? "number"
+                              : def.type === "date"
+                                ? "date"
+                                : "text"
+                          }
+                          step={def.type === "number" ? "any" : undefined}
+                          value={customFieldInputs[def.id] ?? ""}
+                          onChange={(e) =>
+                            setCustomFieldInputs((prev) => ({
+                              ...prev,
+                              [def.id]: e.target.value,
+                            }))
+                          }
+                          disabled={!editable}
+                        />
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
 
             <div>
               <h2 className="mb-3 text-sm font-semibold">Items</h2>

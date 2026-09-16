@@ -68,6 +68,7 @@ export default async function PublicDocumentPage({
           currency={previewDocument.currency}
           business={previewDocument.business}
           customer={previewDocument.customer}
+          customFieldValues={previewDocument.customFieldValues}
           lineItems={previewDocument.lineItems}
           totals={previewDocument.totals}
           gstEnabled={business.gstEnabled}

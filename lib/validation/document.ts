@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { customFieldValueSnapshotSchema } from "@/lib/documents/custom-fields";
 
 export const lineItemInputSchema = z.object({
   productId: z.string().min(1).nullable().optional(),
@@ -69,6 +70,11 @@ export const documentUpdateSchema = appearanceUpdateSchema.extend({
 
   // When present, replaces the document's entire line item set.
   lineItems: z.array(lineItemInputSchema).optional(),
+
+  // When present, replaces the document's entire document-scope custom
+  // field value set — same "whole array, not a merge" shape as
+  // lineItems above. See lib/documents/custom-fields.ts.
+  customFieldValues: z.array(customFieldValueSnapshotSchema).optional(),
 });
 
 export type DocumentUpdateInput = z.infer<typeof documentUpdateSchema>;

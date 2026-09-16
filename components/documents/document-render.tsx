@@ -6,6 +6,10 @@ import type {
   CustomerSnapshot,
 } from "@/lib/documents/snapshots";
 import { paymentDetailsLines } from "@/lib/documents/payment-details";
+import {
+  formatCustomFieldValue,
+  type CustomFieldValueSnapshot,
+} from "@/lib/documents/custom-fields";
 import type {
   PreviewAppearance,
   PreviewLineItem,
@@ -46,6 +50,7 @@ export function DocumentRender({
   currency,
   business,
   customer,
+  customFieldValues,
   lineItems,
   totals,
   payments,
@@ -71,6 +76,7 @@ export function DocumentRender({
   currency: string;
   business: BusinessSnapshot;
   customer: CustomerSnapshot;
+  customFieldValues: CustomFieldValueSnapshot[];
   lineItems: PreviewLineItem[];
   totals: PreviewTotals;
   payments: PreviewPayment[];
@@ -177,6 +183,13 @@ export function DocumentRender({
               {appearance.showReferenceNumber && referenceNumber && (
                 <div>Reference number: {referenceNumber}</div>
               )}
+              {[...customFieldValues]
+                .sort((a, b) => a.sortOrder - b.sortOrder)
+                .map((entry) => (
+                  <div key={entry.definitionId}>
+                    {entry.label}: {formatCustomFieldValue(entry)}
+                  </div>
+                ))}
             </div>
           </div>
         </div>

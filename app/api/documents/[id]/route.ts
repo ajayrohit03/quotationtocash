@@ -143,6 +143,29 @@ export async function PATCH(
       }));
     }
 
+    // Written verbatim (the builder already constructed the full
+    // snapshot from its currently-loaded definitions + entered values —
+    // see lib/documents/custom-fields.ts), but every definitionId is
+    // checked against this business's real document-scope definitions
+    // first, so a request can't attach an arbitrary label/type to a
+    // document as if it came from a real definition.
+    if (input.customFieldValues && input.customFieldValues.length > 0) {
+      const definitionIds = [
+        ...new Set(input.customFieldValues.map((v) => v.definitionId)),
+      ];
+      const validDefinitions = await prisma.customFieldDefinition.findMany({
+        where: { id: { in: definitionIds }, businessId: business.id, scope: "document" },
+        select: { id: true },
+      });
+      const validIds = new Set(validDefinitions.map((d) => d.id));
+      if (input.customFieldValues.some((v) => !validIds.has(v.definitionId))) {
+        return NextResponse.json(
+          { error: "One or more custom fields are invalid" },
+          { status: 400 },
+        );
+      }
+    }
+
     const sameState = isSameState(business.placeOfSupply, customer.state);
     const totals = lineItems
       ? calculateDocumentTotals(
