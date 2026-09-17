@@ -326,10 +326,10 @@ export function DocumentPdf({
               {fxRateLabel && (
                 <>
                   <Text style={{ width: 55, textAlign: "right", paddingRight: 6, color: COLORS.body }}>
-                    {item.foreignCurrency && item.foreignRate != null ? item.foreignRate : "—"}
+                    {item.foreignRate != null ? item.foreignRate : "—"}
                   </Text>
                   <Text style={{ width: 50, textAlign: "right", paddingRight: 6, color: COLORS.body }}>
-                    {item.foreignCurrency && item.exchangeRate != null ? item.exchangeRate : "—"}
+                    {item.exchangeRate != null ? item.exchangeRate : "—"}
                   </Text>
                 </>
               )}

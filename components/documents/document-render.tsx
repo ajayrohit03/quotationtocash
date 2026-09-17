@@ -327,14 +327,10 @@ export function DocumentRender({
               {fxRateLabel && (
                 <>
                   <div className="w-24 px-2 text-right text-[#3D4453]">
-                    {item.foreignCurrency && item.foreignRate != null
-                      ? item.foreignRate
-                      : "—"}
+                    {item.foreignRate != null ? item.foreignRate : "—"}
                   </div>
                   <div className="w-20 px-2 text-right text-[#3D4453]">
-                    {item.foreignCurrency && item.exchangeRate != null
-                      ? item.exchangeRate
-                      : "—"}
+                    {item.exchangeRate != null ? item.exchangeRate : "—"}
                   </div>
                 </>
               )}

@@ -42,14 +42,32 @@ export function resolveLineItemColumns(
 // local state (so the columns appear the instant a row's foreignCurrency
 // is set, before any save), the two read-only renderers call it with the
 // document's already-frozen line items. Returns null when no line item
-// has a foreignCurrency at all, so both columns are omitted entirely —
+// has any FX provenance at all, so both columns are omitted entirely —
 // per the spec, no empty FX columns on a document that doesn't use them.
+//
+// Gated on foreignRate/exchangeRate being present, not just
+// foreignCurrency — a real production document was found with
+// foreignRate/exchangeRate saved but foreignCurrency null (the currency
+// code alone failed to persist on that save), and gating on
+// foreignCurrency only made this function silently suppress both
+// columns even though the numeric FX data was genuinely there. Matches
+// the builder's own hasAnyForeignCurrency check in
+// line-items-editor.tsx, which already ORs across all three fields.
 export function resolveForeignCurrencyRateLabel(
-  lineItems: { foreignCurrency: string | null }[],
+  lineItems: {
+    foreignCurrency: string | null;
+    foreignRate?: number | null;
+    exchangeRate?: number | null;
+  }[],
 ): string | null {
+  const hasAnyFxData = lineItems.some(
+    (item) =>
+      Boolean(item.foreignCurrency) || item.foreignRate != null || item.exchangeRate != null,
+  );
+  if (!hasAnyFxData) return null;
   const currencies = new Set(
     lineItems.map((item) => item.foreignCurrency).filter((c): c is string => Boolean(c)),
   );
-  if (currencies.size === 0) return null;
+  if (currencies.size === 0) return "F.C. Rate";
   return currencies.size === 1 ? `${[...currencies][0]} Rate` : "F.C. Rate";
 }
