@@ -52,6 +52,8 @@ const TEMPLATES: { id: DocumentTemplate; label: string }[] = [
   { id: "classic", label: "Classic" },
   { id: "modern", label: "Modern" },
   { id: "minimal", label: "Minimal" },
+  { id: "compact", label: "Compact" },
+  { id: "formal", label: "Formal" },
 ];
 
 const SWATCHES = ["#4F46E5", "#0F766E", "#1D4ED8", "#C2410C", "#111827"];

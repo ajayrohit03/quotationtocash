@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: "row",
-    paddingVertical: 8,
+    paddingVertical: 5,
     paddingHorizontal: 6,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.rowBorder,
@@ -116,14 +116,27 @@ const styles = StyleSheet.create({
 });
 
 function templateStyle(template: PreviewDocument["template"], accentColor: string) {
+  if (template === "formal") {
+    return {
+      docTitleColor: COLORS.ink,
+      tableHeadBg: "#ffffff",
+      tableHeadColor: COLORS.ink,
+      tableHeadBorderWidth: 1.5,
+      totalRowBg: "#ffffff",
+      totalRowColor: COLORS.ink,
+      totalRowBorderWidth: 1.5,
+    };
+  }
   return {
     docTitleColor: template === "minimal" ? COLORS.ink : accentColor,
     tableHeadBg:
       template === "minimal" ? "#ffffff" : template === "classic" ? COLORS.ink : "#F3F4F7",
     tableHeadColor:
       template === "classic" ? "#ffffff" : template === "minimal" ? COLORS.muted : "#3D4453",
+    tableHeadBorderWidth: 0,
     totalRowBg: template === "minimal" ? "#F6F7F9" : accentColor,
     totalRowColor: template === "minimal" ? COLORS.ink : "#ffffff",
+    totalRowBorderWidth: 0,
   };
 }
 
@@ -136,6 +149,7 @@ export function DocumentPdf({
 }) {
   const isQuotation = document.type === "quotation";
   const style = templateStyle(document.template, document.accentColor);
+  const isCompact = document.template === "compact";
   const showGstinRow = gstEnabled && document.showGstinRow;
   const showTax = gstEnabled && document.showTax;
   const secondaryDate = isQuotation ? document.validUntil : document.dueDate;
@@ -226,7 +240,7 @@ export function DocumentPdf({
               </Text>
             )}
           </View>
-          <View>
+          <View style={{ width: 220 }}>
             <Text style={styles.sectionLabel}>REFERENCE</Text>
             <Text style={styles.addressLine}>
               {isQuotation ? "Validity" : "Payment terms"}: {terms || "—"}
@@ -238,23 +252,35 @@ export function DocumentPdf({
                   Reference number: {document.referenceNumber}
                 </>
               )}
-              {[...document.customFieldValues]
-                .sort((a, b) => a.sortOrder - b.sortOrder)
-                .map((entry) => (
-                  <Text key={entry.definitionId}>
-                    {"\n"}
-                    {entry.label}: {formatCustomFieldValue(entry)}
-                  </Text>
-                ))}
             </Text>
+            {document.customFieldValues.length > 0 && (
+              <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 4 }}>
+                {[...document.customFieldValues]
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .map((entry) => (
+                    <Text
+                      key={entry.definitionId}
+                      style={[styles.addressLine, { width: "50%", marginTop: 2, paddingRight: 4 }]}
+                    >
+                      {entry.label}: {formatCustomFieldValue(entry)}
+                    </Text>
+                  ))}
+              </View>
+            )}
           </View>
         </View>
 
-        <View style={{ marginTop: 24 }}>
+        <View style={{ marginTop: isCompact ? 14 : 24 }}>
           <View
             style={[
               styles.tableHead,
-              { backgroundColor: style.tableHeadBg, color: style.tableHeadColor },
+              isCompact ? { paddingVertical: 4 } : undefined,
+              {
+                backgroundColor: style.tableHeadBg,
+                color: style.tableHeadColor,
+                borderBottomWidth: style.tableHeadBorderWidth,
+                borderBottomColor: COLORS.ink,
+              },
             ]}
           >
             <Text style={{ flex: 1 }}>DESCRIPTION</Text>
@@ -279,7 +305,10 @@ export function DocumentPdf({
             <Text style={{ width: 75, textAlign: "right" }}>AMOUNT</Text>
           </View>
           {document.lineItems.map((item, index) => (
-            <View key={index} style={styles.tableRow}>
+            <View
+              key={index}
+              style={[styles.tableRow, isCompact ? { paddingVertical: 3 } : undefined]}
+            >
               <View style={{ flex: 1, paddingRight: 8 }}>
                 <Text style={styles.itemName}>{item.name}</Text>
                 {item.description && <Text style={styles.itemDesc}>{item.description}</Text>}
@@ -378,7 +407,18 @@ export function DocumentPdf({
               })}
             </>
           )}
-          <View style={[styles.grandTotalRow, { backgroundColor: style.totalRowBg }]}>
+          <View
+            style={[
+              styles.grandTotalRow,
+              {
+                backgroundColor: style.totalRowBg,
+                borderTopWidth: style.totalRowBorderWidth,
+                borderBottomWidth: style.totalRowBorderWidth,
+                borderTopColor: COLORS.ink,
+                borderBottomColor: COLORS.ink,
+              },
+            ]}
+          >
             <Text style={[styles.grandTotalLabel, { color: style.totalRowColor }]}>
               GRAND TOTAL
             </Text>

@@ -27,6 +27,16 @@ const TEMPLATES: {
     name: "Minimal",
     description: "Just the essentials — no color blocks or rules.",
   },
+  {
+    id: "compact",
+    name: "Compact",
+    description: "Tighter spacing throughout — fits more on one page.",
+  },
+  {
+    id: "formal",
+    name: "Formal",
+    description: "Traditional black-and-white grid, no colored accents.",
+  },
 ];
 
 function TemplatePreview({ id }: { id: DocumentTemplate }) {
@@ -50,6 +60,31 @@ function TemplatePreview({ id }: { id: DocumentTemplate }) {
         <div className="mt-1.5 h-1.5 w-full rounded-[2px] bg-muted" />
         <div className="h-1.5 w-3/4 rounded-[2px] bg-muted" />
         <div className="mt-auto h-2 w-1/2 self-end rounded-[2px] bg-primary/70" />
+      </div>
+    );
+  }
+  if (id === "compact") {
+    return (
+      <div className="flex h-full w-full flex-col gap-1 rounded-sm bg-white p-2 ring-1 ring-border">
+        <div className="h-1 w-2/3 rounded-[2px] bg-muted" />
+        <div className="h-1 w-1/2 rounded-[2px] bg-muted" />
+        <div className="mt-1 h-1 w-full rounded-[2px] bg-muted" />
+        <div className="h-1 w-full rounded-[2px] bg-muted" />
+        <div className="h-1 w-full rounded-[2px] bg-muted" />
+        <div className="mt-auto h-1.5 w-1/2 self-end rounded-[2px] bg-primary/70" />
+      </div>
+    );
+  }
+  if (id === "formal") {
+    return (
+      <div className="flex h-full w-full flex-col gap-1.5 rounded-sm bg-white p-2.5 ring-1 ring-border">
+        <div className="flex items-center justify-between border-b border-foreground/60 pb-1">
+          <div className="h-1.5 w-1/3 rounded-[2px] bg-muted" />
+          <div className="h-1.5 w-1/4 rounded-[2px] bg-muted" />
+        </div>
+        <div className="mt-1 h-1 w-full rounded-[2px] bg-muted" />
+        <div className="h-1 w-full rounded-[2px] bg-muted" />
+        <div className="mt-auto h-2 w-1/2 self-end rounded-[2px] border border-foreground/60" />
       </div>
     );
   }
@@ -105,7 +140,7 @@ export function StepTemplate({
       description="Sets the default look for new quotations and invoices. You can switch templates any time from the document preview."
       onSkip={onSkip}
     >
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         {TEMPLATES.map((template) => (
           <button
             key={template.id}

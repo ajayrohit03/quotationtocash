@@ -63,6 +63,8 @@ enum DocumentTemplate {
   classic
   modern
   minimal
+  compact
+  formal
 
   @@map("document_template")
 }

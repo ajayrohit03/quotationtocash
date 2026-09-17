@@ -44,7 +44,7 @@ export type DocumentCreateInput = z.infer<typeof documentCreateSchema>;
 // PDF"). That override is render-only, never persisted, but still needs
 // the same validation so a malformed value can't reach react-pdf.
 export const appearanceUpdateSchema = z.object({
-  template: z.enum(["classic", "modern", "minimal"]).optional(),
+  template: z.enum(["classic", "modern", "minimal", "compact", "formal"]).optional(),
   accentColor: z
     .string()
     .trim()

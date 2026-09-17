@@ -33,7 +33,7 @@ export const businessUpdateSchema = z.object({
   // (GSTIN/rate/place/registration are required together, and disabling
   // GST should clear them) that don't fit a plain partial-update schema.
   // See gstSetupSchema and PATCH /api/business/gst.
-  documentTemplate: z.enum(["classic", "modern", "minimal"]).optional(),
+  documentTemplate: z.enum(["classic", "modern", "minimal", "compact", "formal"]).optional(),
   accentColor: z
     .string()
     .trim()
@@ -108,7 +108,7 @@ export const businessIdentitySchema = z.object({
 export type BusinessIdentityInput = z.infer<typeof businessIdentitySchema>;
 
 export const templateSetupSchema = z.object({
-  documentTemplate: z.enum(["classic", "modern", "minimal"]),
+  documentTemplate: z.enum(["classic", "modern", "minimal", "compact", "formal"]),
 });
 
 export type TemplateSetupInput = z.infer<typeof templateSetupSchema>;

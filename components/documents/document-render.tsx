@@ -31,16 +31,33 @@ function formatDate(iso: string): string {
 
 // Per-template colors, mirroring the design reference's renderVals():
 // classic = dark header band, modern = accent top bar + soft gray header,
-// minimal = no color blocks anywhere except the total row's neutral tint.
+// minimal = no color blocks anywhere except the total row's neutral
+// tint, compact = same coloring as modern but paired with the tighter
+// spacing applied throughout the render below, formal = strictly
+// black/white/gray with a bordered "grid" look instead of any colored
+// fill, for a traditional printed-invoice appearance.
 function templateStyle(template: PreviewAppearance["template"], accentColor: string) {
+  if (template === "formal") {
+    return {
+      docTitleColor: "#0E1220",
+      tableHeadBg: "#fff",
+      tableHeadColor: "#0E1220",
+      tableHeadBorder: "2px solid #0E1220",
+      totalRowBg: "#fff",
+      totalRowColor: "#0E1220",
+      totalRowBorder: "2px solid #0E1220",
+    };
+  }
   return {
     docTitleColor: template === "minimal" ? "#0E1220" : accentColor,
     tableHeadBg:
       template === "minimal" ? "#fff" : template === "classic" ? "#0E1220" : "#F3F4F7",
     tableHeadColor:
       template === "classic" ? "#fff" : template === "minimal" ? "#8A92A6" : "#3D4453",
+    tableHeadBorder: "none",
     totalRowBg: template === "minimal" ? "#F6F7F9" : accentColor,
     totalRowColor: template === "minimal" ? "#0E1220" : "#fff",
+    totalRowBorder: "none",
   };
 }
 
@@ -101,6 +118,7 @@ export function DocumentRender({
 }) {
   const isQuotation = type === "quotation";
   const style = templateStyle(appearance.template, appearance.accentColor);
+  const isCompact = appearance.template === "compact";
   const showGstinRow = gstEnabled && appearance.showGstinRow;
   const showTax = gstEnabled && appearance.showTax;
   const secondaryDate = isQuotation ? validUntil : dueDate;
@@ -139,7 +157,7 @@ export function DocumentRender({
         <div className="h-2.5" style={{ background: appearance.accentColor }} />
       )}
 
-      <div className="px-14 pt-14 pb-14">
+      <div className={isCompact ? "px-10 pt-9 pb-9" : "px-14 pt-14 pb-14"}>
         <div className="flex items-start justify-between gap-8">
           <div>
             {appearance.showLogo && business.logoUrl && (
@@ -200,7 +218,7 @@ export function DocumentRender({
           </div>
         </div>
 
-        <div className="my-8 h-px bg-[#E7E9EF]" />
+        <div className={isCompact ? "my-5 h-px bg-[#E7E9EF]" : "my-8 h-px bg-[#E7E9EF]"} />
 
         <div className="flex flex-wrap gap-12">
           <div>
@@ -232,21 +250,33 @@ export function DocumentRender({
               {appearance.showReferenceNumber && referenceNumber && (
                 <div>Reference number: {referenceNumber}</div>
               )}
-              {[...customFieldValues]
-                .sort((a, b) => a.sortOrder - b.sortOrder)
-                .map((entry) => (
-                  <div key={entry.definitionId}>
-                    {entry.label}: {formatCustomFieldValue(entry)}
-                  </div>
-                ))}
             </div>
+            {customFieldValues.length > 0 && (
+              <div className="mt-1.5 grid grid-cols-2 gap-x-5 gap-y-0.5 text-[12.5px] leading-relaxed text-[#565E72]">
+                {[...customFieldValues]
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .map((entry) => (
+                    <div key={entry.definitionId} className="truncate">
+                      {entry.label}: {formatCustomFieldValue(entry)}
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="mt-8">
+        <div className={isCompact ? "mt-5" : "mt-8"}>
           <div
-            className="flex px-3 py-2.5 text-[10.5px] font-bold tracking-[0.06em]"
-            style={{ background: style.tableHeadBg, color: style.tableHeadColor }}
+            className={
+              isCompact
+                ? "flex px-3 py-1.5 text-[9.5px] font-bold tracking-[0.06em]"
+                : "flex px-3 py-2.5 text-[10.5px] font-bold tracking-[0.06em]"
+            }
+            style={{
+              background: style.tableHeadBg,
+              color: style.tableHeadColor,
+              borderBottom: style.tableHeadBorder,
+            }}
           >
             <div className="flex-1">DESCRIPTION</div>
             {lineItemColumns.map((column) => (
@@ -270,7 +300,11 @@ export function DocumentRender({
           {lineItems.map((item, index) => (
             <div
               key={index}
-              className="flex border-b border-[#F3F4F7] px-3 py-3.5 text-[13px]"
+              className={
+                isCompact
+                  ? "flex border-b border-[#F3F4F7] px-3 py-1.5 text-[12px]"
+                  : "flex border-b border-[#F3F4F7] px-3 py-2 text-[13px]"
+              }
             >
               <div className="flex-1 pr-4">
                 <div className="font-semibold">{item.name}</div>
@@ -377,7 +411,11 @@ export function DocumentRender({
             )}
             <div
               className="mt-2 flex items-baseline justify-between px-3 py-3"
-              style={{ background: style.totalRowBg }}
+              style={{
+                background: style.totalRowBg,
+                borderTop: style.totalRowBorder,
+                borderBottom: style.totalRowBorder,
+              }}
             >
               <span
                 className="text-xs font-bold tracking-[0.06em]"

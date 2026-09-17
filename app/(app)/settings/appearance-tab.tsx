@@ -11,6 +11,8 @@ const TEMPLATES: { id: DocumentTemplate; label: string; description: string }[] 
   { id: "classic", label: "Classic", description: "Traditional layout with a bold header band." },
   { id: "modern", label: "Modern", description: "Clean lines, generous spacing, sans-serif focus." },
   { id: "minimal", label: "Minimal", description: "Just the essentials — no color blocks or rules." },
+  { id: "compact", label: "Compact", description: "Tighter spacing throughout — fits more on one page." },
+  { id: "formal", label: "Formal", description: "Traditional black-and-white grid, no colored accents." },
 ];
 
 const SWATCHES = ["#4F46E5", "#0F766E", "#1D4ED8", "#C2410C", "#111827"];
@@ -96,7 +98,7 @@ export function AppearanceTab({
         <div className="mt-6 text-xs font-semibold tracking-wide text-muted-foreground">
           TEMPLATE
         </div>
-        <div className="mt-2.5 grid grid-cols-3 gap-3">
+        <div className="mt-2.5 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {TEMPLATES.map((t) => (
             <button
               key={t.id}
