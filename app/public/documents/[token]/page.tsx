@@ -66,6 +66,8 @@ export default async function PublicDocumentPage({
           remainingBalance={previewDocument.remainingBalance}
           creditBalance={previewDocument.creditBalance}
           currency={previewDocument.currency}
+          inrExchangeRate={previewDocument.inrExchangeRate}
+          lutDeclarationText={previewDocument.lutDeclarationText}
           business={previewDocument.business}
           customer={previewDocument.customer}
           customFieldValues={previewDocument.customFieldValues}
@@ -82,6 +84,7 @@ export default async function PublicDocumentPage({
             showNotes: previewDocument.showNotes,
             showTerms: previewDocument.showTerms,
             showReferenceNumber: previewDocument.showReferenceNumber,
+            showInrEquivalent: previewDocument.showInrEquivalent,
           }}
         />
       </div>

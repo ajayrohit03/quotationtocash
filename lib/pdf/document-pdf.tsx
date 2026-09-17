@@ -145,8 +145,17 @@ export function DocumentPdf({
   const sameState = isSameState(business.placeOfSupply, customer.state);
   const taxBuckets = showTax ? groupTaxByRate(document.lineItems, sameState) : [];
   const lineItemColumns = resolveLineItemColumns(document.lineItems);
-  const fxRateLabel = resolveForeignCurrencyRateLabel(document.lineItems);
+  const isForeignCurrency = document.currency !== "INR";
+  const fxRateLabel = isForeignCurrency
+    ? null
+    : resolveForeignCurrencyRateLabel(document.lineItems);
   const identityLine = businessIdentityLine(business);
+  const showLutZeroRow = showTax && isForeignCurrency && taxBuckets.length === 0;
+  const showInrSubline =
+    isForeignCurrency && document.showInrEquivalent && document.inrExchangeRate != null;
+  function inrEquivalent(amount: number): string {
+    return formatCurrency(amount * (document.inrExchangeRate ?? 0), "INR");
+  }
 
   return (
     <Document title={`${document.number}.pdf`}>
@@ -179,6 +188,9 @@ export function DocumentPdf({
           <View style={{ alignItems: "flex-end" }}>
             <Text style={[styles.docTitle, { color: style.docTitleColor }]}>
               {isQuotation ? "QUOTATION" : "INVOICE"}
+              {isForeignCurrency && (
+                <Text style={{ fontSize: 11 }}> {document.currency}</Text>
+              )}
             </Text>
             <Text style={styles.docNumber}>{document.number}</Text>
             <Text style={styles.docDates}>
@@ -313,6 +325,14 @@ export function DocumentPdf({
             <Text style={styles.totalLabel}>Subtotal</Text>
             <Text>{formatCurrency(document.totals.subtotal, document.currency)}</Text>
           </View>
+          {showInrSubline && (
+            <View style={[styles.totalRow, { paddingVertical: 0 }]}>
+              <Text style={{ fontSize: 7.5, color: COLORS.muted }}></Text>
+              <Text style={{ fontSize: 7.5, color: COLORS.muted }}>
+                ≈ {inrEquivalent(document.totals.subtotal)}
+              </Text>
+            </View>
+          )}
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Discount</Text>
             <Text>− {formatCurrency(document.totals.discountTotal, document.currency)}</Text>
@@ -323,6 +343,14 @@ export function DocumentPdf({
                 <Text style={styles.totalLabel}>Taxable amount</Text>
                 <Text>{formatCurrency(document.totals.taxableAmount, document.currency)}</Text>
               </View>
+              {showLutZeroRow && (
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>
+                    IGST @0% (Zero-rated — Export under LUT)
+                  </Text>
+                  <Text>{formatCurrency(0, document.currency)}</Text>
+                </View>
+              )}
               {taxBuckets.map((bucket) => {
                 const suffix = taxBuckets.length > 1 ? ` @${bucket.rate}%` : "";
                 return (
@@ -358,6 +386,14 @@ export function DocumentPdf({
               {formatCurrency(document.totals.total, document.currency)}
             </Text>
           </View>
+          {showInrSubline && (
+            <View style={[styles.totalRow, { paddingTop: 2 }]}>
+              <Text style={{ fontSize: 7.5, color: COLORS.muted }}>INR equivalent</Text>
+              <Text style={{ fontSize: 7.5, color: COLORS.muted }}>
+                {inrEquivalent(document.totals.total)}
+              </Text>
+            </View>
+          )}
           {!isQuotation && (
             <View style={[styles.totalRow, { paddingTop: 6 }]}>
               <Text style={styles.totalLabel}>
@@ -426,6 +462,12 @@ export function DocumentPdf({
           <View style={styles.noteBlock}>
             <Text style={styles.sectionLabel}>TERMS &amp; CONDITIONS</Text>
             <Text style={styles.noteBody}>{document.termsText}</Text>
+          </View>
+        )}
+        {isForeignCurrency && document.lutDeclarationText && (
+          <View style={styles.noteBlock}>
+            <Text style={styles.sectionLabel}>EXPORT DECLARATION</Text>
+            <Text style={styles.noteBody}>{document.lutDeclarationText}</Text>
           </View>
         )}
         {document.showPayment && (

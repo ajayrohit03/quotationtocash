@@ -41,6 +41,9 @@ export function toPreviewDocument(
     termsText: document.termsText,
     referenceNumber: document.referenceNumber,
     currency: document.currency,
+    inrExchangeRate:
+      document.inrExchangeRate == null ? null : Number(document.inrExchangeRate),
+    lutDeclarationText: document.lutDeclarationText,
     template: document.template,
     accentColor: document.accentColor,
     showLogo: document.showLogo,
@@ -50,6 +53,7 @@ export function toPreviewDocument(
     showNotes: document.showNotes,
     showTerms: document.showTerms,
     showReferenceNumber: document.showReferenceNumber,
+    showInrEquivalent: document.showInrEquivalent,
     // Snapshots are stored as Json — cast back to the shape they were
     // always written in (see lib/documents/snapshots.ts).
     business: document.businessSnapshot as unknown as BusinessSnapshot,

@@ -5,36 +5,51 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 export function TotalsSummary({
   totals,
   gstEnabled,
+  currency = "INR",
 }: {
   totals: DocumentTotals;
   gstEnabled: boolean;
+  currency?: string;
 }) {
+  const isForeignCurrency = currency !== "INR";
   return (
     <Card>
       <CardHeader>
         <CardTitle>Summary</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-1.5">
-        <Row label="Subtotal" value={formatCurrency(totals.subtotal)} />
+        <Row label="Subtotal" value={formatCurrency(totals.subtotal, currency)} />
         <Row
           label="Discount"
-          value={`− ${formatCurrency(totals.discountTotal)}`}
+          value={`− ${formatCurrency(totals.discountTotal, currency)}`}
           valueClassName="text-success"
         />
         {gstEnabled && (
           <>
             <Row
               label="Taxable amount"
-              value={formatCurrency(totals.taxableAmount)}
+              value={formatCurrency(totals.taxableAmount, currency)}
             />
-            {totals.cgst.greaterThan(0) && (
-              <Row label="CGST" value={formatCurrency(totals.cgst)} />
-            )}
-            {totals.sgst.greaterThan(0) && (
-              <Row label="SGST" value={formatCurrency(totals.sgst)} />
-            )}
-            {totals.igst.greaterThan(0) && (
-              <Row label="IGST" value={formatCurrency(totals.igst)} />
+            {isForeignCurrency &&
+            totals.cgst.isZero() &&
+            totals.sgst.isZero() &&
+            totals.igst.isZero() ? (
+              <Row
+                label="IGST @0% (Zero-rated — Export under LUT)"
+                value={formatCurrency(0, currency)}
+              />
+            ) : (
+              <>
+                {totals.cgst.greaterThan(0) && (
+                  <Row label="CGST" value={formatCurrency(totals.cgst, currency)} />
+                )}
+                {totals.sgst.greaterThan(0) && (
+                  <Row label="SGST" value={formatCurrency(totals.sgst, currency)} />
+                )}
+                {totals.igst.greaterThan(0) && (
+                  <Row label="IGST" value={formatCurrency(totals.igst, currency)} />
+                )}
+              </>
             )}
           </>
         )}
@@ -42,7 +57,7 @@ export function TotalsSummary({
         <div className="flex items-baseline justify-between">
           <span className="text-sm font-semibold">Total</span>
           <span className="text-xl font-semibold tracking-tight">
-            {formatCurrency(totals.total)}
+            {formatCurrency(totals.total, currency)}
           </span>
         </div>
       </CardContent>

@@ -60,6 +60,7 @@ export type PreviewAppearance = {
   showNotes: boolean;
   showTerms: boolean;
   showReferenceNumber: boolean;
+  showInrEquivalent: boolean;
 };
 
 export type PreviewDocument = PreviewAppearance & {
@@ -76,6 +77,8 @@ export type PreviewDocument = PreviewAppearance & {
   termsText: string | null;
   referenceNumber: string | null;
   currency: string;
+  inrExchangeRate: number | null;
+  lutDeclarationText: string | null;
   business: BusinessSnapshot;
   customer: CustomerSnapshot;
   customFieldValues: CustomFieldValueSnapshot[];

@@ -39,6 +39,7 @@ export function LineItemsEditor({
   gstEnabled,
   gstDefaultRate,
   customFieldDefinitions,
+  documentCurrency = "INR",
   onChange,
   disabled = false,
 }: {
@@ -47,9 +48,16 @@ export function LineItemsEditor({
   gstEnabled: boolean;
   gstDefaultRate: number | null;
   customFieldDefinitions: BuilderCustomFieldDefinition[];
+  // The document's own settlement currency — when it isn't INR, the
+  // stage-4 per-line FX columns (for mixed-currency INR documents) are
+  // redundant with Rate itself and hidden entirely, and new lines
+  // default GST% to 0 (still editable, not hard-locked — see
+  // docs/foreign-currency-invoicing-design.md).
+  documentCurrency?: string;
   onChange: (items: LocalLineItem[]) => void;
   disabled?: boolean;
 }) {
+  const isForeignCurrency = documentCurrency !== "INR";
   const sortedCustomFieldDefinitions = [...customFieldDefinitions].sort(
     (a, b) => a.sortOrder - b.sortOrder,
   );
@@ -65,7 +73,7 @@ export function LineItemsEditor({
   const hasAnyForeignCurrency = items.some(
     (item) => item.foreignCurrency || item.foreignRate != null || item.exchangeRate != null,
   );
-  const showFxColumns = fxColumnsToggled || hasAnyForeignCurrency;
+  const showFxColumns = !isForeignCurrency && (fxColumnsToggled || hasAnyForeignCurrency);
   // Reuses the exact same function document-render.tsx/document-pdf.tsx
   // call on the frozen, saved version of this data (§ shared
   // column-schema approach) — here it's fed live local state instead,
@@ -177,7 +185,7 @@ export function LineItemsEditor({
         qty: 1,
         rate: product.price,
         discountPct: 0,
-        gstRate: null,
+        gstRate: isForeignCurrency ? 0 : null,
         foreignCurrency: null,
         foreignRate: null,
         exchangeRate: null,
@@ -197,7 +205,7 @@ export function LineItemsEditor({
         qty: 1,
         rate: 0,
         discountPct: 0,
-        gstRate: null,
+        gstRate: isForeignCurrency ? 0 : null,
         foreignCurrency: null,
         foreignRate: null,
         exchangeRate: null,
@@ -449,7 +457,7 @@ export function LineItemsEditor({
                       </TableCell>
                     )}
                     <TableCell className="pt-4 text-right font-mono text-sm font-medium">
-                      {formatCurrency(amount)}
+                      {formatCurrency(amount, documentCurrency)}
                     </TableCell>
                     <TableCell className="pt-4">
                       <div className="flex justify-end gap-1">
@@ -489,7 +497,7 @@ export function LineItemsEditor({
           onAddCustom={addCustom}
           disabled={disabled}
         />
-        {!disabled && (
+        {!disabled && !isForeignCurrency && (
           <Button
             type="button"
             variant="ghost"

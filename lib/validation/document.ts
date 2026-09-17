@@ -57,6 +57,9 @@ export const appearanceUpdateSchema = z.object({
   showNotes: z.boolean().optional(),
   showTerms: z.boolean().optional(),
   showReferenceNumber: z.boolean().optional(),
+  // Only meaningful when the document's own currency isn't INR — see
+  // documentUpdateSchema's `currency` field.
+  showInrEquivalent: z.boolean().optional(),
 });
 
 export type AppearanceUpdateInput = z.infer<typeof appearanceUpdateSchema>;
@@ -75,6 +78,16 @@ export const documentUpdateSchema = appearanceUpdateSchema.extend({
   notes: z.string().trim().max(2000).nullable().optional(),
   termsText: z.string().trim().max(2000).nullable().optional(),
   referenceNumber: z.string().trim().max(200).nullable().optional(),
+
+  // The document's own settlement currency — an ISO 4217-shaped code,
+  // not validated against a fixed list (the GST/tax engine doesn't care
+  // what this value is; only whether it equals "INR" — see
+  // docs/foreign-currency-invoicing-design.md).
+  currency: z.string().trim().min(3).max(3).optional(),
+  // Display-only INR-equivalent conversion rate; see
+  // appearanceUpdateSchema's `showInrEquivalent`.
+  inrExchangeRate: z.number().positive().nullable().optional(),
+  lutDeclarationText: z.string().trim().max(2000).nullable().optional(),
 
   // Validated against isManuallySettableStatus() in the route handler,
   // not here — that check needs the document's type, which this schema

@@ -70,6 +70,9 @@ export async function POST(
           // reflect who actually created this invoice record.
           createdByUserId: user.id,
           currency: quotation.currency,
+          showInrEquivalent: quotation.showInrEquivalent,
+          inrExchangeRate: quotation.inrExchangeRate,
+          lutDeclarationText: quotation.lutDeclarationText,
           notes: quotation.notes,
           termsText: quotation.termsText,
           template: business.documentTemplate,

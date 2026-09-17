@@ -56,6 +56,8 @@ export function DocumentRender({
   termsText,
   referenceNumber,
   currency,
+  inrExchangeRate,
+  lutDeclarationText,
   business,
   customer,
   customFieldValues,
@@ -82,6 +84,8 @@ export function DocumentRender({
   termsText: string | null;
   referenceNumber: string | null;
   currency: string;
+  inrExchangeRate: number | null;
+  lutDeclarationText: string | null;
   business: BusinessSnapshot;
   customer: CustomerSnapshot;
   customFieldValues: CustomFieldValueSnapshot[];
@@ -105,8 +109,26 @@ export function DocumentRender({
   const sameState = isSameState(business.placeOfSupply, customer.state);
   const taxBuckets = showTax ? groupTaxByRate(lineItems, sameState) : [];
   const lineItemColumns = resolveLineItemColumns(lineItems);
-  const fxRateLabel = resolveForeignCurrencyRateLabel(lineItems);
+  const isForeignCurrency = currency !== "INR";
+  // The stage-4 per-line FX columns are for mixed-currency INR
+  // documents (a line priced in a foreign currency, document still
+  // settles in INR) — once the document's own currency is already
+  // foreign, those columns would be redundant with the RATE column
+  // itself, so they're not shown here at all.
+  const fxRateLabel = isForeignCurrency
+    ? null
+    : resolveForeignCurrencyRateLabel(lineItems);
   const identityLine = businessIdentityLine(business);
+  // Zero-rated export under LUT: every taxable line is 0%, so
+  // groupTaxByRate (which skips 0%/null rows entirely) returns no
+  // buckets — show one explicit row instead of just silently omitting
+  // the section.
+  const showLutZeroRow = showTax && isForeignCurrency && taxBuckets.length === 0;
+  const showInrSubline =
+    isForeignCurrency && appearance.showInrEquivalent && inrExchangeRate != null;
+  function inrEquivalent(amount: number): string {
+    return formatCurrency(amount * (inrExchangeRate ?? 0), "INR");
+  }
 
   return (
     <div
@@ -156,6 +178,14 @@ export function DocumentRender({
               style={{ color: style.docTitleColor }}
             >
               {isQuotation ? "QUOTATION" : "INVOICE"}
+              {isForeignCurrency && (
+                <span
+                  className="ml-2 align-middle text-[12px] font-bold tracking-[0.06em]"
+                  style={{ color: style.docTitleColor }}
+                >
+                  {currency}
+                </span>
+              )}
             </div>
             <div className="mt-2 font-mono text-[13px] text-[#3D4453]">{number}</div>
             <div className="mt-2.5 text-[12.5px] leading-loose text-[#565E72]">
@@ -291,6 +321,13 @@ export function DocumentRender({
         <div className="mt-6 flex justify-end">
           <div className="w-80">
             <TotalRow label="Subtotal" value={formatCurrency(totals.subtotal, currency)} />
+            {showInrSubline && (
+              <TotalRow
+                label=""
+                value={`≈ ${inrEquivalent(totals.subtotal)}`}
+                muted
+              />
+            )}
             <TotalRow
               label="Discount"
               value={`− ${formatCurrency(totals.discountTotal, currency)}`}
@@ -301,6 +338,12 @@ export function DocumentRender({
                   label="Taxable amount"
                   value={formatCurrency(totals.taxableAmount, currency)}
                 />
+                {showLutZeroRow && (
+                  <TotalRow
+                    label="IGST @0% (Zero-rated — Export under LUT)"
+                    value={formatCurrency(0, currency)}
+                  />
+                )}
                 {taxBuckets.map((bucket) => {
                   // Only one rate in use (the overwhelmingly common
                   // case) renders identically to before this fix — the
@@ -349,6 +392,12 @@ export function DocumentRender({
                 {formatCurrency(totals.total, currency)}
               </span>
             </div>
+            {showInrSubline && (
+              <div className="flex justify-between px-3 pt-1 text-[12px] text-[#8A92A6]">
+                <span>INR equivalent</span>
+                <span>{inrEquivalent(totals.total)}</span>
+              </div>
+            )}
             {!isQuotation && (
               <div className="flex justify-between px-3 pt-2 text-[13px]">
                 <span className="text-[#565E72]">
@@ -422,6 +471,16 @@ export function DocumentRender({
             </div>
           </div>
         )}
+        {isForeignCurrency && lutDeclarationText && (
+          <div className="mt-5">
+            <div className="text-[10.5px] font-bold tracking-[0.1em] text-[#8A92A6]">
+              EXPORT DECLARATION
+            </div>
+            <div className="mt-1.5 text-[12.5px] leading-relaxed whitespace-pre-line text-[#3D4453]">
+              {lutDeclarationText}
+            </div>
+          </div>
+        )}
         {appearance.showPayment && (
           <div className="mt-5 border border-[#EEF0F5] bg-[#FAFBFC] p-3.5">
             <div className="text-[10.5px] font-bold tracking-[0.1em] text-[#8A92A6]">
@@ -454,10 +513,24 @@ export function DocumentRender({
   );
 }
 
-function TotalRow({ label, value }: { label: string; value: string }) {
+function TotalRow({
+  label,
+  value,
+  muted = false,
+}: {
+  label: string;
+  value: string;
+  muted?: boolean;
+}) {
   return (
-    <div className="flex justify-between px-3 py-1.5 text-[13px]">
-      <span className="text-[#565E72]">{label}</span>
+    <div
+      className={
+        muted
+          ? "flex justify-between px-3 pb-1 text-[11.5px] text-[#8A92A6]"
+          : "flex justify-between px-3 py-1.5 text-[13px]"
+      }
+    >
+      <span className={muted ? undefined : "text-[#565E72]"}>{label}</span>
       <span>{value}</span>
     </div>
   );

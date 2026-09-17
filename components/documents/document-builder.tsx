@@ -17,6 +17,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
@@ -74,6 +81,10 @@ export type BuilderDocument = {
   notes: string | null;
   termsText: string | null;
   referenceNumber: string | null;
+  currency: string;
+  showInrEquivalent: boolean;
+  inrExchangeRate: number | null;
+  lutDeclarationText: string | null;
   customFieldValues: CustomFieldValueSnapshot[];
   lineItems: BuilderLineItem[];
   // The document's actual, currently-persisted totals — including which
@@ -94,6 +105,13 @@ function toDateInputValue(date: Date | null): string {
 }
 
 const AUTOSAVE_DELAY_MS = 1200;
+
+// A practical set, not an exhaustive ISO 4217 list — the tax engine
+// doesn't care what this value is (see documentUpdateSchema's
+// `currency` comment), so any 3-letter code would technically work;
+// this just keeps the dropdown to currencies GST-registered Indian
+// exporters actually invoice in.
+const CURRENCIES = ["INR", "USD", "EUR", "GBP", "AED", "SGD", "AUD", "CAD"];
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -131,6 +149,14 @@ export function DocumentBuilder({
   const [referenceNumber, setReferenceNumber] = useState(
     document.referenceNumber ?? "",
   );
+  const [currency, setCurrency] = useState(document.currency);
+  const [inrExchangeRate, setInrExchangeRate] = useState(
+    document.inrExchangeRate != null ? String(document.inrExchangeRate) : "",
+  );
+  const [lutDeclarationText, setLutDeclarationText] = useState(
+    document.lutDeclarationText ?? "",
+  );
+  const isForeignCurrency = currency !== "INR";
   // Keyed by definitionId, always a string in local state (including for
   // number/date types) — converted to the snapshot's real value type only
   // when constructing customFieldValues on save, below.
@@ -225,6 +251,9 @@ export function DocumentBuilder({
         notes,
         termsText,
         referenceNumber,
+        currency,
+        inrExchangeRate,
+        lutDeclarationText,
         lineItems,
         customFieldValues,
       }),
@@ -237,6 +266,9 @@ export function DocumentBuilder({
       notes,
       termsText,
       referenceNumber,
+      currency,
+      inrExchangeRate,
+      lutDeclarationText,
       lineItems,
       customFieldValues,
     ],
@@ -277,6 +309,9 @@ export function DocumentBuilder({
           notes: notes || null,
           termsText: termsText || null,
           referenceNumber: referenceNumber || null,
+          currency,
+          inrExchangeRate: inrExchangeRate === "" ? null : Number(inrExchangeRate),
+          lutDeclarationText: lutDeclarationText || null,
           customFieldValues,
           lineItems: lineItems.map((item) => ({
             productId: item.productId,
@@ -509,7 +544,48 @@ export function DocumentBuilder({
                     disabled={!editable}
                   />
                 </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="doc-currency">Currency</Label>
+                  <Select
+                    value={currency}
+                    onValueChange={(value) => value && setCurrency(value)}
+                    disabled={!editable}
+                  >
+                    <SelectTrigger id="doc-currency" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCIES.map((code) => (
+                        <SelectItem key={code} value={code}>
+                          {code}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {isForeignCurrency && document.showInrEquivalent && (
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="doc-inr-exchange-rate">
+                      INR exchange rate
+                    </Label>
+                    <Input
+                      id="doc-inr-exchange-rate"
+                      type="number"
+                      min={0}
+                      step="any"
+                      placeholder={`1 ${currency} = ? INR`}
+                      value={inrExchangeRate}
+                      onChange={(e) => setInrExchangeRate(e.target.value)}
+                      disabled={!editable}
+                    />
+                  </div>
+                )}
               </div>
+              {isForeignCurrency && (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Export supply — zero-rated under LUT. GST is 0%.
+                </p>
+              )}
             </div>
 
             {customFieldDefinitions.length > 0 && (
@@ -554,6 +630,7 @@ export function DocumentBuilder({
                 gstEnabled={business.gstEnabled}
                 gstDefaultRate={business.gstDefaultRate}
                 customFieldDefinitions={lineItemCustomFieldDefinitions}
+                documentCurrency={currency}
                 onChange={setLineItems}
                 disabled={!editable}
               />
@@ -582,13 +659,29 @@ export function DocumentBuilder({
                     disabled={!editable}
                   />
                 </div>
+                {isForeignCurrency && (
+                  <div className="grid gap-1.5 sm:col-span-2">
+                    <Label htmlFor="doc-lut-text">Export declaration (LUT)</Label>
+                    <Textarea
+                      id="doc-lut-text"
+                      rows={2}
+                      value={lutDeclarationText}
+                      onChange={(e) => setLutDeclarationText(e.target.value)}
+                      disabled={!editable}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </fieldset>
 
         <div className="flex w-full flex-col gap-4 lg:w-80 lg:flex-none">
-          <TotalsSummary totals={totals} gstEnabled={business.gstEnabled} />
+          <TotalsSummary
+            totals={totals}
+            gstEnabled={business.gstEnabled}
+            currency={currency}
+          />
           <div className="flex flex-col gap-2">
             {editable && (
               <Button type="button" onClick={handleManualSave}>

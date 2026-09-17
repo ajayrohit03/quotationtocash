@@ -286,6 +286,24 @@ model Document {
   total         Decimal @default(0) @db.Decimal(12, 2)
   currency      String  @default("INR")
 
+  // Foreign-currency invoicing (Document's own settlement currency, not
+  // the per-line-item FX helper below on LineItem) — see
+  // docs/foreign-currency-invoicing-design.md. showInrEquivalent/
+  // inrExchangeRate are purely a display add-on: an optional INR
+  // sub-line under Subtotal/Grand Total, computed client-side as
+  // amount × inrExchangeRate — never touches the tax engine or the
+  // persisted totals above, same "provenance only" rule as LineItem's
+  // foreignRate/exchangeRate.
+  showInrEquivalent Boolean  @default(false) @map("show_inr_equivalent")
+  inrExchangeRate   Decimal? @map("inr_exchange_rate") @db.Decimal(12, 6)
+
+  // Standard GST export/LUT declaration wording, shown in the footer
+  // only when currency isn't INR — pre-populated via the @default below
+  // so every document already has editable text the moment its currency
+  // is changed, same "editable default, not hardcoded" rule as
+  // termsText.
+  lutDeclarationText String? @default("Supply meant for export under Letter of Undertaking (LUT) without payment of Integrated Tax.") @map("lut_declaration_text")
+
   // Maintained running total of this invoice's Payment rows — updated
   // transactionally alongside every payment create/reverse, never
   // live-summed from `payments` on read. See

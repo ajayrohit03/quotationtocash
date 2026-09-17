@@ -90,6 +90,11 @@ export async function DocumentEditorPage({
     notes: document.notes,
     termsText: document.termsText,
     referenceNumber: document.referenceNumber,
+    currency: document.currency,
+    showInrEquivalent: document.showInrEquivalent,
+    inrExchangeRate:
+      document.inrExchangeRate == null ? null : Number(document.inrExchangeRate),
+    lutDeclarationText: document.lutDeclarationText,
     customFieldValues:
       document.customFieldValues as unknown as CustomFieldValueSnapshot[],
     lineItems: document.lineItems.map((item) => ({

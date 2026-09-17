@@ -65,6 +65,7 @@ type ToggleKey = keyof Pick<
   | "showNotes"
   | "showTerms"
   | "showReferenceNumber"
+  | "showInrEquivalent"
 >;
 
 const AUTOSAVE_DELAY_MS = 800;
@@ -130,6 +131,7 @@ export function DocumentPreview({
     showNotes: document.showNotes,
     showTerms: document.showTerms,
     showReferenceNumber: document.showReferenceNumber,
+    showInrEquivalent: document.showInrEquivalent,
   });
 
   const lastSaved = useRef(appearance);
@@ -344,6 +346,9 @@ export function DocumentPreview({
     { key: "showNotes", label: "Notes" },
     { key: "showTerms", label: "Terms & conditions" },
     { key: "showReferenceNumber", label: "Reference number" },
+    ...(document.currency !== "INR"
+      ? ([{ key: "showInrEquivalent", label: "Show INR equivalent" }] as const)
+      : []),
   ];
 
   return (
@@ -474,6 +479,8 @@ export function DocumentPreview({
             creditBalance={document.creditBalance}
             showRecordedBy
             currency={document.currency}
+            inrExchangeRate={document.inrExchangeRate}
+            lutDeclarationText={document.lutDeclarationText}
             business={document.business}
             customer={document.customer}
             customFieldValues={document.customFieldValues}
