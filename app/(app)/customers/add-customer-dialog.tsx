@@ -54,6 +54,7 @@ export function AddCustomerDialog() {
       address: "",
       city: "",
       state: undefined,
+      gstin: "",
     },
   });
 
@@ -201,6 +202,24 @@ export function AddCustomerDialog() {
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="gstin"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>GSTIN</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="27AABCU9603R1ZX"
+                      className="font-mono uppercase"
+                      {...field}
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <DialogFooter className="mt-2">
               <DialogClose render={<Button type="button" variant="outline" />}>
                 Cancel

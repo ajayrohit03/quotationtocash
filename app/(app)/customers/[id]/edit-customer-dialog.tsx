@@ -62,6 +62,7 @@ export function EditCustomerDialog({ customer }: { customer: Customer }) {
       // the validated union the way it must already conform to, since it
       // can only ever have been set through this same schema.
       state: (customer.state ?? undefined) as CustomerUpdateFormValues["state"],
+      gstin: customer.gstin ?? "",
     },
   });
 
@@ -206,6 +207,25 @@ export function EditCustomerDialog({ customer }: { customer: Customer }) {
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="gstin"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>GSTIN</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="27AABCU9603R1ZX"
+                      className="font-mono uppercase"
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <DialogFooter className="mt-2">
               <DialogClose render={<Button type="button" variant="outline" />}>
                 Cancel

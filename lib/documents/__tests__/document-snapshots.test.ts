@@ -97,6 +97,47 @@ describe("document snapshot immutability", () => {
     expect(liveCustomer.address).toBe("200 New Street");
   });
 
+  it("keeps the customer snapshot's GSTIN unchanged after the customer's GSTIN changes", async () => {
+    const business = await createTestBusiness();
+    const customer = await prisma.customer.create({
+      data: {
+        businessId: business.id,
+        name: "Original Customer",
+        gstin: "27AABCU9603R1ZX",
+      },
+    });
+
+    const document = await prisma.document.create({
+      data: {
+        businessId: business.id,
+        type: "invoice",
+        number: `TEST-${randomUUID()}`,
+        customerId: customer.id,
+        issueDate: new Date(),
+        customerSnapshot: buildCustomerSnapshot(customer),
+        businessSnapshot: buildBusinessSnapshot(business),
+      },
+    });
+
+    // The customer's GSTIN changes after the document already exists —
+    // e.g. a genuine correction or a new registration.
+    await prisma.customer.update({
+      where: { id: customer.id },
+      data: { gstin: "29AABCU9603R1ZY" },
+    });
+
+    const refetched = await prisma.document.findUniqueOrThrow({
+      where: { id: document.id },
+    });
+    const snapshot = refetched.customerSnapshot as unknown as CustomerSnapshot;
+    expect(snapshot.gstin).toBe("27AABCU9603R1ZX");
+
+    const liveCustomer = await prisma.customer.findUniqueOrThrow({
+      where: { id: customer.id },
+    });
+    expect(liveCustomer.gstin).toBe("29AABCU9603R1ZY");
+  });
+
   it("keeps a line item's resolved GST rate and computed tax unchanged after the product's rate changes", async () => {
     const business = await createTestBusiness({
       gstEnabled: true,

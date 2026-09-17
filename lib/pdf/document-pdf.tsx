@@ -208,6 +208,11 @@ export function DocumentPdf({
                 {[customer.email, customer.phone].filter(Boolean).join("  ·  ")}
               </Text>
             )}
+            {customer.gstin && (
+              <Text style={[styles.addressLine, { fontFamily: "Courier" }]}>
+                GSTIN {customer.gstin}
+              </Text>
+            )}
           </View>
           <View>
             <Text style={styles.sectionLabel}>REFERENCE</Text>

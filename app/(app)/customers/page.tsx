@@ -111,7 +111,14 @@ export default async function CustomersPage({
                         {customer.name}
                       </Link>
                     </TableCell>
-                    <TableCell>{customer.company || "—"}</TableCell>
+                    <TableCell>
+                      {customer.company || "—"}
+                      {customer.gstin && (
+                        <div className="mt-0.5 font-mono text-xs text-muted-foreground">
+                          {customer.gstin}
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>{customer.email || "—"}</TableCell>
                     <TableCell>{customer.phone || "—"}</TableCell>
                     <TableCell className="text-right font-mono text-sm">

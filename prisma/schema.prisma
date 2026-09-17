@@ -226,6 +226,7 @@ model Customer {
   address String?
   city    String?
   state   String?
+  gstin   String?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

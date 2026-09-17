@@ -16,6 +16,10 @@ export const customerCreateSchema = z.object({
   address: z.string().trim().max(500).optional(),
   city: z.string().trim().max(120).optional(),
   state: z.enum(INDIAN_STATES).optional(),
+  // 15-character format is a soft UI hint only (see edit-customer-dialog),
+  // not enforced here — same reasoning as PAN/TAN/CIN/SWIFT/IFSC
+  // elsewhere: a formatting quibble shouldn't block saving a real GSTIN.
+  gstin: z.string().trim().max(20).optional(),
 });
 
 // The schema's email field is a z.transform (empty string -> undefined),
@@ -32,6 +36,7 @@ export const customerUpdateSchema = z.object({
   address: z.string().trim().max(500).nullable().optional(),
   city: z.string().trim().max(120).nullable().optional(),
   state: z.enum(INDIAN_STATES).nullable().optional(),
+  gstin: z.string().trim().max(20).nullable().optional(),
 });
 
 export type CustomerUpdateInput = z.infer<typeof customerUpdateSchema>;

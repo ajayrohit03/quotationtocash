@@ -187,6 +187,7 @@ export function DocumentRender({
               {(customer.email || customer.phone) && (
                 <div>{[customer.email, customer.phone].filter(Boolean).join(" · ")}</div>
               )}
+              {customer.gstin && <div className="font-mono">GSTIN {customer.gstin}</div>}
             </div>
           </div>
           <div>

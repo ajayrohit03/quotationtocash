@@ -15,6 +15,7 @@ export type CustomerSnapshot = {
   address: string | null;
   city: string | null;
   state: string | null;
+  gstin: string | null;
 };
 
 export function buildCustomerSnapshot(customer: Customer): CustomerSnapshot {
@@ -26,6 +27,7 @@ export function buildCustomerSnapshot(customer: Customer): CustomerSnapshot {
     address: customer.address,
     city: customer.city,
     state: customer.state,
+    gstin: customer.gstin,
   };
 }
 
