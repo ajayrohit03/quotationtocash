@@ -60,6 +60,10 @@ export const appearanceUpdateSchema = z.object({
   // Only meaningful when the document's own currency isn't INR — see
   // documentUpdateSchema's `currency` field.
   showInrEquivalent: z.boolean().optional(),
+  // Base font size in points — null means "use the template's own
+  // default." A user-controlled escape hatch for documents with many
+  // columns/long text; see schema.prisma's Document.fontSize comment.
+  fontSize: z.number().int().min(7).max(12).nullable().optional(),
 });
 
 export type AppearanceUpdateInput = z.infer<typeof appearanceUpdateSchema>;

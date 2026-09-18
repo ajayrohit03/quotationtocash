@@ -67,6 +67,7 @@ export default async function PublicDocumentPage({
           creditBalance={previewDocument.creditBalance}
           currency={previewDocument.currency}
           inrExchangeRate={previewDocument.inrExchangeRate}
+          fontSize={previewDocument.fontSize}
           lutDeclarationText={previewDocument.lutDeclarationText}
           business={previewDocument.business}
           customer={previewDocument.customer}
@@ -85,6 +86,7 @@ export default async function PublicDocumentPage({
             showTerms: previewDocument.showTerms,
             showReferenceNumber: previewDocument.showReferenceNumber,
             showInrEquivalent: previewDocument.showInrEquivalent,
+            fontSize: previewDocument.fontSize,
           }}
         />
       </div>

@@ -315,6 +315,14 @@ model Document {
 
   template    DocumentTemplate @default(classic)
   accentColor String           @default("#4F46E5") @map("accent_color")
+  // Base font size in points, 7-12 — null means "use the template's own
+  // default" (no visual change from today). A user-controlled escape
+  // hatch for documents with many columns/long text that don't fit the
+  // default sizing — see docs/pdf-layout-fixes-design.md. Same
+  // autosave-on-Customize-sidebar pattern as template/accentColor,
+  // consumed identically by the web preview (as a CSS scale factor) and
+  // the PDF renderer (direct per-Text fontSize multiplication).
+  fontSize    Int?             @map("font_size")
 
   showLogo            Boolean @default(true) @map("show_logo")
   showGstinRow        Boolean @default(true) @map("show_gstin_row")

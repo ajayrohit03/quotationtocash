@@ -40,91 +40,131 @@ const COLORS = {
   paymentBorder: "#EEF0F5",
 };
 
-const styles = StyleSheet.create({
-  page: {
-    padding: 40,
-    fontSize: 9.5,
-    fontFamily: "Helvetica",
-    color: COLORS.ink,
-  },
-  topBar: { height: 7 },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  businessName: { fontSize: 14, fontFamily: "Helvetica-Bold" },
-  addressLine: { fontSize: 9, color: COLORS.body, marginTop: 2, lineHeight: 1.4 },
-  gstinLine: { fontSize: 8.5, color: COLORS.body, marginTop: 4, fontFamily: "Courier" },
-  logo: { width: 90, height: 32, marginBottom: 10, objectFit: "contain" },
-  docTitle: { fontSize: 19, fontFamily: "Helvetica-Bold", letterSpacing: 1.5 },
-  docNumber: { fontSize: 9.5, marginTop: 6, fontFamily: "Courier", color: "#3D4453" },
-  docDates: { fontSize: 9, color: COLORS.body, marginTop: 8, lineHeight: 1.6 },
-  divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 14 },
-  refRow: { flexDirection: "row", gap: 32 },
-  sectionLabel: {
-    fontSize: 7.5,
-    fontFamily: "Helvetica-Bold",
-    letterSpacing: 1,
-    color: COLORS.muted,
-  },
-  billToName: { fontSize: 10, fontFamily: "Helvetica-Bold", marginTop: 6 },
-  tableHead: {
-    flexDirection: "row",
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-    fontSize: 7.5,
-    fontFamily: "Helvetica-Bold",
-    letterSpacing: 0.5,
-  },
-  tableRow: {
-    flexDirection: "row",
-    paddingVertical: 3,
-    paddingHorizontal: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.rowBorder,
-    fontSize: 9,
-  },
-  itemName: { fontFamily: "Helvetica-Bold" },
-  itemDesc: { fontSize: 7.5, color: COLORS.faint, marginTop: 1 },
-  totalsBlock: { width: 230, marginLeft: "auto", marginTop: 8 },
-  totalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 3,
-    paddingHorizontal: 6,
-    fontSize: 9,
-  },
-  totalLabel: { color: COLORS.body },
-  grandTotalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "baseline",
-    marginTop: 4,
-    padding: 6,
-  },
-  grandTotalLabel: { fontSize: 8, fontFamily: "Helvetica-Bold", letterSpacing: 0.5 },
-  grandTotalValue: { fontSize: 13, fontFamily: "Helvetica-Bold" },
-  noteBlock: { marginTop: 14 },
-  noteBody: { fontSize: 9, color: "#3D4453", marginTop: 4, lineHeight: 1.5 },
-  paymentBlock: {
-    marginTop: 10,
-    padding: 8,
-    backgroundColor: COLORS.paymentBg,
-    borderWidth: 1,
-    borderColor: COLORS.paymentBorder,
-  },
-  footer: {
-    marginTop: 28,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.paymentBorder,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    fontSize: 8,
-    color: COLORS.muted,
-  },
-});
+// The neutral scale point every fontSize below pivots on — a document
+// with fontSize null (or === this value) renders pixel-identical to
+// before this feature. Kept in sync by hand with
+// components/documents/document-render.tsx's own copy (a shared
+// constant would need a shared module neither file otherwise needs —
+// see that file's DEFAULT_FONT_SIZE comment) and
+// document-preview.tsx's DEFAULT_FONT_SIZE.
+const DEFAULT_FONT_SIZE = 9;
+
+// Turned into a function of the document's own fontSize (see
+// DEFAULT_FONT_SIZE above) rather than a single static StyleSheet.create
+// call, so every Text in the document scales together — this is the
+// direct "multiply every Text component's font size" half of the
+// font-size feature; document-render.tsx's half is a CSS custom
+// property instead, since it isn't constrained to a fixed literal page
+// width the way A4 output is. Only fontSize values scale; padding/
+// margin/width stay fixed so column layout doesn't shift underneath the
+// widths tuned elsewhere in this file — a smaller font just leaves more
+// breathing room in the same boxes, which is the whole point.
+function createStyles(scale: number) {
+  const fs = (px: number) => px * scale;
+  // Vertical rhythm (paddingVertical/marginTop/marginVertical) scales
+  // too, not just glyph size — a smaller font with unchanged gaps
+  // barely reclaims any page space, which defeats the whole point of
+  // this control ("reduce to 8pt and everything fits"). Horizontal
+  // padding, column widths, and the page's own outer padding stay
+  // fixed — those aren't what's fighting for vertical room on a tall
+  // line-item table.
+  const sp = (px: number) => px * scale;
+  return StyleSheet.create({
+    page: {
+      padding: sp(40),
+      fontSize: fs(9.5),
+      fontFamily: "Helvetica",
+      color: COLORS.ink,
+    },
+    topBar: { height: 7 },
+    headerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+    },
+    businessName: { fontSize: fs(14), fontFamily: "Helvetica-Bold" },
+    addressLine: { fontSize: fs(9), color: COLORS.body, marginTop: sp(2), lineHeight: 1.4 },
+    gstinLine: {
+      fontSize: fs(8.5),
+      color: COLORS.body,
+      marginTop: sp(4),
+      fontFamily: "Courier",
+    },
+    logo: { width: 90, height: 32, marginBottom: 10, objectFit: "contain" },
+    docTitle: { fontSize: fs(19), fontFamily: "Helvetica-Bold", letterSpacing: 1.5 },
+    docNumber: {
+      fontSize: fs(9.5),
+      marginTop: sp(6),
+      fontFamily: "Courier",
+      color: "#3D4453",
+    },
+    docDates: { fontSize: fs(9), color: COLORS.body, marginTop: sp(8), lineHeight: 1.6 },
+    divider: { height: 1, backgroundColor: COLORS.border, marginVertical: sp(11) },
+    refRow: { flexDirection: "row", gap: 32 },
+    sectionLabel: {
+      fontSize: fs(7.5),
+      fontFamily: "Helvetica-Bold",
+      letterSpacing: 1,
+      color: COLORS.muted,
+    },
+    billToName: { fontSize: fs(10), fontFamily: "Helvetica-Bold", marginTop: sp(6) },
+    tableHead: {
+      flexDirection: "row",
+      paddingVertical: sp(4),
+      paddingHorizontal: 6,
+      fontSize: fs(7.5),
+      fontFamily: "Helvetica-Bold",
+      letterSpacing: 0.5,
+    },
+    tableRow: {
+      flexDirection: "row",
+      paddingVertical: sp(3),
+      paddingHorizontal: 6,
+      borderBottomWidth: 1,
+      borderBottomColor: COLORS.rowBorder,
+      fontSize: fs(9),
+    },
+    itemName: { fontFamily: "Helvetica-Bold" },
+    itemDesc: { fontSize: fs(7.5), color: COLORS.faint, marginTop: sp(1) },
+    totalsBlock: { width: 230, marginLeft: "auto", marginTop: sp(5) },
+    totalRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingVertical: sp(3),
+      paddingHorizontal: 6,
+      fontSize: fs(9),
+    },
+    totalLabel: { color: COLORS.body },
+    grandTotalRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "baseline",
+      marginTop: sp(4),
+      padding: sp(6),
+    },
+    grandTotalLabel: { fontSize: fs(8), fontFamily: "Helvetica-Bold", letterSpacing: 0.5 },
+    grandTotalValue: { fontSize: fs(13), fontFamily: "Helvetica-Bold" },
+    noteBlock: { marginTop: sp(7) },
+    noteBody: { fontSize: fs(9), color: "#3D4453", marginTop: sp(4), lineHeight: 1.5 },
+    paymentBlock: {
+      marginTop: sp(6),
+      padding: sp(6),
+      backgroundColor: COLORS.paymentBg,
+      borderWidth: 1,
+      borderColor: COLORS.paymentBorder,
+    },
+    footer: {
+      marginTop: 28,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: COLORS.paymentBorder,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      fontSize: fs(8),
+      color: COLORS.muted,
+    },
+  });
+}
 
 function templateStyle(template: PreviewDocument["template"], accentColor: string) {
   if (template === "formal") {
@@ -161,6 +201,9 @@ export function DocumentPdf({
   const isQuotation = document.type === "quotation";
   const style = templateStyle(document.template, document.accentColor);
   const isCompact = document.template === "compact";
+  const scale = (document.fontSize ?? DEFAULT_FONT_SIZE) / DEFAULT_FONT_SIZE;
+  const styles = createStyles(scale);
+  const fs = (px: number) => px * scale;
   const showGstinRow = gstEnabled && document.showGstinRow;
   const showTax = gstEnabled && document.showTax;
   const secondaryDate = isQuotation ? document.validUntil : document.dueDate;
@@ -214,7 +257,7 @@ export function DocumentPdf({
             <Text style={[styles.docTitle, { color: style.docTitleColor }]}>
               {isQuotation ? "QUOTATION" : "INVOICE"}
               {isForeignCurrency && (
-                <Text style={{ fontSize: 11 }}> {document.currency}</Text>
+                <Text style={{ fontSize: fs(11) }}> {document.currency}</Text>
               )}
             </Text>
             <Text style={styles.docNumber}>{document.number}</Text>
@@ -264,28 +307,33 @@ export function DocumentPdf({
                 </>
               )}
             </Text>
-            {document.customFieldValues.length > 0 && (
-              <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 4 }}>
-                {[...document.customFieldValues]
-                  .sort((a, b) => a.sortOrder - b.sortOrder)
-                  .map((entry) => (
-                    <Text
-                      key={entry.definitionId}
-                      style={[styles.addressLine, { width: "50%", marginTop: 2, paddingRight: 4 }]}
-                    >
-                      {`${entry.label}: ${formatCustomFieldValue(entry)}`}
-                    </Text>
-                  ))}
-              </View>
-            )}
           </View>
         </View>
 
-        <View style={{ marginTop: isCompact ? 10 : 16 }}>
+        {/* Full page width, not squeezed into the 260pt REFERENCE
+            column above — a long label+value pair (e.g. "Vessel/Voyage
+            No: ZHONG PENG YOU YI 26067S") needs more than half of one
+            column's worth of room. */}
+        {document.customFieldValues.length > 0 && (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: fs(8) }}>
+            {[...document.customFieldValues]
+              .sort((a, b) => a.sortOrder - b.sortOrder)
+              .map((entry) => (
+                <Text
+                  key={entry.definitionId}
+                  style={[styles.addressLine, { width: "50%", marginTop: 2, paddingRight: 8 }]}
+                >
+                  {`${entry.label}: ${formatCustomFieldValue(entry)}`}
+                </Text>
+              ))}
+          </View>
+        )}
+
+        <View style={{ marginTop: fs(isCompact ? 10 : 16) }}>
           <View
             style={[
               styles.tableHead,
-              isCompact ? { paddingVertical: 3 } : undefined,
+              isCompact ? { paddingVertical: fs(3) } : undefined,
               {
                 backgroundColor: style.tableHeadBg,
                 color: style.tableHeadColor,
@@ -296,29 +344,29 @@ export function DocumentPdf({
           >
             <Text style={{ flex: 1 }}>DESCRIPTION</Text>
             {lineItemColumns.map((column) => (
-              <Text key={column.id} style={{ width: 60, paddingRight: 6 }}>
+              <Text key={column.id} style={{ width: 48, paddingRight: 6 }}>
                 {column.label.toUpperCase()}
               </Text>
             ))}
             {fxRateLabel && (
               <>
-                <Text style={{ width: 55, textAlign: "right", paddingRight: 6 }}>
+                <Text style={{ width: 45, textAlign: "right", paddingRight: 6 }}>
                   {fxRateLabel.toUpperCase()}
                 </Text>
-                <Text style={{ width: 50, textAlign: "right", paddingRight: 6 }}>
+                <Text style={{ width: 42, textAlign: "right", paddingRight: 6 }}>
                   EXCH. RATE
                 </Text>
               </>
             )}
-            <Text style={{ width: 40, textAlign: "right" }}>QTY</Text>
-            <Text style={{ width: 65, textAlign: "right" }}>RATE</Text>
-            {showTax && <Text style={{ width: 40, textAlign: "right" }}>TAX</Text>}
-            <Text style={{ width: 75, textAlign: "right" }}>AMOUNT</Text>
+            <Text style={{ width: 32, textAlign: "right" }}>QTY</Text>
+            <Text style={{ width: 58, textAlign: "right" }}>RATE</Text>
+            {showTax && <Text style={{ width: 32, textAlign: "right" }}>TAX</Text>}
+            <Text style={{ width: 68, textAlign: "right" }}>AMOUNT</Text>
           </View>
           {document.lineItems.map((item, index) => (
             <View
               key={index}
-              style={[styles.tableRow, isCompact ? { paddingVertical: 2 } : undefined]}
+              style={[styles.tableRow, isCompact ? { paddingVertical: fs(2) } : undefined]}
             >
               <View style={{ flex: 1, paddingRight: 8 }}>
                 <Text style={styles.itemName}>{item.name}</Text>
@@ -329,31 +377,31 @@ export function DocumentPdf({
                   (v) => v.definitionId === column.id,
                 );
                 return (
-                  <Text key={column.id} style={{ width: 60, paddingRight: 6, color: COLORS.body }}>
+                  <Text key={column.id} style={{ width: 48, paddingRight: 6, color: COLORS.body }}>
                     {entry ? formatCustomFieldValue(entry) : "—"}
                   </Text>
                 );
               })}
               {fxRateLabel && (
                 <>
-                  <Text style={{ width: 55, textAlign: "right", paddingRight: 6, color: COLORS.body }}>
+                  <Text style={{ width: 45, textAlign: "right", paddingRight: 6, color: COLORS.body }}>
                     {item.foreignRate != null ? item.foreignRate : "—"}
                   </Text>
-                  <Text style={{ width: 50, textAlign: "right", paddingRight: 6, color: COLORS.body }}>
+                  <Text style={{ width: 42, textAlign: "right", paddingRight: 6, color: COLORS.body }}>
                     {item.exchangeRate != null ? item.exchangeRate : "—"}
                   </Text>
                 </>
               )}
-              <Text style={{ width: 40, textAlign: "right" }}>{item.qty}</Text>
-              <Text style={{ width: 65, textAlign: "right" }}>
+              <Text style={{ width: 32, textAlign: "right" }}>{item.qty}</Text>
+              <Text style={{ width: 58, textAlign: "right" }}>
                 {formatCurrency(item.rate, document.currency)}
               </Text>
               {showTax && (
-                <Text style={{ width: 40, textAlign: "right", color: COLORS.body }}>
+                <Text style={{ width: 32, textAlign: "right", color: COLORS.body }}>
                   {item.gstRate != null ? `${item.gstRate}%` : "—"}
                 </Text>
               )}
-              <Text style={{ width: 75, textAlign: "right", fontFamily: "Helvetica-Bold" }}>
+              <Text style={{ width: 68, textAlign: "right", fontFamily: "Helvetica-Bold" }}>
                 {formatCurrency(item.amount, document.currency)}
               </Text>
             </View>
@@ -367,8 +415,8 @@ export function DocumentPdf({
           </View>
           {showInrSubline && (
             <View style={[styles.totalRow, { paddingVertical: 0 }]}>
-              <Text style={{ fontSize: 7.5, color: COLORS.muted }}></Text>
-              <Text style={{ fontSize: 7.5, color: COLORS.muted }}>
+              <Text style={{ fontSize: fs(7.5), color: COLORS.muted }}></Text>
+              <Text style={{ fontSize: fs(7.5), color: COLORS.muted }}>
                 ≈ {inrEquivalent(document.totals.subtotal)}
               </Text>
             </View>
@@ -439,8 +487,8 @@ export function DocumentPdf({
           </View>
           {showInrSubline && (
             <View style={[styles.totalRow, { paddingTop: 2 }]}>
-              <Text style={{ fontSize: 7.5, color: COLORS.muted }}>INR equivalent</Text>
-              <Text style={{ fontSize: 7.5, color: COLORS.muted }}>
+              <Text style={{ fontSize: fs(7.5), color: COLORS.muted }}>INR equivalent</Text>
+              <Text style={{ fontSize: fs(7.5), color: COLORS.muted }}>
                 {inrEquivalent(document.totals.total)}
               </Text>
             </View>
@@ -489,13 +537,13 @@ export function DocumentPdf({
                   borderTopColor: COLORS.rowBorder,
                 }}
               >
-                <Text style={{ fontSize: 8.5, color: COLORS.body }}>
+                <Text style={{ fontSize: fs(8.5), color: COLORS.body }}>
                   {formatDateIST(payment.paidAt)}
                 </Text>
-                <Text style={{ fontSize: 8.5, color: COLORS.body, flex: 1 }}>
+                <Text style={{ fontSize: fs(8.5), color: COLORS.body, flex: 1 }}>
                   {payment.note}
                 </Text>
-                <Text style={{ fontSize: 8.5, fontFamily: "Courier" }}>
+                <Text style={{ fontSize: fs(8.5), fontFamily: "Courier" }}>
                   {formatCurrency(payment.amount, document.currency)}
                 </Text>
               </View>
@@ -524,17 +572,17 @@ export function DocumentPdf({
         {document.showPayment && (
           <View style={styles.paymentBlock}>
             <Text style={styles.sectionLabel}>PAYMENT DETAILS</Text>
+            {/* Business name + every bank field on one wrapped line
+                instead of one line each — up to 6 separate lines
+                (name, then Bank/Account holder/Account number/IFSC/UPI)
+                was the single biggest contributor to page-1 overflow on
+                a document that already has a full line-item table
+                above it. */}
             <Text style={[styles.noteBody, { fontFamily: "Courier" }]}>
-              {business.name}
+              {[business.name, ...bankLines.map((line) => `${line.label}: ${line.value}`)].join(
+                "   ·   ",
+              )}
             </Text>
-            {bankLines.map((line) => (
-              <Text
-                key={line.label}
-                style={[styles.noteBody, { fontFamily: "Courier", marginTop: 1 }]}
-              >
-                {line.label}: {line.value}
-              </Text>
-            ))}
           </View>
         )}
 

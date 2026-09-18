@@ -54,6 +54,7 @@ export function toPreviewDocument(
     showTerms: document.showTerms,
     showReferenceNumber: document.showReferenceNumber,
     showInrEquivalent: document.showInrEquivalent,
+    fontSize: document.fontSize,
     // Snapshots are stored as Json — cast back to the shape they were
     // always written in (see lib/documents/snapshots.ts).
     business: document.businessSnapshot as unknown as BusinessSnapshot,

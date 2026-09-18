@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import type { CSSProperties } from "react";
 import type { DocumentType } from "@prisma/client";
 import { formatDateIST } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
@@ -28,6 +29,15 @@ import type {
 function formatDate(iso: string): string {
   return formatDateIST(iso, { day: "2-digit", month: "short", year: "numeric" });
 }
+
+// The neutral scale point every text-[Npx] class below pivots on via
+// the --doc-scale CSS custom property — a document with fontSize null
+// (or === this value) renders pixel-identical to before this feature.
+// Kept in sync by hand with lib/pdf/document-pdf.tsx's own copy (the
+// PDF renderer can't share this module — see that file's header
+// comment) and document-preview.tsx's DEFAULT_FONT_SIZE (the Customize
+// slider's fallback display value).
+const DEFAULT_FONT_SIZE = 9;
 
 // Per-template colors, mirroring the design reference's renderVals():
 // classic = dark header band, modern = accent top bar + soft gray header,
@@ -75,6 +85,7 @@ export function DocumentRender({
   currency,
   inrExchangeRate,
   lutDeclarationText,
+  fontSize,
   business,
   customer,
   customFieldValues,
@@ -103,6 +114,7 @@ export function DocumentRender({
   currency: string;
   inrExchangeRate: number | null;
   lutDeclarationText: string | null;
+  fontSize: number | null;
   business: BusinessSnapshot;
   customer: CustomerSnapshot;
   customFieldValues: CustomFieldValueSnapshot[];
@@ -147,11 +159,18 @@ export function DocumentRender({
   function inrEquivalent(amount: number): string {
     return formatCurrency(amount * (inrExchangeRate ?? 0), "INR");
   }
+  const scale = (fontSize ?? DEFAULT_FONT_SIZE) / DEFAULT_FONT_SIZE;
 
   return (
     <div
       className="w-full overflow-hidden bg-white text-[#0E1220] shadow-[0_8px_40px_rgba(16,24,40,0.10)]"
-      style={{ maxWidth: 794, minHeight: 1123 }}
+      style={
+        {
+          maxWidth: 794,
+          minHeight: 1123,
+          "--doc-scale": scale,
+        } as CSSProperties
+      }
     >
       {appearance.template === "modern" && (
         <div className="h-2.5" style={{ background: appearance.accentColor }} />
@@ -168,8 +187,8 @@ export function DocumentRender({
                 className="mb-4 h-10 max-w-[160px] object-contain object-left"
               />
             )}
-            <div className="text-[19px] font-bold tracking-tight">{business.name}</div>
-            <div className="mt-1.5 text-[12.5px] leading-relaxed text-[#565E72]">
+            <div className="text-[length:calc(var(--doc-scale)*19px)] font-bold tracking-tight">{business.name}</div>
+            <div className="mt-1.5 text-[length:calc(var(--doc-scale)*12.5px)] leading-relaxed text-[#565E72]">
               {[business.address, [business.city, business.state].filter(Boolean).join(", ")]
                 .filter(Boolean)
                 .map((line, i) => (
@@ -180,33 +199,33 @@ export function DocumentRender({
               </div>
             </div>
             {showGstinRow && business.gstin && (
-              <div className="mt-1.5 font-mono text-[11.5px] text-[#565E72]">
+              <div className="mt-1.5 font-mono text-[length:calc(var(--doc-scale)*11.5px)] text-[#565E72]">
                 GSTIN {business.gstin}
               </div>
             )}
             {identityLine && (
-              <div className="mt-1.5 font-mono text-[11.5px] text-[#565E72]">
+              <div className="mt-1.5 font-mono text-[length:calc(var(--doc-scale)*11.5px)] text-[#565E72]">
                 {identityLine}
               </div>
             )}
           </div>
           <div className="text-right">
             <div
-              className="text-[26px] font-bold tracking-[0.12em]"
+              className="text-[length:calc(var(--doc-scale)*26px)] font-bold tracking-[0.12em]"
               style={{ color: style.docTitleColor }}
             >
               {isQuotation ? "QUOTATION" : "INVOICE"}
               {isForeignCurrency && (
                 <span
-                  className="ml-2 align-middle text-[12px] font-bold tracking-[0.06em]"
+                  className="ml-2 align-middle text-[length:calc(var(--doc-scale)*12px)] font-bold tracking-[0.06em]"
                   style={{ color: style.docTitleColor }}
                 >
                   {currency}
                 </span>
               )}
             </div>
-            <div className="mt-2 font-mono text-[13px] text-[#3D4453]">{number}</div>
-            <div className="mt-2.5 text-[12.5px] leading-loose text-[#565E72]">
+            <div className="mt-2 font-mono text-[length:calc(var(--doc-scale)*13px)] text-[#3D4453]">{number}</div>
+            <div className="mt-2.5 text-[length:calc(var(--doc-scale)*12.5px)] leading-loose text-[#565E72]">
               <div>
                 {isQuotation ? "Issue date" : "Invoice date"}: {formatDate(issueDate)}
               </div>
@@ -222,11 +241,11 @@ export function DocumentRender({
 
         <div className="flex flex-wrap gap-12">
           <div>
-            <div className="text-[10.5px] font-bold tracking-[0.1em] text-[#8A92A6]">
+            <div className="text-[length:calc(var(--doc-scale)*10.5px)] font-bold tracking-[0.1em] text-[#8A92A6]">
               BILL TO
             </div>
-            <div className="mt-2 text-sm font-semibold">{customer.name}</div>
-            <div className="mt-1 text-[12.5px] leading-relaxed text-[#565E72]">
+            <div className="mt-2 text-[length:calc(var(--doc-scale)*14px)] font-semibold">{customer.name}</div>
+            <div className="mt-1 text-[length:calc(var(--doc-scale)*12.5px)] leading-relaxed text-[#565E72]">
               {customer.company && <div>{customer.company}</div>}
               {customer.address && <div>{customer.address}</div>}
               {[customer.city, customer.state].filter(Boolean).length > 0 && (
@@ -239,10 +258,10 @@ export function DocumentRender({
             </div>
           </div>
           <div>
-            <div className="text-[10.5px] font-bold tracking-[0.1em] text-[#8A92A6]">
+            <div className="text-[length:calc(var(--doc-scale)*10.5px)] font-bold tracking-[0.1em] text-[#8A92A6]">
               REFERENCE
             </div>
-            <div className="mt-2 text-[12.5px] leading-relaxed text-[#565E72]">
+            <div className="mt-2 text-[length:calc(var(--doc-scale)*12.5px)] leading-relaxed text-[#565E72]">
               <div>
                 {isQuotation ? "Validity" : "Payment terms"}: {terms || "—"}
               </div>
@@ -251,26 +270,30 @@ export function DocumentRender({
                 <div>Reference number: {referenceNumber}</div>
               )}
             </div>
-            {customFieldValues.length > 0 && (
-              <div className="mt-1.5 grid grid-cols-2 gap-x-5 gap-y-0.5 text-[12.5px] leading-relaxed text-[#565E72]">
-                {[...customFieldValues]
-                  .sort((a, b) => a.sortOrder - b.sortOrder)
-                  .map((entry) => (
-                    <div key={entry.definitionId} className="truncate">
-                      {entry.label}: {formatCustomFieldValue(entry)}
-                    </div>
-                  ))}
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Full document width, not squeezed into the REFERENCE column
+            above — a long label+value pair (e.g. "Vessel/Voyage No: ...")
+            needs more than half of one column's worth of room. */}
+        {customFieldValues.length > 0 && (
+          <div className="mt-2 grid grid-cols-2 gap-x-8 gap-y-0.5 text-[length:calc(var(--doc-scale)*12.5px)] leading-relaxed text-[#565E72]">
+            {[...customFieldValues]
+              .sort((a, b) => a.sortOrder - b.sortOrder)
+              .map((entry) => (
+                <div key={entry.definitionId}>
+                  {entry.label}: {formatCustomFieldValue(entry)}
+                </div>
+              ))}
+          </div>
+        )}
 
         <div className={isCompact ? "mt-5" : "mt-8"}>
           <div
             className={
               isCompact
-                ? "flex px-3 py-1.5 text-[9.5px] font-bold tracking-[0.06em]"
-                : "flex px-3 py-2.5 text-[10.5px] font-bold tracking-[0.06em]"
+                ? "flex px-3 py-1.5 text-[length:calc(var(--doc-scale)*9.5px)] font-bold tracking-[0.06em]"
+                : "flex px-3 py-2.5 text-[length:calc(var(--doc-scale)*10.5px)] font-bold tracking-[0.06em]"
             }
             style={{
               background: style.tableHeadBg,
@@ -302,14 +325,14 @@ export function DocumentRender({
               key={index}
               className={
                 isCompact
-                  ? "flex border-b border-[#F3F4F7] px-3 py-1.5 text-[12px]"
-                  : "flex border-b border-[#F3F4F7] px-3 py-2 text-[13px]"
+                  ? "flex border-b border-[#F3F4F7] px-3 py-1.5 text-[length:calc(var(--doc-scale)*12px)]"
+                  : "flex border-b border-[#F3F4F7] px-3 py-2 text-[length:calc(var(--doc-scale)*13px)]"
               }
             >
               <div className="flex-1 pr-4">
                 <div className="font-semibold">{item.name}</div>
                 {item.description && (
-                  <div className="mt-0.5 text-xs text-[#7E869A]">
+                  <div className="mt-0.5 text-[length:calc(var(--doc-scale)*12px)] text-[#7E869A]">
                     {item.description}
                   </div>
                 )}
@@ -414,26 +437,26 @@ export function DocumentRender({
               }}
             >
               <span
-                className="text-xs font-bold tracking-[0.06em]"
+                className="text-[length:calc(var(--doc-scale)*12px)] font-bold tracking-[0.06em]"
                 style={{ color: style.totalRowColor }}
               >
                 GRAND TOTAL
               </span>
               <span
-                className="text-[19px] font-bold"
+                className="text-[length:calc(var(--doc-scale)*19px)] font-bold"
                 style={{ color: style.totalRowColor }}
               >
                 {formatCurrency(totals.total, currency)}
               </span>
             </div>
             {showInrSubline && (
-              <div className="flex justify-between px-3 pt-1 text-[12px] text-[#8A92A6]">
+              <div className="flex justify-between px-3 pt-1 text-[length:calc(var(--doc-scale)*12px)] text-[#8A92A6]">
                 <span>INR equivalent</span>
                 <span>{inrEquivalent(totals.total)}</span>
               </div>
             )}
             {!isQuotation && (
-              <div className="flex justify-between px-3 pt-2 text-[13px]">
+              <div className="flex justify-between px-3 pt-2 text-[length:calc(var(--doc-scale)*13px)]">
                 <span className="text-[#565E72]">
                   {creditBalance > 0 ? "Credit balance" : "Balance due"}
                 </span>
@@ -450,10 +473,10 @@ export function DocumentRender({
 
         {!isQuotation && payments.length > 0 && (
           <div className="mt-8">
-            <div className="text-[10.5px] font-bold tracking-[0.1em] text-[#8A92A6]">
+            <div className="text-[length:calc(var(--doc-scale)*10.5px)] font-bold tracking-[0.1em] text-[#8A92A6]">
               PAYMENTS
             </div>
-            <div className="mt-1.5 flex justify-between text-[12.5px] leading-relaxed text-[#3D4453]">
+            <div className="mt-1.5 flex justify-between text-[length:calc(var(--doc-scale)*12.5px)] leading-relaxed text-[#3D4453]">
               <span>Amount paid: {formatCurrency(amountPaid, currency)}</span>
               <span>
                 {creditBalance > 0
@@ -467,7 +490,7 @@ export function DocumentRender({
               {payments.map((payment) => (
                 <div
                   key={payment.id}
-                  className="flex justify-between gap-4 py-1.5 text-[12px] text-[#565E72]"
+                  className="flex justify-between gap-4 py-1.5 text-[length:calc(var(--doc-scale)*12px)] text-[#565E72]"
                 >
                   <span>{formatDate(payment.paidAt)}</span>
                   <span className="flex-1 truncate">
@@ -487,44 +510,44 @@ export function DocumentRender({
 
         {appearance.showNotes && notes && (
           <div className="mt-8">
-            <div className="text-[10.5px] font-bold tracking-[0.1em] text-[#8A92A6]">
+            <div className="text-[length:calc(var(--doc-scale)*10.5px)] font-bold tracking-[0.1em] text-[#8A92A6]">
               NOTES
             </div>
-            <div className="mt-1.5 text-[12.5px] leading-relaxed whitespace-pre-line text-[#3D4453]">
+            <div className="mt-1.5 text-[length:calc(var(--doc-scale)*12.5px)] leading-relaxed whitespace-pre-line text-[#3D4453]">
               {notes}
             </div>
           </div>
         )}
         {appearance.showTerms && termsText && (
           <div className="mt-5">
-            <div className="text-[10.5px] font-bold tracking-[0.1em] text-[#8A92A6]">
+            <div className="text-[length:calc(var(--doc-scale)*10.5px)] font-bold tracking-[0.1em] text-[#8A92A6]">
               TERMS &amp; CONDITIONS
             </div>
-            <div className="mt-1.5 text-[12.5px] leading-relaxed whitespace-pre-line text-[#3D4453]">
+            <div className="mt-1.5 text-[length:calc(var(--doc-scale)*12.5px)] leading-relaxed whitespace-pre-line text-[#3D4453]">
               {termsText}
             </div>
           </div>
         )}
         {isForeignCurrency && lutDeclarationText && (
           <div className="mt-5">
-            <div className="text-[10.5px] font-bold tracking-[0.1em] text-[#8A92A6]">
+            <div className="text-[length:calc(var(--doc-scale)*10.5px)] font-bold tracking-[0.1em] text-[#8A92A6]">
               EXPORT DECLARATION
             </div>
-            <div className="mt-1.5 text-[12.5px] leading-relaxed whitespace-pre-line text-[#3D4453]">
+            <div className="mt-1.5 text-[length:calc(var(--doc-scale)*12.5px)] leading-relaxed whitespace-pre-line text-[#3D4453]">
               {lutDeclarationText}
             </div>
           </div>
         )}
         {appearance.showPayment && (
           <div className="mt-5 border border-[#EEF0F5] bg-[#FAFBFC] p-3.5">
-            <div className="text-[10.5px] font-bold tracking-[0.1em] text-[#8A92A6]">
+            <div className="text-[length:calc(var(--doc-scale)*10.5px)] font-bold tracking-[0.1em] text-[#8A92A6]">
               PAYMENT DETAILS
             </div>
-            <div className="mt-1.5 font-mono text-[11.5px] leading-loose text-[#3D4453]">
+            <div className="mt-1.5 font-mono text-[length:calc(var(--doc-scale)*11.5px)] leading-loose text-[#3D4453]">
               {business.name}
             </div>
             {bankLines.length > 0 && (
-              <div className="mt-1.5 font-mono text-[11.5px] leading-loose text-[#3D4453]">
+              <div className="mt-1.5 font-mono text-[length:calc(var(--doc-scale)*11.5px)] leading-loose text-[#3D4453]">
                 {bankLines.map((line) => (
                   <div key={line.label}>
                     {line.label}: {line.value}
@@ -535,7 +558,7 @@ export function DocumentRender({
           </div>
         )}
 
-        <div className="mt-10 flex justify-between border-t border-[#EEF0F5] pt-4 text-[11.5px] text-[#8A92A6]">
+        <div className="mt-10 flex justify-between border-t border-[#EEF0F5] pt-4 text-[length:calc(var(--doc-scale)*11.5px)] text-[#8A92A6]">
           <span>
             {business.name}
             {business.website ? ` · ${business.website}` : ""}
@@ -560,8 +583,8 @@ function TotalRow({
     <div
       className={
         muted
-          ? "flex justify-between px-3 pb-1 text-[11.5px] text-[#8A92A6]"
-          : "flex justify-between px-3 py-1.5 text-[13px]"
+          ? "flex justify-between px-3 pb-1 text-[length:calc(var(--doc-scale)*11.5px)] text-[#8A92A6]"
+          : "flex justify-between px-3 py-1.5 text-[length:calc(var(--doc-scale)*13px)]"
       }
     >
       <span className={muted ? undefined : "text-[#565E72]"}>{label}</span>

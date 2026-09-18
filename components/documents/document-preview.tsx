@@ -72,6 +72,13 @@ type ToggleKey = keyof Pick<
 
 const AUTOSAVE_DELAY_MS = 800;
 
+// The neutral scale point both renderers pivot on — matches the base
+// body-text size already used throughout document-render.tsx/
+// document-pdf.tsx (see DocumentRender's DEFAULT_FONT_SIZE and
+// document-pdf.tsx's own copy). A document with fontSize === null (or
+// === this value) renders pixel-identical to before this feature.
+const DEFAULT_FONT_SIZE = 9;
+
 export function DocumentPreview({
   document,
   gstEnabled,
@@ -134,6 +141,7 @@ export function DocumentPreview({
     showTerms: document.showTerms,
     showReferenceNumber: document.showReferenceNumber,
     showInrEquivalent: document.showInrEquivalent,
+    fontSize: document.fontSize,
   });
 
   const lastSaved = useRef(appearance);
@@ -480,6 +488,7 @@ export function DocumentPreview({
             remainingBalance={document.remainingBalance}
             creditBalance={document.creditBalance}
             showRecordedBy
+            fontSize={appearance.fontSize}
             currency={document.currency}
             inrExchangeRate={document.inrExchangeRate}
             lutDeclarationText={document.lutDeclarationText}
@@ -560,6 +569,27 @@ export function DocumentPreview({
                   />
                 ))}
               </div>
+            </div>
+
+            <div className="border-b border-border px-4 py-4">
+              <div className="mb-2.5 flex items-center justify-between text-xs font-semibold tracking-wide text-muted-foreground">
+                <span>FONT SIZE</span>
+                <span className="font-mono normal-case tracking-normal text-foreground">
+                  {appearance.fontSize ?? DEFAULT_FONT_SIZE}pt
+                </span>
+              </div>
+              <input
+                type="range"
+                min={7}
+                max={12}
+                step={1}
+                disabled={!editable}
+                value={appearance.fontSize ?? DEFAULT_FONT_SIZE}
+                onChange={(e) =>
+                  updateAppearance({ fontSize: Number(e.target.value) })
+                }
+                className="w-full accent-primary disabled:cursor-not-allowed"
+              />
             </div>
 
             <div className="px-4 py-4">
