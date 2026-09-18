@@ -1,6 +1,6 @@
 import { Document, Page, View, Text, Image, StyleSheet, Font } from "@react-pdf/renderer";
 import { formatDateIST } from "@/lib/dates";
-import { formatCurrency as formatCurrencyBase } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 import type { PreviewDocument } from "@/components/documents/preview-types";
 import { paymentDetailsLines } from "@/lib/documents/payment-details";
 import { formatCustomFieldValue } from "@/lib/documents/custom-fields";
@@ -23,23 +23,39 @@ import { businessIdentityLine } from "@/lib/documents/business-identity";
 // <Text> in the document, matching the web preview's plain word-wrap.
 Font.registerHyphenationCallback((word) => [word]);
 
-// What actually looked like a QTY/RATE font-size or baseline mismatch
-// (confirmed, by pixel-measuring a rendered PDF, NOT to be one — every
-// cell's text top aligns identically) turned out to be this: Helvetica
-// (react-pdf's base font throughout this file) has no glyph for ₹
-// (U+20B9), so pdfkit silently substitutes a fallback mark that renders
-// as a small mark raised above the baseline, glued to the first digit —
-// visually indistinguishable from superscript text at a glance. Every
-// other currency this app currently offers (USD, EUR, GBP, AED, SGD,
-// AUD, CAD) uses a symbol within Helvetica's standard WinAnsi encoding,
-// so only INR needs a workaround — this wrapper is a drop-in
-// replacement for every formatCurrency() call in this file.
-function formatCurrency(
-  amount: Parameters<typeof formatCurrencyBase>[0],
-  currency?: string,
-): string {
-  return formatCurrencyBase(amount, currency).replace("₹", "Rs. ");
-}
+// What looked like a QTY/RATE font-size or baseline mismatch (confirmed
+// by pixel-measuring a rendered PDF NOT to be one — every cell's text
+// top aligns identically) was actually this: Helvetica, react-pdf's
+// base font throughout this file, has no glyph for ₹ (U+20B9), so
+// pdfkit silently substituted a fallback mark that rendered as a small
+// blob raised above the baseline, glued to the first digit — visually
+// indistinguishable from superscript text at a glance. A prior fix
+// worked around this by swapping the ₹ symbol for the text "Rs." in
+// the PDF only; this replaces that workaround with the real fix —
+// Noto Sans actually contains the ₹ glyph (confirmed via fontTools:
+// cmap[0x20B9] == "uni20B9"), so registering it and using it as this
+// document's base font renders the genuine symbol instead of avoiding
+// it. Only Regular/Bold are registered — nothing in this renderer uses
+// italic. Applied as the page's own fontFamily (not just wherever a
+// currency amount happens to render) so no element in the table
+// switches fonts mid-row; TTF direct URLs, not woff2 — react-pdf's
+// font loader wants a URL it can fetch and parse as a single static
+// font file, and Google's default (non-browser) UA response for this
+// family happens to be one non-subsetted TTF per weight, which is
+// simpler and more reliable here than juggling unicode-range subsets.
+Font.register({
+  family: "Noto Sans",
+  fonts: [
+    {
+      src: "https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A99d.ttf",
+      fontWeight: "normal",
+    },
+    {
+      src: "https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyAaBN9d.ttf",
+      fontWeight: "bold",
+    },
+  ],
+});
 
 // Mirrors components/documents/document-render.tsx section-for-section —
 // same data, same conditionals — but react-pdf can't render arbitrary
@@ -91,7 +107,7 @@ function createStyles(scale: number) {
     page: {
       padding: sp(40),
       fontSize: fs(9.5),
-      fontFamily: "Helvetica",
+      fontFamily: "Noto Sans",
       color: COLORS.ink,
     },
     topBar: { height: 7 },
@@ -100,7 +116,7 @@ function createStyles(scale: number) {
       justifyContent: "space-between",
       alignItems: "flex-start",
     },
-    businessName: { fontSize: fs(14), fontFamily: "Helvetica-Bold" },
+    businessName: { fontSize: fs(14), fontFamily: "Noto Sans", fontWeight: "bold" },
     addressLine: { fontSize: fs(9), color: COLORS.body, marginTop: sp(2), lineHeight: 1.4 },
     gstinLine: {
       fontSize: fs(8.5),
@@ -109,7 +125,12 @@ function createStyles(scale: number) {
       fontFamily: "Courier",
     },
     logo: { width: 90, height: 32, marginBottom: 10, objectFit: "contain" },
-    docTitle: { fontSize: fs(19), fontFamily: "Helvetica-Bold", letterSpacing: 1.5 },
+    docTitle: {
+      fontSize: fs(19),
+      fontFamily: "Noto Sans",
+      fontWeight: "bold",
+      letterSpacing: 1.5,
+    },
     docNumber: {
       fontSize: fs(9.5),
       marginTop: sp(6),
@@ -121,11 +142,17 @@ function createStyles(scale: number) {
     refRow: { flexDirection: "row", gap: 32 },
     sectionLabel: {
       fontSize: fs(7.5),
-      fontFamily: "Helvetica-Bold",
+      fontFamily: "Noto Sans",
+      fontWeight: "bold",
       letterSpacing: 1,
       color: COLORS.muted,
     },
-    billToName: { fontSize: fs(10), fontFamily: "Helvetica-Bold", marginTop: sp(6) },
+    billToName: {
+      fontSize: fs(10),
+      fontFamily: "Noto Sans",
+      fontWeight: "bold",
+      marginTop: sp(6),
+    },
     // One size smaller than the rest of the document (7/6.5 vs the
     // 7.5/9 the header/reference/totals blocks use) — the table is the
     // widest, most column-hungry part of the page (up to 8 columns with
@@ -138,7 +165,8 @@ function createStyles(scale: number) {
       paddingVertical: sp(4),
       paddingHorizontal: 6,
       fontSize: fs(6.5),
-      fontFamily: "Helvetica-Bold",
+      fontFamily: "Noto Sans",
+      fontWeight: "bold",
       letterSpacing: 0.5,
     },
     tableRow: {
@@ -149,7 +177,7 @@ function createStyles(scale: number) {
       borderBottomColor: COLORS.rowBorder,
       fontSize: fs(8),
     },
-    itemName: { fontSize: fs(8), fontFamily: "Helvetica-Bold" },
+    itemName: { fontSize: fs(8), fontFamily: "Noto Sans", fontWeight: "bold" },
     itemDesc: { fontSize: fs(6.5), color: COLORS.faint, marginTop: sp(1) },
     totalsBlock: { width: 230, marginLeft: "auto", marginTop: sp(5) },
     totalRow: {
@@ -167,8 +195,13 @@ function createStyles(scale: number) {
       marginTop: sp(4),
       padding: sp(6),
     },
-    grandTotalLabel: { fontSize: fs(8), fontFamily: "Helvetica-Bold", letterSpacing: 0.5 },
-    grandTotalValue: { fontSize: fs(13), fontFamily: "Helvetica-Bold" },
+    grandTotalLabel: {
+      fontSize: fs(8),
+      fontFamily: "Noto Sans",
+      fontWeight: "bold",
+      letterSpacing: 0.5,
+    },
+    grandTotalValue: { fontSize: fs(13), fontFamily: "Noto Sans", fontWeight: "bold" },
     noteBlock: { marginTop: sp(7) },
     noteBody: { fontSize: fs(9), color: "#3D4453", marginTop: sp(4), lineHeight: 1.5 },
     paymentBlock: {
@@ -458,7 +491,8 @@ export function DocumentPdf({
                 <Text
                   style={{
                     textAlign: "right",
-                    fontFamily: "Helvetica-Bold",
+                    fontFamily: "Noto Sans",
+                    fontWeight: "bold",
                     fontSize: fs(8),
                   }}
                 >
@@ -559,7 +593,7 @@ export function DocumentPdf({
               <Text style={styles.totalLabel}>
                 {document.creditBalance > 0 ? "Credit balance" : "Balance due"}
               </Text>
-              <Text style={{ fontFamily: "Helvetica-Bold" }}>
+              <Text style={{ fontFamily: "Noto Sans", fontWeight: "bold" }}>
                 {formatCurrency(
                   document.creditBalance > 0
                     ? document.creditBalance
@@ -604,7 +638,7 @@ export function DocumentPdf({
                 <Text style={{ fontSize: fs(8.5), color: COLORS.body, flex: 1 }}>
                   {payment.note}
                 </Text>
-                <Text style={{ fontSize: fs(8.5), fontFamily: "Courier" }}>
+                <Text style={{ fontSize: fs(8.5), fontFamily: "Noto Sans" }}>
                   {formatCurrency(payment.amount, document.currency)}
                 </Text>
               </View>
