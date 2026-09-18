@@ -1,6 +1,6 @@
 import { Document, Page, View, Text, Image, StyleSheet, Font } from "@react-pdf/renderer";
 import { formatDateIST } from "@/lib/dates";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency as formatCurrencyBase } from "@/lib/format";
 import type { PreviewDocument } from "@/components/documents/preview-types";
 import { paymentDetailsLines } from "@/lib/documents/payment-details";
 import { formatCustomFieldValue } from "@/lib/documents/custom-fields";
@@ -22,6 +22,24 @@ import { businessIdentityLine } from "@/lib/documents/business-identity";
 // not "one unbreakable part") disables hyphenation globally for every
 // <Text> in the document, matching the web preview's plain word-wrap.
 Font.registerHyphenationCallback((word) => [word]);
+
+// What actually looked like a QTY/RATE font-size or baseline mismatch
+// (confirmed, by pixel-measuring a rendered PDF, NOT to be one — every
+// cell's text top aligns identically) turned out to be this: Helvetica
+// (react-pdf's base font throughout this file) has no glyph for ₹
+// (U+20B9), so pdfkit silently substitutes a fallback mark that renders
+// as a small mark raised above the baseline, glued to the first digit —
+// visually indistinguishable from superscript text at a glance. Every
+// other currency this app currently offers (USD, EUR, GBP, AED, SGD,
+// AUD, CAD) uses a symbol within Helvetica's standard WinAnsi encoding,
+// so only INR needs a workaround — this wrapper is a drop-in
+// replacement for every formatCurrency() call in this file.
+function formatCurrency(
+  amount: Parameters<typeof formatCurrencyBase>[0],
+  currency?: string,
+): string {
+  return formatCurrencyBase(amount, currency).replace("₹", "Rs. ");
+}
 
 // Mirrors components/documents/document-render.tsx section-for-section —
 // same data, same conditionals — but react-pdf can't render arbitrary
