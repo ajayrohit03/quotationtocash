@@ -1,4 +1,4 @@
-import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image, StyleSheet, Font } from "@react-pdf/renderer";
 import { formatDateIST } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
 import type { PreviewDocument } from "@/components/documents/preview-types";
@@ -11,6 +11,17 @@ import {
   resolveForeignCurrencyRateLabel,
 } from "@/lib/documents/line-item-columns";
 import { businessIdentityLine } from "@/lib/documents/business-identity";
+
+// react-pdf hyphenates any word that overflows its container by default
+// (via the bundled `hyphen` package's syllable-break patterns) — no
+// hyphenationCallback was ever registered, so this was silently on the
+// whole time, producing broken-looking output like "EMER-GENCY" and
+// "CHIT-TAGONG" in narrow columns instead of just wrapping at a space.
+// Registering a callback that returns the word as a single, unsplit
+// part (not an empty array — an empty array is zero valid word parts,
+// not "one unbreakable part") disables hyphenation globally for every
+// <Text> in the document, matching the web preview's plain word-wrap.
+Font.registerHyphenationCallback((word) => [word]);
 
 // Mirrors components/documents/document-render.tsx section-for-section —
 // same data, same conditionals — but react-pdf can't render arbitrary
@@ -49,7 +60,7 @@ const styles = StyleSheet.create({
   docTitle: { fontSize: 19, fontFamily: "Helvetica-Bold", letterSpacing: 1.5 },
   docNumber: { fontSize: 9.5, marginTop: 6, fontFamily: "Courier", color: "#3D4453" },
   docDates: { fontSize: 9, color: COLORS.body, marginTop: 8, lineHeight: 1.6 },
-  divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 20 },
+  divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 14 },
   refRow: { flexDirection: "row", gap: 32 },
   sectionLabel: {
     fontSize: 7.5,
@@ -60,7 +71,7 @@ const styles = StyleSheet.create({
   billToName: { fontSize: 10, fontFamily: "Helvetica-Bold", marginTop: 6 },
   tableHead: {
     flexDirection: "row",
-    paddingVertical: 6,
+    paddingVertical: 4,
     paddingHorizontal: 6,
     fontSize: 7.5,
     fontFamily: "Helvetica-Bold",
@@ -68,15 +79,15 @@ const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: "row",
-    paddingVertical: 5,
+    paddingVertical: 3,
     paddingHorizontal: 6,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.rowBorder,
     fontSize: 9,
   },
   itemName: { fontFamily: "Helvetica-Bold" },
-  itemDesc: { fontSize: 8, color: COLORS.faint, marginTop: 1 },
-  totalsBlock: { width: 230, marginLeft: "auto", marginTop: 14 },
+  itemDesc: { fontSize: 7.5, color: COLORS.faint, marginTop: 1 },
+  totalsBlock: { width: 230, marginLeft: "auto", marginTop: 8 },
   totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -89,16 +100,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "baseline",
-    marginTop: 6,
-    padding: 8,
+    marginTop: 4,
+    padding: 6,
   },
   grandTotalLabel: { fontSize: 8, fontFamily: "Helvetica-Bold", letterSpacing: 0.5 },
   grandTotalValue: { fontSize: 13, fontFamily: "Helvetica-Bold" },
-  noteBlock: { marginTop: 20 },
+  noteBlock: { marginTop: 14 },
   noteBody: { fontSize: 9, color: "#3D4453", marginTop: 4, lineHeight: 1.5 },
   paymentBlock: {
-    marginTop: 14,
-    padding: 10,
+    marginTop: 10,
+    padding: 8,
     backgroundColor: COLORS.paymentBg,
     borderWidth: 1,
     borderColor: COLORS.paymentBorder,
@@ -219,7 +230,7 @@ export function DocumentPdf({
         <View style={styles.divider} />
 
         <View style={styles.refRow}>
-          <View>
+          <View style={{ width: 210 }}>
             <Text style={styles.sectionLabel}>BILL TO</Text>
             <Text style={styles.billToName}>{customer.name}</Text>
             {customer.company && <Text style={styles.addressLine}>{customer.company}</Text>}
@@ -240,7 +251,7 @@ export function DocumentPdf({
               </Text>
             )}
           </View>
-          <View style={{ width: 220 }}>
+          <View style={{ width: 260 }}>
             <Text style={styles.sectionLabel}>REFERENCE</Text>
             <Text style={styles.addressLine}>
               {isQuotation ? "Validity" : "Payment terms"}: {terms || "—"}
@@ -262,7 +273,7 @@ export function DocumentPdf({
                       key={entry.definitionId}
                       style={[styles.addressLine, { width: "50%", marginTop: 2, paddingRight: 4 }]}
                     >
-                      {entry.label}: {formatCustomFieldValue(entry)}
+                      {`${entry.label}: ${formatCustomFieldValue(entry)}`}
                     </Text>
                   ))}
               </View>
@@ -270,11 +281,11 @@ export function DocumentPdf({
           </View>
         </View>
 
-        <View style={{ marginTop: isCompact ? 14 : 24 }}>
+        <View style={{ marginTop: isCompact ? 10 : 16 }}>
           <View
             style={[
               styles.tableHead,
-              isCompact ? { paddingVertical: 4 } : undefined,
+              isCompact ? { paddingVertical: 3 } : undefined,
               {
                 backgroundColor: style.tableHeadBg,
                 color: style.tableHeadColor,
@@ -307,7 +318,7 @@ export function DocumentPdf({
           {document.lineItems.map((item, index) => (
             <View
               key={index}
-              style={[styles.tableRow, isCompact ? { paddingVertical: 3 } : undefined]}
+              style={[styles.tableRow, isCompact ? { paddingVertical: 2 } : undefined]}
             >
               <View style={{ flex: 1, paddingRight: 8 }}>
                 <Text style={styles.itemName}>{item.name}</Text>
