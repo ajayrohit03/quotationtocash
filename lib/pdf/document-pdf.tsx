@@ -108,11 +108,18 @@ function createStyles(scale: number) {
       color: COLORS.muted,
     },
     billToName: { fontSize: fs(10), fontFamily: "Helvetica-Bold", marginTop: sp(6) },
+    // One size smaller than the rest of the document (7/6.5 vs the
+    // 7.5/9 the header/reference/totals blocks use) — the table is the
+    // widest, most column-hungry part of the page (up to 8 columns with
+    // FX rates + custom fields), so it's the part that actually needs
+    // the extra room; shrinking only it, rather than the whole
+    // document, gets DESCRIPTION out of wrapping at the default 7pt
+    // size without needing every other block a size smaller too.
     tableHead: {
       flexDirection: "row",
       paddingVertical: sp(4),
       paddingHorizontal: 6,
-      fontSize: fs(7.5),
+      fontSize: fs(6.5),
       fontFamily: "Helvetica-Bold",
       letterSpacing: 0.5,
     },
@@ -122,10 +129,10 @@ function createStyles(scale: number) {
       paddingHorizontal: 6,
       borderBottomWidth: 1,
       borderBottomColor: COLORS.rowBorder,
-      fontSize: fs(9),
+      fontSize: fs(8),
     },
-    itemName: { fontFamily: "Helvetica-Bold" },
-    itemDesc: { fontSize: fs(7.5), color: COLORS.faint, marginTop: sp(1) },
+    itemName: { fontSize: fs(8), fontFamily: "Helvetica-Bold" },
+    itemDesc: { fontSize: fs(6.5), color: COLORS.faint, marginTop: sp(1) },
     totalsBlock: { width: 230, marginLeft: "auto", marginTop: sp(5) },
     totalRow: {
       flexDirection: "row",
@@ -273,7 +280,7 @@ export function DocumentPdf({
         <View style={styles.divider} />
 
         <View style={styles.refRow}>
-          <View style={{ width: 210 }}>
+          <View style={{ width: 200 }}>
             <Text style={styles.sectionLabel}>BILL TO</Text>
             <Text style={styles.billToName}>{customer.name}</Text>
             {customer.company && <Text style={styles.addressLine}>{customer.company}</Text>}
@@ -294,7 +301,7 @@ export function DocumentPdf({
               </Text>
             )}
           </View>
-          <View style={{ width: 260 }}>
+          <View style={{ width: 250 }}>
             <Text style={styles.sectionLabel}>REFERENCE</Text>
             <Text style={styles.addressLine}>
               {isQuotation ? "Validity" : "Payment terms"}: {terms || "—"}
@@ -307,27 +314,31 @@ export function DocumentPdf({
                 </>
               )}
             </Text>
+            {/* One field per line, at the full 250pt column width —
+                not a 2-up sub-grid (that halved the usable width to
+                ~120pt, which is what caused a long label+value pair
+                like "Vessel/Voyage No: ZHONG PENG YOU YI 26067S" to
+                wrap badly) and not pulled out into its own full-page-
+                width block below (that put Bill To and Reference's
+                content in two sequential vertical blocks instead of
+                one side-by-side row, actually costing *more* total
+                height than the sub-grid it replaced). */}
+            {document.customFieldValues.length > 0 && (
+              <View style={{ marginTop: fs(4) }}>
+                {[...document.customFieldValues]
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .map((entry) => (
+                    <Text
+                      key={entry.definitionId}
+                      style={[styles.addressLine, { marginTop: 2 }]}
+                    >
+                      {`${entry.label}: ${formatCustomFieldValue(entry)}`}
+                    </Text>
+                  ))}
+              </View>
+            )}
           </View>
         </View>
-
-        {/* Full page width, not squeezed into the 260pt REFERENCE
-            column above — a long label+value pair (e.g. "Vessel/Voyage
-            No: ZHONG PENG YOU YI 26067S") needs more than half of one
-            column's worth of room. */}
-        {document.customFieldValues.length > 0 && (
-          <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: fs(8) }}>
-            {[...document.customFieldValues]
-              .sort((a, b) => a.sortOrder - b.sortOrder)
-              .map((entry) => (
-                <Text
-                  key={entry.definitionId}
-                  style={[styles.addressLine, { width: "50%", marginTop: 2, paddingRight: 8 }]}
-                >
-                  {`${entry.label}: ${formatCustomFieldValue(entry)}`}
-                </Text>
-              ))}
-          </View>
-        )}
 
         <View style={{ marginTop: fs(isCompact ? 10 : 16) }}>
           <View
@@ -342,26 +353,32 @@ export function DocumentPdf({
               },
             ]}
           >
-            <Text style={{ flex: 1 }}>DESCRIPTION</Text>
+            <Text style={{ flex: 1, fontSize: fs(6.5) }}>DESCRIPTION</Text>
             {lineItemColumns.map((column) => (
-              <Text key={column.id} style={{ width: 48, paddingRight: 6 }}>
+              <Text key={column.id} style={{ width: 48, paddingRight: 6, fontSize: fs(6.5) }}>
                 {column.label.toUpperCase()}
               </Text>
             ))}
             {fxRateLabel && (
               <>
-                <Text style={{ width: 45, textAlign: "right", paddingRight: 6 }}>
+                <Text
+                  style={{ width: 45, textAlign: "right", paddingRight: 6, fontSize: fs(6.5) }}
+                >
                   {fxRateLabel.toUpperCase()}
                 </Text>
-                <Text style={{ width: 42, textAlign: "right", paddingRight: 6 }}>
+                <Text
+                  style={{ width: 42, textAlign: "right", paddingRight: 6, fontSize: fs(6.5) }}
+                >
                   EXCH. RATE
                 </Text>
               </>
             )}
-            <Text style={{ width: 32, textAlign: "right" }}>QTY</Text>
-            <Text style={{ width: 58, textAlign: "right" }}>RATE</Text>
-            {showTax && <Text style={{ width: 32, textAlign: "right" }}>TAX</Text>}
-            <Text style={{ width: 68, textAlign: "right" }}>AMOUNT</Text>
+            <Text style={{ width: 32, textAlign: "right", fontSize: fs(6.5) }}>QTY</Text>
+            <Text style={{ width: 58, textAlign: "right", fontSize: fs(6.5) }}>RATE</Text>
+            {showTax && (
+              <Text style={{ width: 32, textAlign: "right", fontSize: fs(6.5) }}>TAX</Text>
+            )}
+            <Text style={{ width: 68, textAlign: "right", fontSize: fs(6.5) }}>AMOUNT</Text>
           </View>
           {document.lineItems.map((item, index) => (
             <View
@@ -377,31 +394,59 @@ export function DocumentPdf({
                   (v) => v.definitionId === column.id,
                 );
                 return (
-                  <Text key={column.id} style={{ width: 48, paddingRight: 6, color: COLORS.body }}>
+                  <Text
+                    key={column.id}
+                    style={{ width: 48, paddingRight: 6, color: COLORS.body, fontSize: fs(8) }}
+                  >
                     {entry ? formatCustomFieldValue(entry) : "—"}
                   </Text>
                 );
               })}
               {fxRateLabel && (
                 <>
-                  <Text style={{ width: 45, textAlign: "right", paddingRight: 6, color: COLORS.body }}>
+                  <Text
+                    style={{
+                      width: 45,
+                      textAlign: "right",
+                      paddingRight: 6,
+                      color: COLORS.body,
+                      fontSize: fs(8),
+                    }}
+                  >
                     {item.foreignRate != null ? item.foreignRate : "—"}
                   </Text>
-                  <Text style={{ width: 42, textAlign: "right", paddingRight: 6, color: COLORS.body }}>
+                  <Text
+                    style={{
+                      width: 42,
+                      textAlign: "right",
+                      paddingRight: 6,
+                      color: COLORS.body,
+                      fontSize: fs(8),
+                    }}
+                  >
                     {item.exchangeRate != null ? item.exchangeRate : "—"}
                   </Text>
                 </>
               )}
-              <Text style={{ width: 32, textAlign: "right" }}>{item.qty}</Text>
-              <Text style={{ width: 58, textAlign: "right" }}>
+              <Text style={{ width: 32, textAlign: "right", fontSize: fs(8) }}>{item.qty}</Text>
+              <Text style={{ width: 58, textAlign: "right", fontSize: fs(8) }}>
                 {formatCurrency(item.rate, document.currency)}
               </Text>
               {showTax && (
-                <Text style={{ width: 32, textAlign: "right", color: COLORS.body }}>
+                <Text
+                  style={{ width: 32, textAlign: "right", color: COLORS.body, fontSize: fs(8) }}
+                >
                   {item.gstRate != null ? `${item.gstRate}%` : "—"}
                 </Text>
               )}
-              <Text style={{ width: 68, textAlign: "right", fontFamily: "Helvetica-Bold" }}>
+              <Text
+                style={{
+                  width: 68,
+                  textAlign: "right",
+                  fontFamily: "Helvetica-Bold",
+                  fontSize: fs(8),
+                }}
+              >
                 {formatCurrency(item.amount, document.currency)}
               </Text>
             </View>
@@ -572,17 +617,17 @@ export function DocumentPdf({
         {document.showPayment && (
           <View style={styles.paymentBlock}>
             <Text style={styles.sectionLabel}>PAYMENT DETAILS</Text>
-            {/* Business name + every bank field on one wrapped line
-                instead of one line each — up to 6 separate lines
-                (name, then Bank/Account holder/Account number/IFSC/UPI)
-                was the single biggest contributor to page-1 overflow on
-                a document that already has a full line-item table
-                above it. */}
             <Text style={[styles.noteBody, { fontFamily: "Courier" }]}>
-              {[business.name, ...bankLines.map((line) => `${line.label}: ${line.value}`)].join(
-                "   ·   ",
-              )}
+              {business.name}
             </Text>
+            {bankLines.map((line) => (
+              <Text
+                key={line.label}
+                style={[styles.noteBody, { fontFamily: "Courier", marginTop: 1 }]}
+              >
+                {line.label}: {line.value}
+              </Text>
+            ))}
           </View>
         )}
 
