@@ -355,30 +355,36 @@ export function DocumentPdf({
           >
             <Text style={{ flex: 1, fontSize: fs(6.5) }}>DESCRIPTION</Text>
             {lineItemColumns.map((column) => (
-              <Text key={column.id} style={{ width: 48, paddingRight: 6, fontSize: fs(6.5) }}>
-                {column.label.toUpperCase()}
-              </Text>
+              <View key={column.id} style={{ width: 48, paddingRight: 6 }}>
+                <Text style={{ fontSize: fs(6.5) }}>{column.label.toUpperCase()}</Text>
+              </View>
             ))}
             {fxRateLabel && (
               <>
-                <Text
-                  style={{ width: 45, textAlign: "right", paddingRight: 6, fontSize: fs(6.5) }}
-                >
-                  {fxRateLabel.toUpperCase()}
-                </Text>
-                <Text
-                  style={{ width: 42, textAlign: "right", paddingRight: 6, fontSize: fs(6.5) }}
-                >
-                  EXCH. RATE
-                </Text>
+                <View style={{ width: 45, paddingRight: 6 }}>
+                  <Text style={{ textAlign: "right", fontSize: fs(6.5) }}>
+                    {fxRateLabel.toUpperCase()}
+                  </Text>
+                </View>
+                <View style={{ width: 42, paddingRight: 6 }}>
+                  <Text style={{ textAlign: "right", fontSize: fs(6.5) }}>EXCH. RATE</Text>
+                </View>
               </>
             )}
-            <Text style={{ width: 32, textAlign: "right", fontSize: fs(6.5) }}>QTY</Text>
-            <Text style={{ width: 58, textAlign: "right", fontSize: fs(6.5) }}>RATE</Text>
+            <View style={{ width: 32 }}>
+              <Text style={{ textAlign: "right", fontSize: fs(6.5) }}>QTY</Text>
+            </View>
+            <View style={{ width: 58 }}>
+              <Text style={{ textAlign: "right", fontSize: fs(6.5) }}>RATE</Text>
+            </View>
             {showTax && (
-              <Text style={{ width: 32, textAlign: "right", fontSize: fs(6.5) }}>TAX</Text>
+              <View style={{ width: 32 }}>
+                <Text style={{ textAlign: "right", fontSize: fs(6.5) }}>TAX</Text>
+              </View>
             )}
-            <Text style={{ width: 68, textAlign: "right", fontSize: fs(6.5) }}>AMOUNT</Text>
+            <View style={{ width: 68 }}>
+              <Text style={{ textAlign: "right", fontSize: fs(6.5) }}>AMOUNT</Text>
+            </View>
           </View>
           {document.lineItems.map((item, index) => (
             <View
@@ -394,61 +400,53 @@ export function DocumentPdf({
                   (v) => v.definitionId === column.id,
                 );
                 return (
-                  <Text
-                    key={column.id}
-                    style={{ width: 48, paddingRight: 6, color: COLORS.body, fontSize: fs(8) }}
-                  >
-                    {entry ? formatCustomFieldValue(entry) : "—"}
-                  </Text>
+                  <View key={column.id} style={{ width: 48, paddingRight: 6 }}>
+                    <Text style={{ color: COLORS.body, fontSize: fs(8) }}>
+                      {entry ? formatCustomFieldValue(entry) : "—"}
+                    </Text>
+                  </View>
                 );
               })}
               {fxRateLabel && (
                 <>
-                  <Text
-                    style={{
-                      width: 45,
-                      textAlign: "right",
-                      paddingRight: 6,
-                      color: COLORS.body,
-                      fontSize: fs(8),
-                    }}
-                  >
-                    {item.foreignRate != null ? item.foreignRate : "—"}
-                  </Text>
-                  <Text
-                    style={{
-                      width: 42,
-                      textAlign: "right",
-                      paddingRight: 6,
-                      color: COLORS.body,
-                      fontSize: fs(8),
-                    }}
-                  >
-                    {item.exchangeRate != null ? item.exchangeRate : "—"}
-                  </Text>
+                  <View style={{ width: 45, paddingRight: 6 }}>
+                    <Text style={{ textAlign: "right", color: COLORS.body, fontSize: fs(8) }}>
+                      {item.foreignRate != null ? item.foreignRate : "—"}
+                    </Text>
+                  </View>
+                  <View style={{ width: 42, paddingRight: 6 }}>
+                    <Text style={{ textAlign: "right", color: COLORS.body, fontSize: fs(8) }}>
+                      {item.exchangeRate != null ? item.exchangeRate : "—"}
+                    </Text>
+                  </View>
                 </>
               )}
-              <Text style={{ width: 32, textAlign: "right", fontSize: fs(8) }}>{item.qty}</Text>
-              <Text style={{ width: 58, textAlign: "right", fontSize: fs(8) }}>
-                {formatCurrency(item.rate, document.currency)}
-              </Text>
-              {showTax && (
-                <Text
-                  style={{ width: 32, textAlign: "right", color: COLORS.body, fontSize: fs(8) }}
-                >
-                  {item.gstRate != null ? `${item.gstRate}%` : "—"}
+              <View style={{ width: 32 }}>
+                <Text style={{ textAlign: "right", fontSize: fs(8) }}>{item.qty}</Text>
+              </View>
+              <View style={{ width: 58 }}>
+                <Text style={{ textAlign: "right", fontSize: fs(8) }}>
+                  {formatCurrency(item.rate, document.currency)}
                 </Text>
+              </View>
+              {showTax && (
+                <View style={{ width: 32 }}>
+                  <Text style={{ textAlign: "right", color: COLORS.body, fontSize: fs(8) }}>
+                    {item.gstRate != null ? `${item.gstRate}%` : "—"}
+                  </Text>
+                </View>
               )}
-              <Text
-                style={{
-                  width: 68,
-                  textAlign: "right",
-                  fontFamily: "Helvetica-Bold",
-                  fontSize: fs(8),
-                }}
-              >
-                {formatCurrency(item.amount, document.currency)}
-              </Text>
+              <View style={{ width: 68 }}>
+                <Text
+                  style={{
+                    textAlign: "right",
+                    fontFamily: "Helvetica-Bold",
+                    fontSize: fs(8),
+                  }}
+                >
+                  {formatCurrency(item.amount, document.currency)}
+                </Text>
+              </View>
             </View>
           ))}
         </View>
