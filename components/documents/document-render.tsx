@@ -19,6 +19,7 @@ import {
   resolveForeignCurrencyRateLabel,
 } from "@/lib/documents/line-item-columns";
 import { businessIdentityLine } from "@/lib/documents/business-identity";
+import { QRCodeSVG } from "qrcode.react";
 import type {
   PreviewAppearance,
   PreviewLineItem,
@@ -85,6 +86,10 @@ export function DocumentRender({
   currency,
   inrExchangeRate,
   lutDeclarationText,
+  irn,
+  irnAckNo,
+  irnAckDate,
+  einvoiceQrCode,
   fontSize,
   business,
   customer,
@@ -114,6 +119,14 @@ export function DocumentRender({
   currency: string;
   inrExchangeRate: number | null;
   lutDeclarationText: string | null;
+  // E-invoicing (IRP/GST) — scaffolding only, see
+  // lib/einvoice/buildIrpPayload.ts's own comment. Shown whenever `irn`
+  // is set, regardless of document type — in practice only ever set on
+  // an invoice (nothing generates one for any other type).
+  irn: string | null;
+  irnAckNo: string | null;
+  irnAckDate: string | null;
+  einvoiceQrCode: string | null;
   fontSize: number | null;
   business: BusinessSnapshot;
   customer: CustomerSnapshot;
@@ -237,6 +250,16 @@ export function DocumentRender({
                 {secondaryDate ? formatDate(secondaryDate) : "—"}
               </div>
             </div>
+            {irn && (
+              <div className="mt-2.5 max-w-[220px] text-[length:calc(var(--doc-scale)*11px)] leading-relaxed text-[#565E72]">
+                <div className="font-mono break-all">
+                  <span className="font-bold text-[#0E1220]">IRN: </span>
+                  {irn}
+                </div>
+                {irnAckNo && <div>Ack No: {irnAckNo}</div>}
+                {irnAckDate && <div>Ack Date: {irnAckDate}</div>}
+              </div>
+            )}
           </div>
         </div>
 
@@ -558,6 +581,17 @@ export function DocumentRender({
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {einvoiceQrCode && (
+          <div className="mt-6 flex justify-end">
+            <div className="flex flex-col items-center gap-1">
+              <QRCodeSVG value={einvoiceQrCode} size={96} level="M" />
+              <span className="text-[length:calc(var(--doc-scale)*9px)] text-[#8A92A6]">
+                e-Invoice QR
+              </span>
+            </div>
           </div>
         )}
 

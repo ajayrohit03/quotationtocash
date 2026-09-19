@@ -59,6 +59,14 @@ export async function DocumentPreviewPage({
       gstEnabled={business.gstEnabled}
       canEdit={canEdit}
       canReassign={canReassign}
+      einvoicingEnabled={business.einvoicingEnabled}
+      // Computed here, never the raw values — the client component only
+      // ever needs to know whether credentials exist, not what they are
+      // (irpClientSecret in particular has no business crossing the
+      // Server -> Client boundary at all).
+      irpCredentialsConfigured={Boolean(
+        business.irpClientId && business.irpClientSecret,
+      )}
     />
   );
 }

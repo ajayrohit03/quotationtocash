@@ -1,4 +1,4 @@
-import type { DocumentTemplate, DocumentType } from "@prisma/client";
+import type { DocumentTemplate, DocumentType, EinvoiceStatus } from "@prisma/client";
 import type {
   BusinessSnapshot,
   CustomerSnapshot,
@@ -95,4 +95,14 @@ export type PreviewDocument = PreviewAppearance & {
   // Set only for a converted quotation — lets the preview link straight
   // to the invoice it became instead of dead-ending at "converted".
   convertedToInvoice: { id: string; number: string } | null;
+  // E-invoicing (IRP/GST) — scaffolding only, see
+  // lib/einvoice/buildIrpPayload.ts's own comment. irnAckDate is IRP's
+  // own string format, not a parsed Date — never recomputed here, shown
+  // verbatim.
+  einvoiceStatus: EinvoiceStatus;
+  irn: string | null;
+  irnGeneratedAt: string | null;
+  irnAckNo: string | null;
+  irnAckDate: string | null;
+  einvoiceQrCode: string | null;
 };

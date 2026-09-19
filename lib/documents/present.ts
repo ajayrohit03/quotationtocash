@@ -94,5 +94,11 @@ export function toPreviewDocument(
     remainingBalance: remainingBalance(total, amountPaid),
     creditBalance: creditBalance(total, amountPaid),
     convertedToInvoice: document.convertedToInvoice ?? null,
+    einvoiceStatus: document.einvoiceStatus,
+    irn: document.irn,
+    irnGeneratedAt: document.irnGeneratedAt?.toISOString() ?? null,
+    irnAckNo: document.irnAckNo,
+    irnAckDate: document.irnAckDate,
+    einvoiceQrCode: document.einvoiceQrCode,
   };
 }

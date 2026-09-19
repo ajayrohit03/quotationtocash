@@ -44,6 +44,20 @@ enum DocumentType {
   @@map("document_type")
 }
 
+// See lib/einvoice/buildIrpPayload.ts and Document.einvoiceStatus's own
+// comment — scaffolding only, no real IRP call exists yet. "generated"
+// covers a document with a live IRN; "cancelled" is reserved for a
+// future real cancellation call (IRP allows cancelling an IRN within 24
+// hours) and isn't set anywhere yet.
+enum EinvoiceStatus {
+  none
+  pending
+  generated
+  cancelled
+
+  @@map("einvoice_status")
+}
+
 // See docs/custom-fields-and-multicurrency-design.md §1a.
 enum CustomFieldType {
   text
@@ -115,6 +129,26 @@ model Business {
 
   documentTemplate DocumentTemplate @default(classic) @map("document_template")
   accentColor      String           @default("#4F46E5") @map("accent_color")
+
+  // E-invoicing (IRP/GST) scaffolding — see docs on lib/einvoice/. No API
+  // call is made anywhere yet (that's a follow-up session once the
+  // client has real credentials); this is only storage + the "Generate
+  // IRN" UI placeholder + the JSON payload builder. Owner-only route
+  // (app/api/business/einvoicing/route.ts), same tier as gstin/tax
+  // fields above. Independent of gstEnabled — e-invoicing is its own
+  // opt-in, not implied by GST being on.
+  einvoicingEnabled Boolean @default(false) @map("einvoicing_enabled")
+  // Credentials from einvoice1.gst.gov.in — never required to create or
+  // send a document; only consulted by the (future) IRN-generation call
+  // and by the "Generate IRN" button's own enabled/disabled state.
+  irpClientId     String? @map("irp_client_id")
+  irpClientSecret String? @map("irp_client_secret")
+  irpUsername     String? @map("irp_username")
+  // The GSTIN registered for e-invoicing — kept separate from the
+  // business's own `gstin` above since IRP registration can, in edge
+  // cases, be under a different GSTIN than the one on the document
+  // header (e.g. a business with multiple registrations).
+  irpGstin String? @map("irp_gstin")
 
   // Pre-fill defaults for new documents (Settings > Documents) — never
   // applied retroactively to documents that already exist.
@@ -324,6 +358,24 @@ model Document {
   // consumed identically by the web preview (as a CSS scale factor) and
   // the PDF renderer (direct per-Text fontSize multiplication).
   fontSize    Int?             @map("font_size")
+
+  // E-invoicing (IRP/GST) — scaffolding only, no API call made anywhere
+  // yet (see Business.einvoicingEnabled's own comment). irn is the
+  // 64-char Invoice Reference Number IRP returns once generation is
+  // real; ackNo/ackDate and the QR code string are stored verbatim as
+  // IRP returns them (ackDate as their own String format, not a real
+  // DateTime — never parsed/recomputed here). einvoiceStatus is the
+  // single source of truth for which UI state to show (see
+  // document-preview.tsx's "Generate IRN" button and
+  // document-render.tsx/document-pdf.tsx's IRN/QR block) — not derived
+  // from whether `irn` happens to be set, so a future "cancelled" state
+  // (irn still present, but no longer valid) has somewhere to live.
+  einvoiceStatus  EinvoiceStatus @default(none) @map("einvoice_status")
+  irn             String?        @map("irn")
+  irnGeneratedAt  DateTime?      @map("irn_generated_at")
+  irnAckNo        String?        @map("irn_ack_no")
+  irnAckDate      String?        @map("irn_ack_date")
+  einvoiceQrCode  String?        @map("einvoice_qr_code")
 
   showLogo            Boolean @default(true) @map("show_logo")
   showGstinRow        Boolean @default(true) @map("show_gstin_row")

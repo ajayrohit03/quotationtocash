@@ -84,6 +84,8 @@ export function DocumentPreview({
   gstEnabled,
   canEdit,
   canReassign,
+  einvoicingEnabled,
+  irpCredentialsConfigured,
 }: {
   document: PreviewDocument;
   gstEnabled: boolean;
@@ -97,6 +99,12 @@ export function DocumentPreview({
   // Whether "Reassign to me" should be offered — !canEdit and the
   // document is still a draft (see the reassign route's own restriction).
   canReassign: boolean;
+  // E-invoicing scaffolding (see lib/einvoice/buildIrpPayload.ts) —
+  // whether the business has turned e-invoicing on at all, and whether
+  // it has IRP credentials saved. Never the credentials themselves; see
+  // document-preview-page.tsx's own comment on why.
+  einvoicingEnabled: boolean;
+  irpCredentialsConfigured: boolean;
 }) {
   const router = useRouter();
   const isQuotation = document.type === "quotation";
@@ -135,6 +143,12 @@ export function DocumentPreview({
   const [sending, setSending] = useState(false);
   const [converting, setConverting] = useState(false);
   const [reassigning, setReassigning] = useState(false);
+
+  // "Generate IRN" is Invoice-only (spec: a quotation/proforma is never
+  // reported to the IRP) and only ever shown when e-invoicing is turned
+  // on for the business at all — otherwise the whole row of states
+  // below (disabled/badge/active) has nothing to gate on.
+  const showIrnAction = isInvoice && einvoicingEnabled;
 
   const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
   const [recordingPayment, setRecordingPayment] = useState(false);
@@ -220,6 +234,15 @@ export function DocumentPreview({
     } finally {
       setDownloading(false);
     }
+  }
+
+  // Placeholder for the real IRP call, which needs the actual
+  // credentials and a live GSP connection — neither exists yet (see
+  // lib/einvoice/buildIrpPayload.ts's own comment). Once that's built,
+  // this becomes the real "call IRP, persist irn/ackNo/ackDate/QR"
+  // request; for now it just confirms the button/gating logic works.
+  function handleGenerateIrn() {
+    toast.info("Coming soon — IRP API integration in progress.");
   }
 
   async function handleShare() {
@@ -446,6 +469,30 @@ export function DocumentPreview({
               Reverse last payment
             </Button>
           )}
+          {showIrnAction &&
+            (document.irn ? (
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-success/10 px-3 py-1.5 text-sm font-medium text-success">
+                IRN generated · {document.irn}
+                {document.irnGeneratedAt && (
+                  <span className="text-success/70">
+                    ({new Date(document.irnGeneratedAt).toLocaleDateString("en-IN")})
+                  </span>
+                )}
+              </span>
+            ) : (
+              <Button
+                variant="outline"
+                disabled={!irpCredentialsConfigured}
+                title={
+                  !irpCredentialsConfigured
+                    ? "Configure IRP credentials in Settings → E-invoicing"
+                    : undefined
+                }
+                onClick={handleGenerateIrn}
+              >
+                Generate IRN
+              </Button>
+            ))}
           <Button variant="outline" disabled={sharing || !canEdit} onClick={handleShare}>
             {sharing ? "Sharing…" : "Share"}
           </Button>
@@ -508,6 +555,10 @@ export function DocumentPreview({
             currency={document.currency}
             inrExchangeRate={document.inrExchangeRate}
             lutDeclarationText={document.lutDeclarationText}
+            irn={document.irn}
+            irnAckNo={document.irnAckNo}
+            irnAckDate={document.irnAckDate}
+            einvoiceQrCode={document.einvoiceQrCode}
             business={document.business}
             customer={document.customer}
             customFieldValues={document.customFieldValues}

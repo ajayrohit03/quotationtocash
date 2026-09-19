@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Building2, Percent, Landmark, FileText, ListPlus, Palette, CircleUser, Users } from "lucide-react";
+import { Building2, Percent, Landmark, FileText, ListPlus, Palette, CircleUser, Users, ScanLine } from "lucide-react";
 import {
   Tabs,
   TabsContent,
@@ -28,6 +28,9 @@ const TaxTab = dynamic(() => import("./tax-tab").then((m) => m.TaxTab));
 const PaymentTab = dynamic(() =>
   import("./payment-tab").then((m) => m.PaymentTab),
 );
+const EinvoicingTab = dynamic(() =>
+  import("./einvoicing-tab").then((m) => m.EinvoicingTab),
+);
 const DocumentsTab = dynamic(() =>
   import("./documents-tab").then((m) => m.DocumentsTab),
 );
@@ -47,6 +50,7 @@ const BASE_TABS = [
   { value: "tax", label: "Tax", icon: Percent },
   { value: "payment", label: "Payment details", icon: Landmark },
   { value: "documents", label: "Documents", icon: FileText },
+  { value: "einvoicing", label: "E-invoicing", icon: ScanLine },
 ];
 const CUSTOM_FIELDS_TAB = {
   value: "custom-fields",
@@ -131,6 +135,9 @@ export function SettingsTabs({
             readOnly={!isAdmin}
             onUpdated={setCurrent}
           />
+        </TabsContent>
+        <TabsContent value="einvoicing">
+          <EinvoicingTab business={current} readOnly={!isOwner} onUpdated={setCurrent} />
         </TabsContent>
         {isAdmin && customFieldDefinitions && (
           <TabsContent value="custom-fields">

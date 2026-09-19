@@ -107,6 +107,22 @@ export const businessIdentitySchema = z.object({
 
 export type BusinessIdentityInput = z.infer<typeof businessIdentitySchema>;
 
+// Owner-only (app/api/business/einvoicing/route.ts), same tier as GST/
+// identity above — scaffolding only, no API call anywhere reads these
+// yet (see lib/einvoice/buildIrpPayload.ts and Business.einvoicingEnabled's
+// schema comment). Soft length hints only, same rationale as
+// businessIdentitySchema — these are real IRP-issued values, not
+// something this app should reject on a formatting guess.
+export const einvoicingSchema = z.object({
+  einvoicingEnabled: z.boolean().optional(),
+  irpGstin: z.string().trim().max(20).nullable().optional(),
+  irpUsername: z.string().trim().max(100).nullable().optional(),
+  irpClientId: z.string().trim().max(200).nullable().optional(),
+  irpClientSecret: z.string().trim().max(200).nullable().optional(),
+});
+
+export type EinvoicingInput = z.infer<typeof einvoicingSchema>;
+
 export const templateSetupSchema = z.object({
   documentTemplate: z.enum(["classic", "modern", "minimal", "compact", "formal"]),
 });

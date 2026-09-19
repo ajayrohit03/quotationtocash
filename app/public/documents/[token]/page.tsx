@@ -69,6 +69,10 @@ export default async function PublicDocumentPage({
           inrExchangeRate={previewDocument.inrExchangeRate}
           fontSize={previewDocument.fontSize}
           lutDeclarationText={previewDocument.lutDeclarationText}
+          irn={previewDocument.irn}
+          irnAckNo={previewDocument.irnAckNo}
+          irnAckDate={previewDocument.irnAckDate}
+          einvoiceQrCode={previewDocument.einvoiceQrCode}
           business={previewDocument.business}
           customer={previewDocument.customer}
           customFieldValues={previewDocument.customFieldValues}
