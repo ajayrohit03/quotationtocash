@@ -10,6 +10,7 @@ import { CustomerPicker } from "./customer-picker";
 const COPY: Record<DocumentType, { title: string; basePath: string }> = {
   quotation: { title: "New quotation", basePath: "/quotations" },
   invoice: { title: "New invoice", basePath: "/invoices" },
+  proforma: { title: "New proforma invoice", basePath: "/proforma-invoices" },
 };
 
 export function NewDocumentPicker({

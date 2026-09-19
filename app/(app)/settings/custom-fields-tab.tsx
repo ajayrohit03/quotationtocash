@@ -9,10 +9,15 @@ import { EditCustomFieldDialog } from "./edit-custom-field-dialog";
 import { Button } from "@/components/ui/button";
 
 const TYPE_LABEL = { text: "Text", number: "Number", date: "Date" } as const;
-const APPLIES_TO_LABEL: Record<"both" | "quotation" | "invoice", string> = {
+// "invoice" also covers proforma invoices — a proforma is Invoice-shaped
+// (same builder, same custom fields), not a fourth appliesTo value of
+// its own. See document-editor-page.tsx's query for the matching read
+// side of this.
+const APPLIES_TO_LABEL: Record<"both" | "quotation" | "invoice" | "proforma", string> = {
   both: "Quotations & invoices",
   quotation: "Quotations only",
-  invoice: "Invoices only",
+  invoice: "Invoices & proforma invoices only",
+  proforma: "Invoices & proforma invoices only",
 };
 
 function Section({

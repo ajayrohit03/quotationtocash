@@ -5,6 +5,7 @@ import {
   CircleCheck,
   FileText,
   Receipt,
+  FileSpreadsheet,
   Users,
   Package,
   Inbox,
@@ -32,9 +33,16 @@ import {
 const QUICK_ACTIONS = [
   { href: "/quotations/new", label: "Create quotation", icon: FileText },
   { href: "/invoices/new", label: "Create invoice", icon: Receipt },
+  { href: "/proforma-invoices/new", label: "Create proforma invoice", icon: FileSpreadsheet },
   { href: "/customers", label: "Add customer", icon: Users },
   { href: "/products", label: "Add product", icon: Package },
 ];
+
+const DOCUMENT_BASE_PATH: Record<"quotation" | "invoice" | "proforma", string> = {
+  quotation: "quotations",
+  invoice: "invoices",
+  proforma: "proforma-invoices",
+};
 
 const HEAD_CLASS = "bg-muted/40 text-xs font-semibold tracking-wide text-muted-foreground";
 
@@ -186,7 +194,7 @@ export default async function DashboardPage() {
                   <TableRow key={doc.id} className="cursor-pointer">
                     <TableCell className="p-0">
                       <Link
-                        href={`/${doc.type === "quotation" ? "quotations" : "invoices"}/${doc.id}`}
+                        href={`/${DOCUMENT_BASE_PATH[doc.type]}/${doc.id}`}
                         className="block px-4 py-2.5 font-mono text-sm"
                       >
                         {doc.number}

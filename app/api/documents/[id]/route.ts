@@ -20,19 +20,24 @@ import { calculateDocumentTotals } from "@/lib/tax/calculateDocumentTotals";
 import { isSameState } from "@/lib/tax/calculateGST";
 import { resolveGstRate } from "@/lib/tax/resolveGstRate";
 
+// Proforma reuses the invoices.* permission tier — see
+// app/api/documents/route.ts's own copy of this comment.
 const VIEW_PERMISSION: Record<DocumentType, Permission> = {
   quotation: "quotations.view",
   invoice: "invoices.view",
+  proforma: "invoices.view",
 };
 
 const EDIT_PERMISSION: Record<DocumentType, Permission> = {
   quotation: "quotations.edit",
   invoice: "invoices.edit",
+  proforma: "invoices.edit",
 };
 
 const DELETE_PERMISSION: Record<DocumentType, Permission> = {
   quotation: "quotations.delete",
   invoice: "invoices.delete",
+  proforma: "invoices.delete",
 };
 
 export async function GET(

@@ -39,6 +39,7 @@ enum InvitationStatus {
 enum DocumentType {
   quotation
   invoice
+  proforma
 
   @@map("document_type")
 }

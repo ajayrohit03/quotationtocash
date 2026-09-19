@@ -40,7 +40,7 @@ const TYPE_LABEL = { text: "Text", number: "Number", date: "Date" } as const;
 const APPLIES_TO_LABEL = {
   both: "Quotations & invoices",
   quotation: "Quotations only",
-  invoice: "Invoices only",
+  invoice: "Invoices & proforma invoices only",
 } as const;
 
 // "both" (not editing) UI value for appliesTo maps to `null` on the wire.

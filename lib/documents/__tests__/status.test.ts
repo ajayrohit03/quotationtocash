@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ForbiddenError } from "@/lib/auth/errors";
 import {
   INVOICE_STATUSES,
+  PROFORMA_STATUSES,
   QUOTATION_STATUSES,
   canConvertQuotation,
   canRecordPayment,
@@ -255,6 +256,57 @@ describe("remainingBalance / creditBalance", () => {
     expect(remainingBalance(100, 150)).toBe(0);
     expect(creditBalance(100, 40)).toBe(0);
   });
+});
+
+describe("proforma — smallest vocabulary of the three, no payment/convert semantics", () => {
+  it("has exactly draft/sent/viewed/cancelled — no accepted/converted/paid/partially_paid/overdue", () => {
+    expect([...PROFORMA_STATUSES].sort()).toEqual(
+      ["cancelled", "draft", "sent", "viewed"].sort(),
+    );
+  });
+
+  it("isValidStatus accepts its own vocabulary and rejects the others'", () => {
+    for (const status of PROFORMA_STATUSES) {
+      expect(isValidStatus("proforma", status)).toBe(true);
+    }
+    expect(isValidStatus("proforma", "paid")).toBe(false);
+    expect(isValidStatus("proforma", "converted")).toBe(false);
+    expect(isValidStatus("proforma", "accepted")).toBe(false);
+  });
+
+  it("only draft and cancelled are manually settable, same shape as invoice", () => {
+    expect(isManuallySettableStatus("proforma", "draft")).toBe(true);
+    expect(isManuallySettableStatus("proforma", "cancelled")).toBe(true);
+    expect(isManuallySettableStatus("proforma", "sent")).toBe(false);
+    expect(isManuallySettableStatus("proforma", "viewed")).toBe(false);
+  });
+
+  it("draft is editable, everything else is not", () => {
+    expect(isEditableStatus("draft")).toBe(true);
+    for (const status of PROFORMA_STATUSES) {
+      if (status === "draft") continue;
+      expect(isEditableStatus(status)).toBe(false);
+    }
+  });
+
+  it("can be sent from every status except cancelled — a proforma is never a Send-triggers-payment-follow-up instrument, but sending itself still works", () => {
+    for (const status of PROFORMA_STATUSES) {
+      if (status === "cancelled") continue;
+      expect(canSendDocument("proforma", status)).toBe(true);
+    }
+    expect(canSendDocument("proforma", "cancelled")).toBe(false);
+  });
+
+  // canRecordPayment/canConvertQuotation are plain status-string
+  // functions (see lib/documents/status.ts), not DocumentType-aware —
+  // the real "proformas never take payments/never convert" guarantee
+  // lives in the UI (document-preview.tsx gates both on the document's
+  // *type*, isInvoice/isQuotation respectively, not just on status) and
+  // server-side (payments/route.ts, reverse-last/route.ts, and
+  // convert/route.ts each explicitly reject any type other than
+  // "invoice"/"quotation"). Nothing here would stop canRecordPayment("sent")
+  // from returning true for a proforma's "sent" status if it were ever
+  // called for one — it's simply never called for one.
 });
 
 describe("isOverdue", () => {

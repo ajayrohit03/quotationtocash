@@ -40,7 +40,7 @@ const TYPE_LABEL = { text: "Text", number: "Number", date: "Date" } as const;
 const APPLIES_TO_LABEL = {
   both: "Quotations & invoices",
   quotation: "Quotations only",
-  invoice: "Invoices only",
+  invoice: "Invoices & proforma invoices only",
 } as const;
 const APPLIES_TO_ANY = "both";
 
@@ -65,7 +65,13 @@ export function EditCustomFieldDialog({
     values: {
       label: definition.label,
       type: definition.type,
-      appliesTo: definition.appliesTo ?? APPLIES_TO_ANY,
+      // "proforma" is never actually stored here (see
+      // customFieldAppliesToWhere's comment) — this editor's tri-state
+      // dropdown treats "invoice" as covering proforma too, so it has
+      // nothing separate to show even in the unreachable case where it
+      // is.
+      appliesTo:
+        definition.appliesTo === "proforma" ? "invoice" : (definition.appliesTo ?? APPLIES_TO_ANY),
     },
   });
 

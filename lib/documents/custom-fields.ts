@@ -1,5 +1,21 @@
 import { z } from "zod";
+import type { DocumentType, Prisma } from "@prisma/client";
 import { formatDateIST } from "@/lib/dates";
+
+// CustomFieldDefinition.appliesTo only ever stores "quotation", "invoice",
+// or null (see lib/validation/custom-fields.ts's schema — "proforma" was
+// deliberately never added as its own appliesTo value) — a Proforma is
+// Invoice-shaped (same builder, same custom fields, see
+// docs/custom-fields-and-multicurrency-design.md), so a definition scoped
+// to "invoice" applies to proforma documents too, same as it already
+// applies to invoices. Shared so the document-scope and line-item-scope
+// queries in document-editor-page.tsx can't drift out of sync on this.
+export function customFieldAppliesToWhere(
+  type: DocumentType,
+): Prisma.CustomFieldDefinitionWhereInput {
+  const matchingTypes: DocumentType[] = type === "proforma" ? ["proforma", "invoice"] : [type];
+  return { OR: [{ appliesTo: null }, { appliesTo: { in: matchingTypes } }] };
+}
 
 // Stored on Document.customFieldValues (Json) — see
 // docs/custom-fields-and-multicurrency-design.md §1a. Snapshots both the

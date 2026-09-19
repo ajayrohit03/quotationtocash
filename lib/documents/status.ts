@@ -27,13 +27,22 @@ export const INVOICE_STATUSES = [
   "cancelled",
 ] as const;
 
+// A Proforma is a pre-shipment/approval document, not a tax invoice — no
+// payment tracking (see docs/payment-tracking-design.md's scope note)
+// and no conversion (a proforma never *becomes* a real invoice the way a
+// quotation does; a separate invoice is raised later, independently).
+// Its vocabulary is intentionally the smallest of the three.
+export const PROFORMA_STATUSES = ["draft", "sent", "viewed", "cancelled"] as const;
+
 export type QuotationStatus = (typeof QUOTATION_STATUSES)[number];
 export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
-export type DocumentStatus = QuotationStatus | InvoiceStatus;
+export type ProformaStatus = (typeof PROFORMA_STATUSES)[number];
+export type DocumentStatus = QuotationStatus | InvoiceStatus | ProformaStatus;
 
 const STATUSES_BY_TYPE: Record<DocumentType, readonly string[]> = {
   quotation: QUOTATION_STATUSES,
   invoice: INVOICE_STATUSES,
+  proforma: PROFORMA_STATUSES,
 };
 
 export function isValidStatus(type: DocumentType, status: string): boolean {
@@ -66,6 +75,7 @@ const RESTRICTED_STATUSES = new Set<string>([
 const MANUALLY_SETTABLE_STATUSES: Record<DocumentType, readonly string[]> = {
   quotation: ["draft", "declined", "expired"],
   invoice: ["draft", "cancelled"],
+  proforma: ["draft", "cancelled"],
 };
 
 export function isManuallySettableStatus(
@@ -115,6 +125,7 @@ export function shouldMarkViewed(status: string): boolean {
 const UNSENDABLE_STATUSES: Record<DocumentType, readonly string[]> = {
   quotation: ["declined", "expired", "converted"],
   invoice: ["cancelled"],
+  proforma: ["cancelled"],
 };
 
 export function canSendDocument(type: DocumentType, status: string): boolean {

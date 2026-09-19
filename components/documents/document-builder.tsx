@@ -132,6 +132,18 @@ export function DocumentBuilder({
 }) {
   const router = useRouter();
   const isQuotation = document.type === "quotation";
+  const documentTypeLabel =
+    document.type === "quotation"
+      ? "Quotation"
+      : document.type === "proforma"
+        ? "Proforma Invoice"
+        : "Invoice";
+  const basePath =
+    document.type === "quotation"
+      ? "quotations"
+      : document.type === "proforma"
+        ? "proforma-invoices"
+        : "invoices";
   const editable = isEditableStatus(document.status);
 
   const [customer, setCustomer] = useState(document.customer);
@@ -412,7 +424,7 @@ export function DocumentBuilder({
         setDeleting(false);
         return;
       }
-      router.push(isQuotation ? "/quotations" : "/invoices");
+      router.push(`/${basePath}`);
     } finally {
       setDeleting(false);
     }
@@ -432,7 +444,7 @@ export function DocumentBuilder({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
-            {isQuotation ? "Quotation" : "Invoice"}{" "}
+            {documentTypeLabel}{" "}
             <span className="font-mono text-base text-muted-foreground">
               {number}
             </span>
@@ -693,7 +705,7 @@ export function DocumentBuilder({
               nativeButton={false}
               render={
                 <Link
-                  href={`/${isQuotation ? "quotations" : "invoices"}/${document.id}/preview`}
+                  href={`/${basePath}/${document.id}/preview`}
                 />
               }
             >

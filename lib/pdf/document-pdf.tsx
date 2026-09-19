@@ -257,6 +257,13 @@ export function DocumentPdf({
   gstEnabled: boolean;
 }) {
   const isQuotation = document.type === "quotation";
+  const isInvoice = document.type === "invoice";
+  const documentTypeLabel =
+    document.type === "quotation"
+      ? "QUOTATION"
+      : document.type === "proforma"
+        ? "PROFORMA INVOICE"
+        : "INVOICE";
   const style = templateStyle(document.template, document.accentColor);
   const isCompact = document.template === "compact";
   const scale = (document.fontSize ?? DEFAULT_FONT_SIZE) / DEFAULT_FONT_SIZE;
@@ -313,7 +320,7 @@ export function DocumentPdf({
           </View>
           <View style={{ alignItems: "flex-end" }}>
             <Text style={[styles.docTitle, { color: style.docTitleColor }]}>
-              {isQuotation ? "QUOTATION" : "INVOICE"}
+              {documentTypeLabel}
               {isForeignCurrency && (
                 <Text style={{ fontSize: fs(11) }}> {document.currency}</Text>
               )}
@@ -588,7 +595,7 @@ export function DocumentPdf({
               </Text>
             </View>
           )}
-          {!isQuotation && (
+          {isInvoice && (
             <View style={[styles.totalRow, { paddingTop: 6 }]}>
               <Text style={styles.totalLabel}>
                 {document.creditBalance > 0 ? "Credit balance" : "Balance due"}
@@ -605,7 +612,7 @@ export function DocumentPdf({
           )}
         </View>
 
-        {!isQuotation && document.payments.length > 0 && (
+        {isInvoice && document.payments.length > 0 && (
           <View style={styles.noteBlock}>
             <Text style={styles.sectionLabel}>PAYMENTS</Text>
             <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>

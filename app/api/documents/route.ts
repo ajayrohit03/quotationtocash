@@ -15,17 +15,22 @@ import {
 } from "@/lib/documents/snapshots";
 import { documentScopeWhere } from "@/lib/documents/visibility";
 
+// Proforma reuses the invoices.* permission tier — same roles that can
+// create/view/edit invoices can do the same for proformas, no separate
+// permission (spec rule; see docs/permission-layer-design.md).
 const VIEW_PERMISSION: Record<DocumentType, Permission> = {
   quotation: "quotations.view",
   invoice: "invoices.view",
+  proforma: "invoices.view",
 };
 
 const CREATE_PERMISSION: Record<DocumentType, Permission> = {
   quotation: "quotations.create",
   invoice: "invoices.create",
+  proforma: "invoices.create",
 };
 
-const DOCUMENT_TYPES: readonly DocumentType[] = ["quotation", "invoice"];
+const DOCUMENT_TYPES: readonly DocumentType[] = ["quotation", "invoice", "proforma"];
 
 export async function GET(request: NextRequest) {
   try {

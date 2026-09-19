@@ -100,8 +100,15 @@ export function DocumentPreview({
 }) {
   const router = useRouter();
   const isQuotation = document.type === "quotation";
+  const isProforma = document.type === "proforma";
+  const isInvoice = document.type === "invoice";
   const editable = isEditableStatus(document.status);
-  const basePath = isQuotation ? "/quotations" : "/invoices";
+  const basePath =
+    document.type === "quotation"
+      ? "/quotations"
+      : document.type === "proforma"
+        ? "/proforma-invoices"
+        : "/invoices";
   const sendable =
     canEdit &&
     canSendDocument(document.type, document.status) &&
@@ -109,9 +116,18 @@ export function DocumentPreview({
   const convertible = canEdit && isQuotation && canConvertQuotation(document.status);
   // Not gated on remainingBalance > 0 — overpayment is allowed and
   // becomes a credit balance, so a fully-paid invoice can still take
-  // another payment. See docs/payment-tracking-design.md §2.
-  const recordable = canEdit && !isQuotation && canRecordPayment(document.status);
-  const reversible = canEdit && !isQuotation && document.payments.length > 0;
+  // another payment. See docs/payment-tracking-design.md §2. Proforma
+  // is explicitly excluded, not just "not a quotation" — it's not a
+  // payment instrument at all (spec: "No Mark as paid / Record
+  // payment"), same server-side rule payments/route.ts and
+  // reverse-last/route.ts already enforce (type !== "invoice").
+  const recordable = canEdit && isInvoice && canRecordPayment(document.status);
+  const reversible = canEdit && isInvoice && document.payments.length > 0;
+  const documentTypeLabel = isQuotation
+    ? "Quotation"
+    : isProforma
+      ? "Proforma Invoice"
+      : "Invoice";
   const lastPayment = document.payments[0] ?? null;
 
   const [downloading, setDownloading] = useState(false);
@@ -243,7 +259,7 @@ export function DocumentPreview({
         toast.error(message);
         return;
       }
-      toast.success(`${isQuotation ? "Quotation" : "Invoice"} emailed to the customer.`);
+      toast.success(`${documentTypeLabel} emailed to the customer.`);
       router.refresh();
     } catch (err) {
       console.error("Send threw:", err);
@@ -381,7 +397,7 @@ export function DocumentPreview({
         )}
         <div className="h-5 w-px bg-border" />
         <div className="text-base font-semibold">
-          {isQuotation ? "Quotation" : "Invoice"} preview
+          {documentTypeLabel} preview
         </div>
         <div className="ml-auto flex gap-2.5">
           {canReassign && (
@@ -407,7 +423,7 @@ export function DocumentPreview({
               {converting ? "Converting…" : "Convert to invoice"}
             </Button>
           )}
-          {!isQuotation && (
+          {isInvoice && (
             <Button
               variant="outline"
               disabled={!recordable}
@@ -421,7 +437,7 @@ export function DocumentPreview({
               Record payment
             </Button>
           )}
-          {!isQuotation && (
+          {isInvoice && (
             <Button
               variant="ghost"
               disabled={!reversible}

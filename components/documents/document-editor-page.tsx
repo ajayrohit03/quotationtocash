@@ -10,7 +10,10 @@ import {
   type BuilderCustomFieldDefinition,
 } from "./document-builder";
 import type { BuilderProduct } from "./types";
-import type { CustomFieldValueSnapshot } from "@/lib/documents/custom-fields";
+import {
+  customFieldAppliesToWhere,
+  type CustomFieldValueSnapshot,
+} from "@/lib/documents/custom-fields";
 
 export async function DocumentEditorPage({
   type,
@@ -50,13 +53,14 @@ export async function DocumentEditorPage({
         orderBy: { createdAt: "desc" },
       }),
       // Document-scope, active, and either applies to both types (null) or
-      // this document's own type specifically.
+      // this document's own type specifically (proforma also picks up
+      // "invoice"-scoped fields — see customFieldAppliesToWhere).
       prisma.customFieldDefinition.findMany({
         where: {
           businessId: business.id,
           scope: "document",
           isActive: true,
-          OR: [{ appliesTo: null }, { appliesTo: type }],
+          ...customFieldAppliesToWhere(type),
         },
         orderBy: { sortOrder: "asc" },
       }),
@@ -67,7 +71,7 @@ export async function DocumentEditorPage({
           businessId: business.id,
           scope: "lineItem",
           isActive: true,
-          OR: [{ appliesTo: null }, { appliesTo: type }],
+          ...customFieldAppliesToWhere(type),
         },
         orderBy: { sortOrder: "asc" },
       }),

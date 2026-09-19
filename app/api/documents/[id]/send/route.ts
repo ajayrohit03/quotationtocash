@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { Resend } from "resend";
 import { NextResponse, type NextRequest } from "next/server";
+import type { DocumentType } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { errorResponse } from "@/lib/api/respond";
 import { requireBusiness } from "@/lib/auth/session";
@@ -12,9 +13,10 @@ import { renderDocumentPdf } from "@/lib/pdf/render";
 import { documentScopeWhere } from "@/lib/documents/visibility";
 import { hasPermission, type Permission } from "@/lib/auth/permissions";
 
-const EDIT_PERMISSION: Record<"quotation" | "invoice", Permission> = {
+const EDIT_PERMISSION: Record<DocumentType, Permission> = {
   quotation: "quotations.edit",
   invoice: "invoices.edit",
+  proforma: "invoices.edit",
 };
 
 // The only code path allowed to set status = "sent" (spec rule) — emails
@@ -73,7 +75,13 @@ export async function POST(
     const { error: sendError } = await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL ?? "QuotationToCash <onboarding@resend.dev>",
       to: document.customer.email,
-      subject: `${document.type === "quotation" ? "Quotation" : "Invoice"} ${document.number} from ${business.name}`,
+      subject: `${
+        document.type === "quotation"
+          ? "Quotation"
+          : document.type === "proforma"
+            ? "Proforma Invoice"
+            : "Invoice"
+      } ${document.number} from ${business.name}`,
       html: buildDocumentEmailHtml({
         businessName: business.name,
         customerName: document.customer.name,

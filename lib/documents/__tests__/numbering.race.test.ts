@@ -73,4 +73,24 @@ describe("getNextDocumentNumber", () => {
       .sort((a, b) => a - b);
     expect(qtSuffixes).toEqual([1, 2]);
   });
+
+  it("numbers proformas as PRF-YYYY-NNNN, independent of quotation/invoice", async () => {
+    const business = await createTestBusiness();
+    const now = new Date();
+
+    const [prf1, inv1, prf2] = await Promise.all([
+      getNextDocumentNumber(business.id, "proforma", now),
+      getNextDocumentNumber(business.id, "invoice", now),
+      getNextDocumentNumber(business.id, "proforma", now),
+    ]);
+
+    const year = getISTYear(now);
+    expect(prf1.startsWith(`PRF-${year}-`)).toBe(true);
+    expect(inv1.startsWith(`INV-${year}-`)).toBe(true);
+    expect(prf2.startsWith(`PRF-${year}-`)).toBe(true);
+    const prfSuffixes = [prf1, prf2]
+      .map((n) => Number(n.split("-")[2]))
+      .sort((a, b) => a - b);
+    expect(prfSuffixes).toEqual([1, 2]);
+  });
 });

@@ -10,6 +10,7 @@ import { requireEditableDocument } from "@/lib/documents/status";
 const EDIT_PERMISSION: Record<DocumentType, Permission> = {
   quotation: "quotations.edit",
   invoice: "invoices.edit",
+  proforma: "invoices.edit",
 };
 
 // The sole bridge from "I can see it" to "I can edit it" for a document

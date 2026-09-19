@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, Receipt } from "lucide-react";
+import { FileText, Receipt, FileSpreadsheet } from "lucide-react";
 import type { DocumentType, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { requireBusinessForPage } from "@/lib/auth/page";
@@ -27,6 +27,12 @@ const COPY: Record<
     dateLabel: "Due date",
     icon: Receipt,
   },
+  proforma: {
+    title: "Proforma invoices",
+    newLabel: "New proforma invoice",
+    dateLabel: "Due date",
+    icon: FileSpreadsheet,
+  },
 };
 
 const TUTORIAL_COPY: Record<DocumentType, { key: string; title: string; description: string }> = {
@@ -39,6 +45,11 @@ const TUTORIAL_COPY: Record<DocumentType, { key: string; title: string; descript
     key: "invoices",
     title: "Invoices track what's owed.",
     description: "Mark one paid as money comes in and its status updates everywhere it appears.",
+  },
+  proforma: {
+    key: "proformas",
+    title: "Proforma invoices are for pre-shipment approval.",
+    description: "Share the expected charges with a customer before you raise the real tax invoice.",
   },
 };
 
@@ -59,7 +70,8 @@ export async function DocumentListPage({
   const q = typeof params.q === "string" ? params.q.trim() : "";
   const status = typeof params.status === "string" ? params.status : "";
   const copy = COPY[type];
-  const basePath = type === "quotation" ? "/quotations" : "/invoices";
+  const basePath =
+    type === "quotation" ? "/quotations" : type === "proforma" ? "/proforma-invoices" : "/invoices";
 
   // Combined via AND, not spread — see app/api/documents/route.ts's GET for
   // why: scopeWhere and the search filter can each independently produce

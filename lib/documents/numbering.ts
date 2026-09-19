@@ -10,6 +10,7 @@ import { getISTYear } from "@/lib/dates";
 const PREFIXES: Record<DocumentType, string> = {
   quotation: "QT",
   invoice: "INV",
+  proforma: "PRF",
 };
 
 // Concurrency-safe: the upsert's increment compiles to a native Postgres

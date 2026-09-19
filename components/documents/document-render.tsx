@@ -129,6 +129,9 @@ export function DocumentRender({
   showRecordedBy?: boolean;
 }) {
   const isQuotation = type === "quotation";
+  const isInvoice = type === "invoice";
+  const documentTypeLabel =
+    type === "quotation" ? "QUOTATION" : type === "proforma" ? "PROFORMA INVOICE" : "INVOICE";
   const style = templateStyle(appearance.template, appearance.accentColor);
   const isCompact = appearance.template === "compact";
   const showGstinRow = gstEnabled && appearance.showGstinRow;
@@ -214,7 +217,7 @@ export function DocumentRender({
               className="text-[length:calc(var(--doc-scale)*26px)] font-bold tracking-[0.12em]"
               style={{ color: style.docTitleColor }}
             >
-              {isQuotation ? "QUOTATION" : "INVOICE"}
+              {documentTypeLabel}
               {isForeignCurrency && (
                 <span
                   className="ml-2 align-middle text-[length:calc(var(--doc-scale)*12px)] font-bold tracking-[0.06em]"
@@ -455,7 +458,7 @@ export function DocumentRender({
                 <span>{inrEquivalent(totals.total)}</span>
               </div>
             )}
-            {!isQuotation && (
+            {isInvoice && (
               <div className="flex justify-between px-3 pt-2 text-[length:calc(var(--doc-scale)*13px)]">
                 <span className="text-[#565E72]">
                   {creditBalance > 0 ? "Credit balance" : "Balance due"}
@@ -471,7 +474,7 @@ export function DocumentRender({
           </div>
         </div>
 
-        {!isQuotation && payments.length > 0 && (
+        {isInvoice && payments.length > 0 && (
           <div className="mt-8">
             <div className="text-[length:calc(var(--doc-scale)*10.5px)] font-bold tracking-[0.1em] text-[#8A92A6]">
               PAYMENTS

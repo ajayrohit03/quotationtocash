@@ -31,7 +31,7 @@ export type LineItemInput = z.infer<typeof lineItemInputSchema>;
 // real id to autosave against — then PATCHes content in as the user fills
 // the form in. Line items, dates, terms etc. all come later via PATCH.
 export const documentCreateSchema = z.object({
-  type: z.enum(["quotation", "invoice"]),
+  type: z.enum(["quotation", "invoice", "proforma"]),
   customerId: z.string().min(1, "Select a customer"),
 });
 

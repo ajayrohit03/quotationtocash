@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
+import type { DocumentType } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { errorResponse } from "@/lib/api/respond";
 import { requireBusiness } from "@/lib/auth/session";
@@ -7,9 +8,10 @@ import { publicDocumentUrl } from "@/lib/documents/public-url";
 import { documentScopeWhere } from "@/lib/documents/visibility";
 import { hasPermission, type Permission } from "@/lib/auth/permissions";
 
-const EDIT_PERMISSION: Record<"quotation" | "invoice", Permission> = {
+const EDIT_PERMISSION: Record<DocumentType, Permission> = {
   quotation: "quotations.edit",
   invoice: "invoices.edit",
+  proforma: "invoices.edit",
 };
 
 // (Re)generates the public share token — spec calls this out as

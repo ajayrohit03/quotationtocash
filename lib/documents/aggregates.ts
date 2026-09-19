@@ -1,6 +1,6 @@
 import "server-only";
 
-import { Prisma } from "@prisma/client";
+import { Prisma, type DocumentType } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { documentScopeWhere } from "@/lib/documents/visibility";
 
@@ -177,7 +177,7 @@ export async function getDashboardMetrics(
 export type RecentDocument = {
   id: string;
   number: string;
-  type: "quotation" | "invoice";
+  type: DocumentType;
   status: string;
   issueDate: Date;
   dueDate: Date | null;

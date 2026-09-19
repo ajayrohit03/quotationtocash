@@ -16,14 +16,19 @@ export function buildDocumentEmailHtml({
 }: {
   businessName: string;
   customerName: string;
-  documentTypeLabel: "quotation" | "invoice";
+  documentTypeLabel: "quotation" | "invoice" | "proforma";
   documentNumber: string;
   total: number;
   currency: string;
   accentColor: string;
   viewUrl: string;
 }): string {
-  const label = documentTypeLabel === "quotation" ? "Quotation" : "Invoice";
+  const label =
+    documentTypeLabel === "quotation"
+      ? "Quotation"
+      : documentTypeLabel === "proforma"
+        ? "Proforma Invoice"
+        : "Invoice";
   const formattedTotal = formatCurrency(total, currency);
 
   return `<!doctype html>
