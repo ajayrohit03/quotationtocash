@@ -52,6 +52,7 @@ export default async function PublicDocumentPage({
         </a>
         <DocumentRender
           type={previewDocument.type}
+          status={previewDocument.status}
           number={previewDocument.number}
           issueDate={previewDocument.issueDate}
           dueDate={previewDocument.dueDate}
@@ -90,6 +91,8 @@ export default async function PublicDocumentPage({
             showTerms: previewDocument.showTerms,
             showReferenceNumber: previewDocument.showReferenceNumber,
             showSignature: previewDocument.showSignature,
+            showDiscount: previewDocument.showDiscount,
+            roundTotal: previewDocument.roundTotal,
             showInrEquivalent: previewDocument.showInrEquivalent,
             fontSize: previewDocument.fontSize,
           }}

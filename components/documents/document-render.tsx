@@ -19,6 +19,7 @@ import {
   resolveForeignCurrencyRateLabel,
 } from "@/lib/documents/line-item-columns";
 import { businessIdentityLine } from "@/lib/documents/business-identity";
+import { applyRounding } from "@/lib/tax/applyRounding";
 import { QRCodeSVG } from "qrcode.react";
 import type {
   PreviewAppearance,
@@ -74,6 +75,7 @@ function templateStyle(template: PreviewAppearance["template"], accentColor: str
 
 export function DocumentRender({
   type,
+  status,
   number,
   issueDate,
   dueDate,
@@ -107,6 +109,11 @@ export function DocumentRender({
   showRecordedBy = false,
 }: {
   type: DocumentType;
+  // Only used to switch the INVOICE label to TAX INVOICE once an
+  // invoice is finalized (see lib/documents/status.ts's "finalized"
+  // status) — every other rendering decision here still keys off
+  // `type`/`appearance`, not status.
+  status: string;
   number: string;
   issueDate: string;
   dueDate: string | null;
@@ -144,7 +151,13 @@ export function DocumentRender({
   const isQuotation = type === "quotation";
   const isInvoice = type === "invoice";
   const documentTypeLabel =
-    type === "quotation" ? "QUOTATION" : type === "proforma" ? "PROFORMA INVOICE" : "INVOICE";
+    type === "quotation"
+      ? "QUOTATION"
+      : type === "proforma"
+        ? "PROFORMA INVOICE"
+        : isInvoice && status === "finalized"
+          ? "TAX INVOICE"
+          : "INVOICE";
   const style = templateStyle(appearance.template, appearance.accentColor);
   const isCompact = appearance.template === "compact";
   const showGstinRow = gstEnabled && appearance.showGstinRow;
@@ -176,6 +189,15 @@ export function DocumentRender({
     return formatCurrency(amount * (inrExchangeRate ?? 0), "INR");
   }
   const scale = (fontSize ?? DEFAULT_FONT_SIZE) / DEFAULT_FONT_SIZE;
+  // Live, not from totals.total — see PreviewAppearance's roundTotal
+  // comment: recomputed from taxableAmount/cgst/sgst/igst (never
+  // touched by rounding) plus the *current* toggle state, so flipping
+  // the switch updates GRAND TOTAL immediately, before the debounced
+  // autosave PATCH has a chance to land.
+  const { total: grandTotal, roundingAdjustment } = applyRounding(
+    totals.taxableAmount + totals.cgst + totals.sgst + totals.igst,
+    appearance.roundTotal,
+  );
 
   return (
     <div
@@ -407,10 +429,12 @@ export function DocumentRender({
                 muted
               />
             )}
-            <TotalRow
-              label="Discount"
-              value={`− ${formatCurrency(totals.discountTotal, currency)}`}
-            />
+            {appearance.showDiscount && (
+              <TotalRow
+                label="Discount"
+                value={`− ${formatCurrency(totals.discountTotal, currency)}`}
+              />
+            )}
             {showTax && (
               <>
                 <TotalRow
@@ -454,6 +478,12 @@ export function DocumentRender({
                 })}
               </>
             )}
+            {appearance.roundTotal && (
+              <TotalRow
+                label="Rounding"
+                value={`${roundingAdjustment > 0 ? "+" : ""}${formatCurrency(roundingAdjustment, currency)}`}
+              />
+            )}
             <div
               className="mt-2 flex items-baseline justify-between px-3 py-3"
               style={{
@@ -472,13 +502,13 @@ export function DocumentRender({
                 className="text-[length:calc(var(--doc-scale)*19px)] font-bold"
                 style={{ color: style.totalRowColor }}
               >
-                {formatCurrency(totals.total, currency)}
+                {formatCurrency(grandTotal, currency)}
               </span>
             </div>
             {showInrSubline && (
               <div className="flex justify-between px-3 pt-1 text-[length:calc(var(--doc-scale)*12px)] text-[#8A92A6]">
                 <span>INR equivalent</span>
-                <span>{inrEquivalent(totals.total)}</span>
+                <span>{inrEquivalent(grandTotal)}</span>
               </div>
             )}
             {isInvoice && (

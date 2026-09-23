@@ -334,6 +334,26 @@ model Document {
   total         Decimal @default(0) @db.Decimal(12, 2)
   currency      String  @default("INR")
 
+  // "Round total" (Customize sidebar, SHOW ON DOCUMENT — see
+  // appearanceUpdateSchema/document-preview.tsx) rounds `total` to the
+  // nearest whole currency unit. roundTotal is the toggle; roundingAdjustment
+  // is the resulting delta (Math.round(rawTotal) - rawTotal, so negative
+  // when rounding down), persisted the same way discountTotal is — a real
+  // stored column, computed once server-side in PATCH
+  // /api/documents/:id (see lib/tax/applyRounding.ts) and never trusted
+  // from the client. `total` above already reflects the rounded figure
+  // when roundTotal is on: it's what remainingBalance/payments compare
+  // against, so the amount actually invoiced must be the amount actually
+  // collectable. The web/PDF renderers don't read roundingAdjustment
+  // directly — they recompute the "Rounding" line and GRAND TOTAL live
+  // from taxableAmount+cgst+sgst+igst plus the *current* toggle state
+  // (same applyRounding call), so flipping the switch in the Customize
+  // sidebar updates the total instantly, before the debounced autosave
+  // PATCH lands — same "live preview" guarantee every other appearance
+  // toggle already has.
+  roundTotal         Boolean @default(false) @map("round_total")
+  roundingAdjustment Decimal @default(0) @map("rounding_adjustment") @db.Decimal(12, 2)
+
   // Foreign-currency invoicing (Document's own settlement currency, not
   // the per-line-item FX helper below on LineItem) — see
   // docs/foreign-currency-invoicing-design.md. showInrEquivalent/
@@ -391,6 +411,7 @@ model Document {
   showLogo            Boolean @default(true) @map("show_logo")
   showGstinRow        Boolean @default(true) @map("show_gstin_row")
   showTax             Boolean @default(true) @map("show_tax")
+  showDiscount        Boolean @default(true) @map("show_discount")
   showPayment         Boolean @default(true) @map("show_payment")
   showNotes           Boolean @default(true) @map("show_notes")
   showTerms           Boolean @default(true) @map("show_terms")

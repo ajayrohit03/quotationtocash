@@ -61,6 +61,13 @@ export type PreviewAppearance = {
   showTerms: boolean;
   showReferenceNumber: boolean;
   showSignature: boolean;
+  showDiscount: boolean;
+  // See schema.prisma's Document.roundTotal comment — the renderers
+  // recompute GRAND TOTAL/the "Rounding" line live from this flag plus
+  // totals.taxableAmount/cgst/sgst/igst (via lib/tax/applyRounding),
+  // rather than trusting totals.total directly, so the Customize
+  // sidebar's switch updates the preview and PDF instantly.
+  roundTotal: boolean;
   showInrEquivalent: boolean;
   // Base font size in points (7-12); null means "use the template's own
   // default." See schema.prisma's Document.fontSize comment.

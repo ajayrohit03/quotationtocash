@@ -108,6 +108,8 @@ function makeDocument(overrides: Partial<PreviewDocument> = {}): PreviewDocument
     showTerms: true,
     showReferenceNumber: true,
     showSignature: true,
+    showDiscount: true,
+    roundTotal: false,
     showInrEquivalent: false,
     fontSize: null,
     einvoiceStatus: "none",

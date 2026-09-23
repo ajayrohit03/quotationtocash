@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import type { DocumentType } from "@prisma/client";
+import { Prisma, type DocumentType } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { errorResponse } from "@/lib/api/respond";
 import { requireBusiness } from "@/lib/auth/session";
@@ -19,6 +19,7 @@ import { documentScopeWhere } from "@/lib/documents/visibility";
 import { calculateDocumentTotals } from "@/lib/tax/calculateDocumentTotals";
 import { isSameState } from "@/lib/tax/calculateGST";
 import { resolveGstRate } from "@/lib/tax/resolveGstRate";
+import { applyRounding } from "@/lib/tax/applyRounding";
 
 // Proforma reuses the invoices.* permission tier — see
 // app/api/documents/route.ts's own copy of this comment.
@@ -215,6 +216,28 @@ export async function PATCH(
         )
       : undefined;
 
+    // "Round total" — persisted total/roundingAdjustment need
+    // recomputing whenever either input changes: the line items (a new
+    // `totals.total`) or the toggle itself (`input.roundTotal`, which
+    // can arrive on its own via the Customize sidebar's autosave, with
+    // no lineItems in the same request at all). taxableAmount/cgst/sgst/
+    // igst are never touched by rounding — see calculateDocumentTotals —
+    // so the pre-rounding figure is always just their sum, whichever
+    // source (freshly computed vs. already-persisted) is in play.
+    const effectiveRoundTotal = input.roundTotal ?? existing.roundTotal;
+    const shouldRecomputeTotal = totals !== undefined || input.roundTotal !== undefined;
+    const rounding = shouldRecomputeTotal
+      ? applyRounding(
+          Number(
+            (totals?.taxableAmount ?? existing.taxableAmount)
+              .plus(totals?.cgst ?? existing.cgst)
+              .plus(totals?.sgst ?? existing.sgst)
+              .plus(totals?.igst ?? existing.igst),
+          ),
+          effectiveRoundTotal,
+        )
+      : undefined;
+
     const updated = await prisma.$transaction(async (tx) => {
       if (lineItems) {
         await tx.lineItem.deleteMany({ where: { documentId: id } });
@@ -256,7 +279,12 @@ export async function PATCH(
                 cgst: totals.cgst,
                 sgst: totals.sgst,
                 igst: totals.igst,
-                total: totals.total,
+              }
+            : {}),
+          ...(rounding
+            ? {
+                total: new Prisma.Decimal(rounding.total),
+                roundingAdjustment: new Prisma.Decimal(rounding.roundingAdjustment),
               }
             : {}),
         },

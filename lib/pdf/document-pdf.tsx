@@ -11,6 +11,7 @@ import {
   resolveForeignCurrencyRateLabel,
 } from "@/lib/documents/line-item-columns";
 import { businessIdentityLine } from "@/lib/documents/business-identity";
+import { applyRounding } from "@/lib/tax/applyRounding";
 
 // react-pdf hyphenates any word that overflows its container by default
 // (via the bundled `hyphen` package's syllable-break patterns) — no
@@ -272,7 +273,9 @@ export function DocumentPdf({
       ? "QUOTATION"
       : document.type === "proforma"
         ? "PROFORMA INVOICE"
-        : "INVOICE";
+        : isInvoice && document.status === "finalized"
+          ? "TAX INVOICE"
+          : "INVOICE";
   const style = templateStyle(document.template, document.accentColor);
   const isCompact = document.template === "compact";
   const scale = (document.fontSize ?? DEFAULT_FONT_SIZE) / DEFAULT_FONT_SIZE;
@@ -298,6 +301,16 @@ export function DocumentPdf({
   function inrEquivalent(amount: number): string {
     return formatCurrency(amount * (document.inrExchangeRate ?? 0), "INR");
   }
+  // Live, not from document.totals.total — see
+  // components/documents/document-render.tsx's own copy of this comment
+  // and PreviewAppearance's roundTotal comment.
+  const { total: grandTotal, roundingAdjustment } = applyRounding(
+    document.totals.taxableAmount +
+      document.totals.cgst +
+      document.totals.sgst +
+      document.totals.igst,
+    document.roundTotal,
+  );
 
   return (
     <Document title={`${document.number}.pdf`}>
@@ -556,10 +569,12 @@ export function DocumentPdf({
               </Text>
             </View>
           )}
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Discount</Text>
-            <Text>− {formatCurrency(document.totals.discountTotal, document.currency)}</Text>
-          </View>
+          {document.showDiscount && (
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Discount</Text>
+              <Text>− {formatCurrency(document.totals.discountTotal, document.currency)}</Text>
+            </View>
+          )}
           {showTax && (
             <>
               <View style={styles.totalRow}>
@@ -601,6 +616,15 @@ export function DocumentPdf({
               })}
             </>
           )}
+          {document.roundTotal && (
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Rounding</Text>
+              <Text>
+                {roundingAdjustment > 0 ? "+" : ""}
+                {formatCurrency(roundingAdjustment, document.currency)}
+              </Text>
+            </View>
+          )}
           <View
             style={[
               styles.grandTotalRow,
@@ -617,14 +641,14 @@ export function DocumentPdf({
               GRAND TOTAL
             </Text>
             <Text style={[styles.grandTotalValue, { color: style.totalRowColor }]}>
-              {formatCurrency(document.totals.total, document.currency)}
+              {formatCurrency(grandTotal, document.currency)}
             </Text>
           </View>
           {showInrSubline && (
             <View style={[styles.totalRow, { paddingTop: 2 }]}>
               <Text style={{ fontSize: fs(7.5), color: COLORS.muted }}>INR equivalent</Text>
               <Text style={{ fontSize: fs(7.5), color: COLORS.muted }}>
-                {inrEquivalent(document.totals.total)}
+                {inrEquivalent(grandTotal)}
               </Text>
             </View>
           )}

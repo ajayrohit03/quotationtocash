@@ -65,11 +65,13 @@ type ToggleKey = keyof Pick<
   | "showLogo"
   | "showGstinRow"
   | "showTax"
+  | "showDiscount"
   | "showPayment"
   | "showNotes"
   | "showTerms"
   | "showReferenceNumber"
   | "showSignature"
+  | "roundTotal"
   | "showInrEquivalent"
 >;
 
@@ -177,11 +179,13 @@ export function DocumentPreview({
     showLogo: document.showLogo,
     showGstinRow: document.showGstinRow,
     showTax: document.showTax,
+    showDiscount: document.showDiscount,
     showPayment: document.showPayment,
     showNotes: document.showNotes,
     showTerms: document.showTerms,
     showReferenceNumber: document.showReferenceNumber,
     showSignature: document.showSignature,
+    roundTotal: document.roundTotal,
     showInrEquivalent: document.showInrEquivalent,
     fontSize: document.fontSize,
   });
@@ -424,11 +428,13 @@ export function DocumentPreview({
           { key: "showTax", label: "Tax breakdown" },
         ] as const)
       : []),
+    { key: "showDiscount", label: "Discount" },
     { key: "showPayment", label: "Payment details" },
     { key: "showNotes", label: "Notes" },
     { key: "showTerms", label: "Terms & conditions" },
     { key: "showReferenceNumber", label: "Reference number" },
     { key: "showSignature", label: "Signature" },
+    { key: "roundTotal", label: "Round total" },
     ...(document.currency !== "INR"
       ? ([{ key: "showInrEquivalent", label: "Show INR equivalent" }] as const)
       : []),
@@ -585,6 +591,7 @@ export function DocumentPreview({
         <div className="flex min-w-0 flex-1 justify-center">
           <DocumentRender
             type={document.type}
+            status={document.status}
             number={document.number}
             issueDate={document.issueDate}
             dueDate={document.dueDate}
