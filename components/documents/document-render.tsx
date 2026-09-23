@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { DocumentType } from "@prisma/client";
 import { formatDateIST } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
@@ -107,6 +107,12 @@ export function DocumentRender({
   // In-app only — never passed true from the public share page or the
   // PDF renderer. See docs/payment-tracking-design.md §6.
   showRecordedBy = false,
+  // In-app only — the "Update signature" trigger for a sent/finalized
+  // Invoice/Proforma, rendered adjacent to the signature block itself
+  // (see document-preview.tsx's own comment). Never passed from the
+  // public share page: a customer viewing the document has no reason to
+  // see this, and no permission to use it if they did.
+  signatureAction,
 }: {
   type: DocumentType;
   // Only used to switch the INVOICE label to TAX INVOICE once an
@@ -147,6 +153,7 @@ export function DocumentRender({
   gstEnabled: boolean;
   appearance: PreviewAppearance;
   showRecordedBy?: boolean;
+  signatureAction?: ReactNode;
 }) {
   const isQuotation = type === "quotation";
   const isInvoice = type === "invoice";
@@ -642,6 +649,9 @@ export function DocumentRender({
               </div>
             </div>
           )}
+        {signatureAction && (
+          <div className="mt-2 flex justify-end print:hidden">{signatureAction}</div>
+        )}
 
         {einvoiceQrCode && (
           <div className="mt-6 flex justify-end">

@@ -133,6 +133,21 @@ export function requireEditableDocument(status: string): void {
   }
 }
 
+// The inverse of requireEditableDocument, for the one narrow exception
+// to the frozen-snapshot rule: PATCH /api/documents/:id/update-signature
+// (see that route's own comment). A draft document's whole snapshot
+// already gets rebuilt on every autosave — including the signature
+// fields — so this dedicated route is redundant there and rejected with
+// a message pointing back at the normal edit flow, rather than silently
+// no-op'ing or duplicating the autosave's own write.
+export function requireNonDraftForSignatureUpdate(status: string): void {
+  if (isEditableStatus(status)) {
+    throw new ForbiddenError(
+      "Draft documents update automatically — edit from the builder",
+    );
+  }
+}
+
 // Whether opening the public share link should bump status to "viewed".
 // A document only ever moves forward through the vocabulary — from draft
 // or sent — never regressed back from something further along (paid,

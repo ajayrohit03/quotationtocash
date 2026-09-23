@@ -111,3 +111,18 @@ export const documentUpdateSchema = appearanceUpdateSchema.extend({
 });
 
 export type DocumentUpdateInput = z.infer<typeof documentUpdateSchema>;
+
+// PATCH /api/documents/:id/update-signature — the one narrow exception
+// to the frozen-snapshot rule (see that route's own comment). Same
+// field shapes as businessUpdateSchema's signature fields; deliberately
+// its own schema, not shared, since this one only ever touches
+// Document.businessSnapshot, never the live Business row.
+export const documentSignatureUpdateSchema = z.object({
+  signatureImageUrl: z.string().trim().max(2000).nullable().optional(),
+  signatureSignatoryName: z.string().trim().max(200).nullable().optional(),
+  signatureDesignation: z.string().trim().max(200).nullable().optional(),
+});
+
+export type DocumentSignatureUpdateInput = z.infer<
+  typeof documentSignatureUpdateSchema
+>;

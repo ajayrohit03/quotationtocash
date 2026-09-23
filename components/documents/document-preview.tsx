@@ -141,6 +141,16 @@ export function DocumentPreview({
   // see lib/documents/status.ts's own comment on requireFinalizableDocument.
   const finalizable =
     canEdit && (isInvoice || isProforma) && canFinalizeDocument(document.status);
+  // The one narrow exception to the frozen-snapshot rule (see PATCH
+  // /api/documents/:id/update-signature's own comment) — Invoice/
+  // Proforma only (spec: quotations are converted, not signed), and
+  // only once a document has actually left draft (a draft's whole
+  // snapshot already refreshes on every autosave, making this
+  // redundant there — same rule the route itself enforces server-side).
+  const canUpdateSignature =
+    canEdit &&
+    (isInvoice || isProforma) &&
+    (document.status === "sent" || document.status === "finalized");
   const documentTypeLabel = isQuotation
     ? "Quotation"
     : isProforma
@@ -172,6 +182,23 @@ export function DocumentPreview({
 
   const [finalizeConfirmOpen, setFinalizeConfirmOpen] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
+
+  const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
+  const [signatureUploading, setSignatureUploading] = useState(false);
+  const [signatureSaving, setSignatureSaving] = useState(false);
+  // Seeded from the document's own frozen snapshot each time the dialog
+  // opens (see openSignatureDialog) — never from live Business data,
+  // consistent with everything else this dialog touches.
+  const [signatureImageUrlDraft, setSignatureImageUrlDraft] = useState<
+    string | null
+  >(document.business.signatureImageUrl);
+  const [signatureNameDraft, setSignatureNameDraft] = useState(
+    document.business.signatureSignatoryName ?? "",
+  );
+  const [signatureDesignationDraft, setSignatureDesignationDraft] = useState(
+    document.business.signatureDesignation ?? "",
+  );
+  const signatureFileInputRef = useRef<HTMLInputElement>(null);
 
   const [appearance, setAppearance] = useState<PreviewAppearance>({
     template: document.template,
@@ -398,6 +425,74 @@ export function DocumentPreview({
     }
   }
 
+  function openSignatureDialog() {
+    setSignatureImageUrlDraft(document.business.signatureImageUrl);
+    setSignatureNameDraft(document.business.signatureSignatoryName ?? "");
+    setSignatureDesignationDraft(document.business.signatureDesignation ?? "");
+    setSignatureDialogOpen(true);
+  }
+
+  async function handleSignatureFileChange(
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setSignatureUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch(
+        `/api/documents/${document.id}/update-signature`,
+        { method: "POST", body: formData },
+      );
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        toast.error(body?.error ?? "Couldn't upload signature. Try again.");
+        return;
+      }
+      const snapshot = body.document.businessSnapshot as {
+        signatureImageUrl: string | null;
+      };
+      setSignatureImageUrlDraft(snapshot.signatureImageUrl);
+      toast.success("Signature image uploaded");
+    } catch {
+      toast.error("Couldn't upload signature. Try again.");
+    } finally {
+      setSignatureUploading(false);
+    }
+  }
+
+  async function handleSaveSignature() {
+    setSignatureSaving(true);
+    try {
+      const response = await fetch(
+        `/api/documents/${document.id}/update-signature`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            signatureSignatoryName: signatureNameDraft.trim() || null,
+            signatureDesignation: signatureDesignationDraft.trim() || null,
+          }),
+        },
+      );
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        toast.error(body?.error ?? "Couldn't update the signature. Try again.");
+        return;
+      }
+      toast.success("Signature updated on this document.");
+      setSignatureDialogOpen(false);
+      router.refresh();
+    } catch {
+      toast.error("Couldn't update the signature. Try again.");
+    } finally {
+      setSignatureSaving(false);
+    }
+  }
+
   async function handleReverseLastPayment() {
     setReversingPayment(true);
     try {
@@ -621,6 +716,13 @@ export function DocumentPreview({
             totals={document.totals}
             gstEnabled={gstEnabled}
             appearance={appearance}
+            signatureAction={
+              canUpdateSignature && (
+                <Button variant="link" size="sm" className="h-auto p-0" onClick={openSignatureDialog}>
+                  Update signature
+                </Button>
+              )
+            }
           />
         </div>
 
@@ -825,6 +927,79 @@ export function DocumentPreview({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={signatureDialogOpen} onOpenChange={setSignatureDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update signature</DialogTitle>
+            <DialogDescription>
+              This updates the signature on this document only. Your business
+              profile signature in Settings is unchanged.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-32 flex-none items-center justify-center overflow-hidden rounded-xl border border-dashed border-input bg-muted">
+                {signatureImageUrlDraft ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL
+                  <img
+                    src={signatureImageUrlDraft}
+                    alt="Signature"
+                    className="size-full object-contain"
+                  />
+                ) : (
+                  <span className="font-mono text-[10px] text-muted-foreground">
+                    No signature
+                  </span>
+                )}
+              </div>
+              <input
+                ref={signatureFileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                className="hidden"
+                onChange={handleSignatureFileChange}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                disabled={signatureUploading}
+                onClick={() => signatureFileInputRef.current?.click()}
+              >
+                {signatureUploading
+                  ? "Uploading…"
+                  : signatureImageUrlDraft
+                    ? "Replace image"
+                    : "Upload image"}
+              </Button>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="signature-name">Signatory name</Label>
+              <Input
+                id="signature-name"
+                value={signatureNameDraft}
+                onChange={(e) => setSignatureNameDraft(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="signature-designation">Designation</Label>
+              <Input
+                id="signature-designation"
+                value={signatureDesignationDraft}
+                onChange={(e) => setSignatureDesignationDraft(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter className="mt-2">
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              Cancel
+            </DialogClose>
+            <Button disabled={signatureSaving} onClick={handleSaveSignature}>
+              {signatureSaving ? "Saving…" : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

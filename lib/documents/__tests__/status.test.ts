@@ -18,6 +18,7 @@ import {
   requireConvertibleQuotation,
   requireEditableDocument,
   requireFinalizableDocument,
+  requireNonDraftForSignatureUpdate,
   requireRecordablePaymentInvoice,
   requireSendableDocument,
   shouldMarkViewed,
@@ -210,6 +211,28 @@ describe("canFinalizeDocument / requireFinalizableDocument", () => {
       if (status === "draft") continue;
       expect(canFinalizeDocument(status)).toBe(false);
       expect(() => requireFinalizableDocument(status)).toThrow(ForbiddenError);
+    }
+  });
+});
+
+describe("requireNonDraftForSignatureUpdate", () => {
+  it("throws for draft, with the exact message the route surfaces", () => {
+    expect(() => requireNonDraftForSignatureUpdate("draft")).toThrow(
+      ForbiddenError,
+    );
+    expect(() => requireNonDraftForSignatureUpdate("draft")).toThrow(
+      "Draft documents update automatically — edit from the builder",
+    );
+  });
+
+  it("allows every non-draft status across all three vocabularies", () => {
+    for (const status of [
+      ...QUOTATION_STATUSES,
+      ...INVOICE_STATUSES,
+      ...PROFORMA_STATUSES,
+    ]) {
+      if (status === "draft") continue;
+      expect(() => requireNonDraftForSignatureUpdate(status)).not.toThrow();
     }
   });
 });
