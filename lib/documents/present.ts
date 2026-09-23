@@ -53,6 +53,7 @@ export function toPreviewDocument(
     showNotes: document.showNotes,
     showTerms: document.showTerms,
     showReferenceNumber: document.showReferenceNumber,
+    showSignature: document.showSignature,
     showInrEquivalent: document.showInrEquivalent,
     fontSize: document.fontSize,
     // Snapshots are stored as Json — cast back to the shape they were

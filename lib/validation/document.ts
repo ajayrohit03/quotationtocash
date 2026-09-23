@@ -57,6 +57,7 @@ export const appearanceUpdateSchema = z.object({
   showNotes: z.boolean().optional(),
   showTerms: z.boolean().optional(),
   showReferenceNumber: z.boolean().optional(),
+  showSignature: z.boolean().optional(),
   // Only meaningful when the document's own currency isn't INR — see
   // documentUpdateSchema's `currency` field.
   showInrEquivalent: z.boolean().optional(),

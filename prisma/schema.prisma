@@ -100,6 +100,17 @@ model Business {
   website String?
   logoUrl String? @map("logo_url")
 
+  // Authorised-signatory block shown at the bottom of every document —
+  // see lib/documents/snapshots.ts's BusinessSnapshot (frozen at save
+  // time, same as logoUrl) and Document.showSignature below (per-document
+  // toggle). signatureImageUrl follows the exact same Supabase Storage
+  // pattern as logoUrl (app/api/business/signature/route.ts,
+  // lib/storage/signature.ts); name/designation are plain text, shown
+  // even when no image is uploaded.
+  signatureImageUrl      String? @map("signature_image_url")
+  signatureSignatoryName String? @map("signature_signatory_name")
+  signatureDesignation   String? @map("signature_designation")
+
   gstEnabled       Boolean  @default(false) @map("gst_enabled")
   gstin            String?
   gstDefaultRate   Decimal? @map("gst_default_rate") @db.Decimal(5, 2)
@@ -384,6 +395,7 @@ model Document {
   showNotes           Boolean @default(true) @map("show_notes")
   showTerms           Boolean @default(true) @map("show_terms")
   showReferenceNumber Boolean @default(false) @map("show_reference_number")
+  showSignature       Boolean @default(true) @map("show_signature")
 
   notes           String?
   termsText       String? @map("terms_text")

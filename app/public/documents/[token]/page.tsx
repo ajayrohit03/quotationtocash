@@ -89,6 +89,7 @@ export default async function PublicDocumentPage({
             showNotes: previewDocument.showNotes,
             showTerms: previewDocument.showTerms,
             showReferenceNumber: previewDocument.showReferenceNumber,
+            showSignature: previewDocument.showSignature,
             showInrEquivalent: previewDocument.showInrEquivalent,
             fontSize: previewDocument.fontSize,
           }}

@@ -146,3 +146,55 @@ describe("POST/DELETE /api/business/logo — the auth gate specifically", () => 
     expect(response.status).toBe(403);
   });
 });
+
+describe("POST/DELETE /api/business/signature — same admin-delegable tier as logo", () => {
+  it("an admin request passes the auth gate (fails later, on 'no file provided', not 403)", async () => {
+    const { clerkUserId } = await createBusinessWithMember("admin");
+    await mockedAuthAs(clerkUserId);
+
+    const { POST } = await import("@/app/api/business/signature/route");
+    const request = new NextRequest("http://localhost/api/business/signature", {
+      method: "POST",
+      body: new FormData(),
+    });
+    const response = await POST(request);
+    expect(response.status).not.toBe(403);
+    expect(response.status).toBe(400);
+  });
+
+  it("a staff request is rejected with 403 before ever reaching the upload logic", async () => {
+    const { clerkUserId } = await createBusinessWithMember("staff");
+    await mockedAuthAs(clerkUserId);
+
+    const { POST } = await import("@/app/api/business/signature/route");
+    const request = new NextRequest("http://localhost/api/business/signature", {
+      method: "POST",
+      body: new FormData(),
+    });
+    const response = await POST(request);
+    expect(response.status).toBe(403);
+  });
+
+  it("an admin DELETE succeeds (no signature set, so the storage call is a no-op)", async () => {
+    const { clerkUserId, business } = await createBusinessWithMember("admin");
+    await mockedAuthAs(clerkUserId);
+
+    const { DELETE } = await import("@/app/api/business/signature/route");
+    const response = await DELETE();
+    expect(response.status).toBe(200);
+
+    const updated = await prisma.business.findUniqueOrThrow({
+      where: { id: business.id },
+    });
+    expect(updated.signatureImageUrl).toBeNull();
+  });
+
+  it("a staff DELETE is rejected with 403", async () => {
+    const { clerkUserId } = await createBusinessWithMember("staff");
+    await mockedAuthAs(clerkUserId);
+
+    const { DELETE } = await import("@/app/api/business/signature/route");
+    const response = await DELETE();
+    expect(response.status).toBe(403);
+  });
+});

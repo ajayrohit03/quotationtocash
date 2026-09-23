@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import type { DocumentTemplate } from "@prisma/client";
 import {
   canConvertQuotation,
+  canFinalizeDocument,
   canRecordPayment,
   canSendDocument,
   isEditableStatus,
@@ -36,6 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { StatusBadge } from "./status-badge";
 import { DocumentRender } from "./document-render";
 import type { PreviewAppearance, PreviewDocument } from "./preview-types";
 
@@ -67,6 +69,7 @@ type ToggleKey = keyof Pick<
   | "showNotes"
   | "showTerms"
   | "showReferenceNumber"
+  | "showSignature"
   | "showInrEquivalent"
 >;
 
@@ -131,6 +134,11 @@ export function DocumentPreview({
   // reverse-last/route.ts already enforce (type !== "invoice").
   const recordable = canEdit && isInvoice && canRecordPayment(document.status);
   const reversible = canEdit && isInvoice && document.payments.length > 0;
+  // Finalize is Invoice/Proforma-only (spec: quotations get converted,
+  // not finalized) and only ever offered from "draft" — a one-way lock,
+  // see lib/documents/status.ts's own comment on requireFinalizableDocument.
+  const finalizable =
+    canEdit && (isInvoice || isProforma) && canFinalizeDocument(document.status);
   const documentTypeLabel = isQuotation
     ? "Quotation"
     : isProforma
@@ -160,6 +168,9 @@ export function DocumentPreview({
   const [reverseConfirmOpen, setReverseConfirmOpen] = useState(false);
   const [reversingPayment, setReversingPayment] = useState(false);
 
+  const [finalizeConfirmOpen, setFinalizeConfirmOpen] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+
   const [appearance, setAppearance] = useState<PreviewAppearance>({
     template: document.template,
     accentColor: document.accentColor,
@@ -170,6 +181,7 @@ export function DocumentPreview({
     showNotes: document.showNotes,
     showTerms: document.showTerms,
     showReferenceNumber: document.showReferenceNumber,
+    showSignature: document.showSignature,
     showInrEquivalent: document.showInrEquivalent,
     fontSize: document.fontSize,
   });
@@ -361,6 +373,27 @@ export function DocumentPreview({
     }
   }
 
+  async function handleFinalize() {
+    setFinalizing(true);
+    try {
+      const response = await fetch(`/api/documents/${document.id}/finalize`, {
+        method: "POST",
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        toast.error(body?.error ?? "Couldn't finalize this document. Try again.");
+        return;
+      }
+      toast.success(`${documentTypeLabel} finalized.`);
+      setFinalizeConfirmOpen(false);
+      router.refresh();
+    } catch {
+      toast.error("Couldn't finalize this document. Try again.");
+    } finally {
+      setFinalizing(false);
+    }
+  }
+
   async function handleReverseLastPayment() {
     setReversingPayment(true);
     try {
@@ -395,6 +428,7 @@ export function DocumentPreview({
     { key: "showNotes", label: "Notes" },
     { key: "showTerms", label: "Terms & conditions" },
     { key: "showReferenceNumber", label: "Reference number" },
+    { key: "showSignature", label: "Signature" },
     ...(document.currency !== "INR"
       ? ([{ key: "showInrEquivalent", label: "Show INR equivalent" }] as const)
       : []),
@@ -419,8 +453,13 @@ export function DocumentPreview({
           </Link>
         )}
         <div className="h-5 w-px bg-border" />
-        <div className="text-base font-semibold">
-          {documentTypeLabel} preview
+        <div className="flex items-center gap-2">
+          <div className="text-base font-semibold">
+            {documentTypeLabel} preview
+          </div>
+          {document.status === "finalized" && (
+            <StatusBadge status={document.status} />
+          )}
         </div>
         <div className="ml-auto flex gap-2.5">
           {canReassign && (
@@ -444,6 +483,15 @@ export function DocumentPreview({
               onClick={handleConvert}
             >
               {converting ? "Converting…" : "Convert to invoice"}
+            </Button>
+          )}
+          {(isInvoice || isProforma) && document.status === "draft" && (
+            <Button
+              variant="outline"
+              disabled={!finalizable}
+              onClick={() => setFinalizeConfirmOpen(true)}
+            >
+              Finalize
             </Button>
           )}
           {isInvoice && (
@@ -747,6 +795,25 @@ export function DocumentPreview({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction disabled={reversingPayment} onClick={handleReverseLastPayment}>
               {reversingPayment ? "Reversing…" : "Reverse payment"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={finalizeConfirmOpen} onOpenChange={setFinalizeConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Finalize this {isProforma ? "proforma invoice" : "invoice"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This locks it from further editing and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={finalizing} onClick={handleFinalize}>
+              {finalizing ? "Finalizing…" : "Finalize"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -584,6 +584,35 @@ export function DocumentRender({
           </div>
         )}
 
+        {appearance.showSignature &&
+          (business.signatureImageUrl || business.signatureSignatoryName) && (
+            <div className="mt-8 flex justify-end">
+              <div className="flex flex-col items-end gap-1 text-right">
+                <div className="text-[length:calc(var(--doc-scale)*9px)] font-bold tracking-[0.1em] text-[#8A92A6]">
+                  AUTHORISED SIGNATORY
+                </div>
+                {business.signatureImageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL
+                  <img
+                    src={business.signatureImageUrl}
+                    alt="Signature"
+                    className="mt-1 h-10 max-w-[160px] object-contain object-right"
+                  />
+                )}
+                {business.signatureSignatoryName && (
+                  <div className="mt-1 text-[length:calc(var(--doc-scale)*12px)] text-[#0E1220]">
+                    {business.signatureSignatoryName}
+                  </div>
+                )}
+                {business.signatureDesignation && (
+                  <div className="text-[length:calc(var(--doc-scale)*10px)] text-[#8A92A6]">
+                    {business.signatureDesignation}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
         {einvoiceQrCode && (
           <div className="mt-6 flex justify-end">
             <div className="flex flex-col items-center gap-1">

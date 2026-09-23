@@ -28,6 +28,9 @@ export const businessUpdateSchema = z.object({
   country: z.string().trim().max(120).nullable().optional(),
   website: z.string().trim().max(300).nullable().optional(),
   logoUrl: z.string().trim().max(2000).nullable().optional(),
+  signatureImageUrl: z.string().trim().max(2000).nullable().optional(),
+  signatureSignatoryName: z.string().trim().max(200).nullable().optional(),
+  signatureDesignation: z.string().trim().max(200).nullable().optional(),
 
   // GST fields are intentionally not here — they have cross-field rules
   // (GSTIN/rate/place/registration are required together, and disabling

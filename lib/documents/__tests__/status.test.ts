@@ -5,6 +5,7 @@ import {
   PROFORMA_STATUSES,
   QUOTATION_STATUSES,
   canConvertQuotation,
+  canFinalizeDocument,
   canRecordPayment,
   canSendDocument,
   creditBalance,
@@ -16,6 +17,7 @@ import {
   remainingBalance,
   requireConvertibleQuotation,
   requireEditableDocument,
+  requireFinalizableDocument,
   requireRecordablePaymentInvoice,
   requireSendableDocument,
   shouldMarkViewed,
@@ -75,6 +77,7 @@ describe("isManuallySettableStatus", () => {
       "partially_paid",
       "accepted",
       "converted",
+      "finalized",
     ];
     for (const status of restricted) {
       expect(isManuallySettableStatus("quotation", status)).toBe(false);
@@ -196,6 +199,21 @@ describe("canConvertQuotation / requireConvertibleQuotation", () => {
   });
 });
 
+describe("canFinalizeDocument / requireFinalizableDocument", () => {
+  it("allows only draft", () => {
+    expect(canFinalizeDocument("draft")).toBe(true);
+    expect(() => requireFinalizableDocument("draft")).not.toThrow();
+  });
+
+  it("blocks every other invoice/proforma status, including finalized itself — a one-way door", () => {
+    for (const status of [...INVOICE_STATUSES, ...PROFORMA_STATUSES]) {
+      if (status === "draft") continue;
+      expect(canFinalizeDocument(status)).toBe(false);
+      expect(() => requireFinalizableDocument(status)).toThrow(ForbiddenError);
+    }
+  });
+});
+
 describe("canRecordPayment / requireRecordablePaymentInvoice", () => {
   it("blocks draft and cancelled invoices", () => {
     for (const status of ["draft", "cancelled"]) {
@@ -259,9 +277,9 @@ describe("remainingBalance / creditBalance", () => {
 });
 
 describe("proforma — smallest vocabulary of the three, no payment/convert semantics", () => {
-  it("has exactly draft/sent/viewed/cancelled — no accepted/converted/paid/partially_paid/overdue", () => {
+  it("has exactly draft/finalized/sent/viewed/cancelled — no accepted/converted/paid/partially_paid/overdue", () => {
     expect([...PROFORMA_STATUSES].sort()).toEqual(
-      ["cancelled", "draft", "sent", "viewed"].sort(),
+      ["cancelled", "draft", "finalized", "sent", "viewed"].sort(),
     );
   });
 

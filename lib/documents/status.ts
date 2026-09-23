@@ -17,8 +17,17 @@ export const QUOTATION_STATUSES = [
   "converted",
 ] as const;
 
+// "finalized" sits between draft and sent — an explicit, one-way lock a
+// user can apply before a document has even been sent (see
+// requireFinalizableDocument below), distinct from "sent" which is set
+// automatically by POST /api/documents/:id/send. Once finalized, the
+// document behaves like any other non-draft status for editing purposes
+// (isEditableStatus already only allows "draft") but remains sendable and
+// payable — see canSendDocument/canRecordPayment below, neither of which
+// singles it out.
 export const INVOICE_STATUSES = [
   "draft",
+  "finalized",
   "sent",
   "viewed",
   "partially_paid",
@@ -31,8 +40,16 @@ export const INVOICE_STATUSES = [
 // payment tracking (see docs/payment-tracking-design.md's scope note)
 // and no conversion (a proforma never *becomes* a real invoice the way a
 // quotation does; a separate invoice is raised later, independently).
-// Its vocabulary is intentionally the smallest of the three.
-export const PROFORMA_STATUSES = ["draft", "sent", "viewed", "cancelled"] as const;
+// Its vocabulary is intentionally the smallest of the three, plus
+// "finalized" (see INVOICE_STATUSES's own comment — proforma can be
+// finalized too, quotations can't).
+export const PROFORMA_STATUSES = [
+  "draft",
+  "finalized",
+  "sent",
+  "viewed",
+  "cancelled",
+] as const;
 
 export type QuotationStatus = (typeof QUOTATION_STATUSES)[number];
 export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
@@ -60,6 +77,10 @@ export function isValidStatus(type: DocumentType, status: string): boolean {
 //                     (see docs/payment-tracking-design.md)
 //   accepted       -> the public share view's accept action         (Phase 8/9)
 //   converted      -> POST /api/documents/:id/convert                (Phase 9)
+//   finalized      -> POST /api/documents/:id/finalize, and only from
+//                     "draft" — a one-way door, see
+//                     requireFinalizableDocument below. Never settable via
+//                     a general PATCH, same as every other status here.
 const RESTRICTED_STATUSES = new Set<string>([
   "sent",
   "viewed",
@@ -67,6 +88,7 @@ const RESTRICTED_STATUSES = new Set<string>([
   "partially_paid",
   "accepted",
   "converted",
+  "finalized",
 ]);
 
 // What a general-purpose edit (PATCH /api/documents/:id) is allowed to set
@@ -163,6 +185,23 @@ export function requireConvertibleQuotation(status: string): void {
   if (!canConvertQuotation(status)) {
     throw new ForbiddenError(
       `This quotation can't be converted in its current status ("${status}").`,
+    );
+  }
+}
+
+// Finalizing is only ever offered from "draft" — a document already
+// sent/finalized/paid/etc. is either already locked or a dead end
+// (cancelled). One-way: there is deliberately no "un-finalize" the way
+// mark-unpaid reverses a payment — see POST
+// /api/documents/:id/finalize's own comment.
+export function canFinalizeDocument(status: string): boolean {
+  return status === "draft";
+}
+
+export function requireFinalizableDocument(status: string): void {
+  if (!canFinalizeDocument(status)) {
+    throw new ForbiddenError(
+      `This document can't be finalized in its current status ("${status}").`,
     );
   }
 }

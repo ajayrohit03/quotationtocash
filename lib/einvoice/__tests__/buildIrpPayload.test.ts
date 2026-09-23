@@ -28,6 +28,9 @@ const business: PreviewDocument["business"] = {
   tan: null,
   cin: null,
   swiftCode: null,
+  signatureImageUrl: null,
+  signatureSignatoryName: null,
+  signatureDesignation: null,
 };
 
 const sameStateCustomer: PreviewDocument["customer"] = {
@@ -104,6 +107,7 @@ function makeDocument(overrides: Partial<PreviewDocument> = {}): PreviewDocument
     showNotes: true,
     showTerms: true,
     showReferenceNumber: true,
+    showSignature: true,
     showInrEquivalent: false,
     fontSize: null,
     einvoiceStatus: "none",

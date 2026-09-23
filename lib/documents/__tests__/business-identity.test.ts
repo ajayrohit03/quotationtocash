@@ -25,6 +25,9 @@ const base: BusinessSnapshot = {
   tan: null,
   cin: null,
   swiftCode: null,
+  signatureImageUrl: null,
+  signatureSignatoryName: null,
+  signatureDesignation: null,
 };
 
 describe("businessIdentityLine", () => {

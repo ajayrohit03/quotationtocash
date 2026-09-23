@@ -54,6 +54,9 @@ export type BusinessSnapshot = {
   tan: string | null;
   cin: string | null;
   swiftCode: string | null;
+  signatureImageUrl: string | null;
+  signatureSignatoryName: string | null;
+  signatureDesignation: string | null;
 };
 
 export function buildBusinessSnapshot(business: Business): BusinessSnapshot {
@@ -80,5 +83,8 @@ export function buildBusinessSnapshot(business: Business): BusinessSnapshot {
     tan: business.tan,
     cin: business.cin,
     swiftCode: business.swiftCode,
+    signatureImageUrl: business.signatureImageUrl,
+    signatureSignatoryName: business.signatureSignatoryName,
+    signatureDesignation: business.signatureDesignation,
   };
 }

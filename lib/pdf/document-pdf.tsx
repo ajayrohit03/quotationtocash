@@ -721,6 +721,34 @@ export function DocumentPdf({
           </View>
         )}
 
+        {document.showSignature &&
+          (business.signatureImageUrl || business.signatureSignatoryName) && (
+            <View style={{ marginTop: 16, alignItems: "flex-end" }}>
+              <Text style={[styles.sectionLabel, { textAlign: "right" }]}>
+                AUTHORISED SIGNATORY
+              </Text>
+              {business.signatureImageUrl && (
+                // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image has no alt prop
+                <Image
+                  src={business.signatureImageUrl}
+                  style={{ width: 80, height: 40, marginTop: 4, objectFit: "contain" }}
+                />
+              )}
+              {business.signatureSignatoryName && (
+                <Text style={{ fontSize: fs(9.5), marginTop: 4, textAlign: "right" }}>
+                  {business.signatureSignatoryName}
+                </Text>
+              )}
+              {business.signatureDesignation && (
+                <Text
+                  style={{ fontSize: fs(8), color: COLORS.muted, textAlign: "right" }}
+                >
+                  {business.signatureDesignation}
+                </Text>
+              )}
+            </View>
+          )}
+
         {qrCodeDataUrl && (
           <View style={{ marginTop: 14, alignItems: "flex-end" }}>
             {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image has no alt prop */}

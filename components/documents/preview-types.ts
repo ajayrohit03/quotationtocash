@@ -60,6 +60,7 @@ export type PreviewAppearance = {
   showNotes: boolean;
   showTerms: boolean;
   showReferenceNumber: boolean;
+  showSignature: boolean;
   showInrEquivalent: boolean;
   // Base font size in points (7-12); null means "use the template's own
   // default." See schema.prisma's Document.fontSize comment.

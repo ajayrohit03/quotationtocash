@@ -42,6 +42,10 @@ export function BusinessProfileTab({
   const [submitting, setSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const [signatureUploading, setSignatureUploading] = useState(false);
+  const [signatureRemoving, setSignatureRemoving] = useState(false);
+  const signatureInputRef = useRef<HTMLInputElement>(null);
+
   const form = useForm<BusinessUpdateInput>({
     resolver: zodResolver(businessUpdateSchema),
     values: {
@@ -53,6 +57,8 @@ export function BusinessProfileTab({
       state: business.state ?? "",
       country: business.country ?? "",
       website: business.website ?? "",
+      signatureSignatoryName: business.signatureSignatoryName ?? "",
+      signatureDesignation: business.signatureDesignation ?? "",
     },
   });
 
@@ -93,6 +99,46 @@ export function BusinessProfileTab({
       onUpdated(toSettingsBusiness(body.business));
     } finally {
       setRemoving(false);
+    }
+  }
+
+  async function handleSignatureChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setSignatureUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/business/signature", {
+        method: "POST",
+        body: formData,
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        toast.error(body?.error ?? "Couldn't upload signature. Try again.");
+        return;
+      }
+      onUpdated(toSettingsBusiness(body.business));
+      toast.success("Signature uploaded");
+    } finally {
+      setSignatureUploading(false);
+    }
+  }
+
+  async function handleRemoveSignature() {
+    setSignatureRemoving(true);
+    try {
+      const response = await fetch("/api/business/signature", { method: "DELETE" });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        toast.error(body?.error ?? "Couldn't remove signature. Try again.");
+        return;
+      }
+      onUpdated(toSettingsBusiness(body.business));
+    } finally {
+      setSignatureRemoving(false);
     }
   }
 
@@ -306,6 +352,92 @@ export function BusinessProfileTab({
                 </FormItem>
               )}
             />
+
+            <div className="col-span-2 mt-2 border-t border-border pt-5">
+              <div className="text-sm font-semibold">Signature</div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Shown as the authorised signatory block at the bottom of
+                every document.
+              </p>
+
+              <div className="mt-4 flex items-center gap-5">
+                <div className="flex h-14 w-32 flex-none items-center justify-center overflow-hidden rounded-xl border border-dashed border-input bg-muted">
+                  {business.signatureImageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL
+                    <img
+                      src={business.signatureImageUrl}
+                      alt="Signature"
+                      className="size-full object-contain"
+                    />
+                  ) : (
+                    <span className="font-mono text-[10px] text-muted-foreground">
+                      No signature
+                    </span>
+                  )}
+                </div>
+                {!readOnly && (
+                  <div className="flex gap-2">
+                    <input
+                      ref={signatureInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      className="hidden"
+                      onChange={handleSignatureChange}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={signatureUploading || signatureRemoving}
+                      onClick={() => signatureInputRef.current?.click()}
+                    >
+                      {signatureUploading
+                        ? "Uploading…"
+                        : business.signatureImageUrl
+                          ? "Replace signature"
+                          : "Upload signature"}
+                    </Button>
+                    {business.signatureImageUrl && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        disabled={signatureUploading || signatureRemoving}
+                        onClick={handleRemoveSignature}
+                      >
+                        {signatureRemoving ? "Removing…" : "Remove"}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <FormField
+              control={form.control}
+              name="signatureSignatoryName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Signatory name</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value ?? ""} disabled={readOnly} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="signatureDesignation"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Designation</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value ?? ""} disabled={readOnly} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             {!readOnly && (
               <Button type="submit" disabled={submitting} className="col-span-2 mt-2 w-fit">
                 {submitting ? "Saving…" : "Save changes"}

@@ -226,4 +226,63 @@ describe("document snapshot immutability", () => {
     });
     expect(liveProduct.gstRate?.toString()).toBe("28");
   });
+
+  it("keeps the signature block unchanged after the business's signature is replaced", async () => {
+    const business = await createTestBusiness();
+    await prisma.business.update({
+      where: { id: business.id },
+      data: {
+        signatureImageUrl: "https://example.invalid/original-signature.png",
+        signatureSignatoryName: "Original Signatory",
+        signatureDesignation: "Original Designation",
+      },
+    });
+    const liveBusiness = await prisma.business.findUniqueOrThrow({
+      where: { id: business.id },
+    });
+
+    const customer = await prisma.customer.create({
+      data: { businessId: business.id, name: "Test Customer" },
+    });
+    const document = await prisma.document.create({
+      data: {
+        businessId: business.id,
+        type: "invoice",
+        number: `TEST-${randomUUID()}`,
+        customerId: customer.id,
+        issueDate: new Date(),
+        customerSnapshot: buildCustomerSnapshot(customer),
+        businessSnapshot: buildBusinessSnapshot(liveBusiness),
+      },
+    });
+
+    // The signature is replaced after the document already exists.
+    await prisma.business.update({
+      where: { id: business.id },
+      data: {
+        signatureImageUrl: "https://example.invalid/new-signature.png",
+        signatureSignatoryName: "New Signatory",
+        signatureDesignation: "New Designation",
+      },
+    });
+
+    const refetched = await prisma.document.findUniqueOrThrow({
+      where: { id: document.id },
+    });
+    const snapshot = refetched.businessSnapshot as {
+      signatureImageUrl: string | null;
+      signatureSignatoryName: string | null;
+      signatureDesignation: string | null;
+    };
+    expect(snapshot.signatureImageUrl).toBe(
+      "https://example.invalid/original-signature.png",
+    );
+    expect(snapshot.signatureSignatoryName).toBe("Original Signatory");
+    expect(snapshot.signatureDesignation).toBe("Original Designation");
+
+    const liveAfter = await prisma.business.findUniqueOrThrow({
+      where: { id: business.id },
+    });
+    expect(liveAfter.signatureSignatoryName).toBe("New Signatory");
+  });
 });
