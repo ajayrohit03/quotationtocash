@@ -1,10 +1,13 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Users } from "lucide-react";
 import { prisma } from "@/lib/db/prisma";
 import { requireBusinessForPage } from "@/lib/auth/page";
 import { getCustomersBillingSummaries } from "@/lib/documents/aggregates";
 import { formatCurrency } from "@/lib/format";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { TutorialBanner } from "@/components/tutorial-banner";
 import {
   Table,
@@ -14,14 +17,44 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AddCustomerDialog } from "./add-customer-dialog";
 import { CustomerSearch } from "./customer-search";
+
+// Dynamically imported: a modal only ever opened from its own trigger
+// button, never needed for the list's initial render. Its zod-based
+// form (react-hook-form + zodResolver) would otherwise pull zod's
+// runtime into this page's main chunk for every visitor, most of whom
+// never open it.
+const AddCustomerDialog = dynamic(() =>
+  import("./add-customer-dialog").then((m) => m.AddCustomerDialog),
+);
 
 const HEAD_CLASS = "bg-muted/40 text-xs font-semibold tracking-wide text-muted-foreground";
 
-export default async function CustomersPage({
+export default function CustomersPage({
   searchParams,
 }: PageProps<"/customers">) {
+  // Shell renders immediately; the data-dependent part (auth + the DB
+  // query) sits behind Suspense — see document-list-page.tsx's own
+  // comment on this same split.
+  return (
+    <div className="flex flex-1 flex-col gap-6 p-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold tracking-tight">Customers</h1>
+        <AddCustomerDialog />
+      </div>
+
+      <Suspense fallback={<TableSkeleton />}>
+        <CustomersContent searchParams={searchParams} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function CustomersContent({
+  searchParams,
+}: {
+  searchParams: PageProps<"/customers">["searchParams"];
+}) {
   const { business, user } = await requireBusinessForPage();
   const { q } = await searchParams;
   const search = typeof q === "string" ? q.trim() : "";
@@ -48,12 +81,7 @@ export default async function CustomersPage({
   );
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold tracking-tight">Customers</h1>
-        <AddCustomerDialog />
-      </div>
-
+    <>
       <TutorialBanner
         tutorialKey="customers"
         title="Your customer list."
@@ -136,6 +164,6 @@ export default async function CustomersPage({
           </Table>
         </div>
       )}
-    </div>
+    </>
   );
 }

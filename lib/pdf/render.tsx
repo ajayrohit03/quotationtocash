@@ -1,3 +1,4 @@
+import "server-only";
 import { renderToBuffer } from "@react-pdf/renderer";
 import QRCode from "qrcode";
 import type { PreviewDocument } from "@/components/documents/preview-types";

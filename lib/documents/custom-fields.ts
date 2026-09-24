@@ -1,6 +1,13 @@
-import { z } from "zod";
 import type { DocumentType, Prisma } from "@prisma/client";
 import { formatDateIST } from "@/lib/dates";
+
+// Deliberately zod-free — this module is imported by client components
+// (document-render.tsx, document-builder.tsx) purely for
+// formatCustomFieldValue()/the CustomFieldValueSnapshot type. The zod
+// validation schema for this same shape lives in
+// lib/validation/custom-fields.ts instead, so a client component that
+// only needs the display helper never pulls zod's whole runtime into
+// the browser bundle along with it.
 
 // CustomFieldDefinition.appliesTo only ever stores "quotation", "invoice",
 // or null (see lib/validation/custom-fields.ts's schema — "proforma" was
@@ -30,20 +37,6 @@ export type CustomFieldValueSnapshot = {
   value: string | number | null;
   sortOrder: number;
 };
-
-// The builder constructs this verbatim from its currently-loaded
-// definitions + entered values (§4) — the server validates shape and
-// that each definitionId is a real document-scope definition belonging
-// to this business (see PATCH /api/documents/:id), but doesn't rebuild
-// the snapshot itself, same "compute once at entry time" rule as
-// multi-currency's exchangeRate (§2).
-export const customFieldValueSnapshotSchema = z.object({
-  definitionId: z.string().min(1),
-  label: z.string().min(1),
-  type: z.enum(["text", "number", "date"]),
-  value: z.union([z.string(), z.number()]).nullable(),
-  sortOrder: z.number().int(),
-});
 
 // Shared by document-render.tsx and document-pdf.tsx (same reasoning as
 // bankDetailsLine/paymentDetailsLines in lib/documents/payment-details.ts)

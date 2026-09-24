@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { customFieldValueSnapshotSchema } from "@/lib/documents/custom-fields";
+import { customFieldValueSnapshotSchema } from "@/lib/validation/custom-fields";
 
 export const lineItemInputSchema = z.object({
   productId: z.string().min(1).nullable().optional(),

@@ -40,3 +40,21 @@ export const customFieldDefinitionReorderSchema = z.object({
 export type CustomFieldDefinitionReorderInput = z.infer<
   typeof customFieldDefinitionReorderSchema
 >;
+
+// Validates a Document.customFieldValues entry — see
+// lib/documents/custom-fields.ts's own CustomFieldValueSnapshot type
+// (the shape this parses into) for the full "frozen at save time"
+// rationale. Deliberately kept in this zod-only, server-only-imported
+// file rather than alongside that type: lib/documents/custom-fields.ts
+// also exports formatCustomFieldValue(), which client components like
+// document-render.tsx import for display — keeping zod itself (and its
+// ~60KB-plus runtime) out of that file means importing the display
+// helper never drags the whole validation library into the browser
+// bundle. See docs/performance notes on this exact bundle-size bug.
+export const customFieldValueSnapshotSchema = z.object({
+  definitionId: z.string().min(1),
+  label: z.string().min(1),
+  type: z.enum(["text", "number", "date"]),
+  value: z.union([z.string(), z.number()]).nullable(),
+  sortOrder: z.number().int(),
+});

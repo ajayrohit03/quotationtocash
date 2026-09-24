@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { FileText, Receipt, FileSpreadsheet } from "lucide-react";
 import type { DocumentType, Prisma } from "@prisma/client";
@@ -6,6 +7,7 @@ import { requireBusinessForPage } from "@/lib/auth/page";
 import { documentStatusFilterWhere } from "@/lib/documents/status";
 import { documentScopeWhere } from "@/lib/documents/visibility";
 import { Button } from "@/components/ui/button";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { TutorialBanner } from "@/components/tutorial-banner";
 import { DocumentSearch } from "./document-search";
 import { DocumentTable } from "./document-table";
@@ -53,7 +55,40 @@ const TUTORIAL_COPY: Record<DocumentType, { key: string; title: string; descript
   },
 };
 
-export async function DocumentListPage({
+export function DocumentListPage({
+  type,
+  searchParams,
+}: {
+  type: DocumentType;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const copy = COPY[type];
+  const basePath =
+    type === "quotation" ? "/quotations" : type === "proforma" ? "/proforma-invoices" : "/invoices";
+
+  // The shell (title, "New X" button) needs neither auth nor a DB round
+  // trip, so it renders synchronously — only the part that does
+  // (DocumentListContent below: requireBusinessForPage() + the actual
+  // query) sits behind Suspense, showing a skeleton instead of leaving
+  // the whole route blank while that resolves. See
+  // components/ui/table-skeleton.tsx's own comment.
+  return (
+    <div className="flex flex-1 flex-col gap-6 p-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold tracking-tight">{copy.title}</h1>
+        <Button nativeButton={false} render={<Link href={`${basePath}/new`} />}>
+          {copy.newLabel}
+        </Button>
+      </div>
+
+      <Suspense fallback={<TableSkeleton />}>
+        <DocumentListContent type={type} searchParams={searchParams} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function DocumentListContent({
   type,
   searchParams,
 }: {
@@ -105,14 +140,7 @@ export async function DocumentListPage({
   const documents = hasMore ? rows.slice(0, DOCUMENT_PAGE_SIZE) : rows;
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold tracking-tight">{copy.title}</h1>
-        <Button nativeButton={false} render={<Link href={`${basePath}/new`} />}>
-          {copy.newLabel}
-        </Button>
-      </div>
-
+    <>
       <TutorialBanner
         tutorialKey={TUTORIAL_COPY[type].key}
         title={TUTORIAL_COPY[type].title}
@@ -151,6 +179,6 @@ export async function DocumentListPage({
           status={status}
         />
       )}
-    </div>
+    </>
   );
 }

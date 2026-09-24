@@ -1,7 +1,10 @@
+import { Suspense } from "react";
 import { Package } from "lucide-react";
+import dynamic from "next/dynamic";
 import { prisma } from "@/lib/db/prisma";
 import { requireBusinessForPage } from "@/lib/auth/page";
 import { formatCurrency } from "@/lib/format";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { TutorialBanner } from "@/components/tutorial-banner";
 import {
   Table,
@@ -11,18 +14,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AddProductDialog } from "./add-product-dialog";
-import { EditProductDialog } from "./edit-product-dialog";
+
+// Dynamically imported — same rationale as the customers page's
+// AddCustomerDialog (see that file's own comment): both are modals
+// behind zod-based forms, never needed for the list's initial render.
+const AddProductDialog = dynamic(() =>
+  import("./add-product-dialog").then((m) => m.AddProductDialog),
+);
+const EditProductDialog = dynamic(() =>
+  import("./edit-product-dialog").then((m) => m.EditProductDialog),
+);
 
 const HEAD_CLASS = "bg-muted/40 text-xs font-semibold tracking-wide text-muted-foreground";
 
 export default async function ProductsPage() {
+  // requireBusinessForPage() is the same fast auth+membership lookup
+  // every page already pays for — kept synchronous here (rather than
+  // behind Suspense like document-list-page.tsx's split) because the
+  // header's own "Add product" button needs business.gstEnabled. Only
+  // the actual product list query sits behind Suspense.
   const { business, user } = await requireBusinessForPage();
-
-  const products = await prisma.product.findMany({
-    where: { businessId: business.id },
-    orderBy: { createdAt: "desc" },
-  });
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
@@ -40,6 +51,27 @@ export default async function ProductsPage() {
         initiallyDismissed={user.dismissedTutorials.includes("products")}
       />
 
+      <Suspense fallback={<TableSkeleton />}>
+        <ProductsContent businessId={business.id} gstEnabled={business.gstEnabled} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function ProductsContent({
+  businessId,
+  gstEnabled,
+}: {
+  businessId: string;
+  gstEnabled: boolean;
+}) {
+  const products = await prisma.product.findMany({
+    where: { businessId },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return (
+    <>
       {products.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-border py-16 text-center">
           <span className="mb-4 flex size-11 items-center justify-center rounded-xl bg-muted text-muted-foreground">
@@ -63,7 +95,7 @@ export default async function ProductsPage() {
                 <TableHead className={`${HEAD_CLASS} text-right`}>
                   Price
                 </TableHead>
-                {business.gstEnabled && (
+                {gstEnabled && (
                   <TableHead className={`${HEAD_CLASS} text-right`}>
                     GST rate
                   </TableHead>
@@ -87,13 +119,13 @@ export default async function ProductsPage() {
                   <TableCell className="text-right font-mono text-sm">
                     {formatCurrency(product.price)}
                   </TableCell>
-                  {business.gstEnabled && (
+                  {gstEnabled && (
                     <TableCell className="text-right font-mono text-sm">
                       {product.gstRate ? `${product.gstRate}%` : "—"}
                     </TableCell>
                   )}
                   <TableCell className="text-right">
-                    <EditProductDialog product={product} gstEnabled={business.gstEnabled} />
+                    <EditProductDialog product={product} gstEnabled={gstEnabled} />
                   </TableCell>
                 </TableRow>
               ))}
@@ -101,6 +133,6 @@ export default async function ProductsPage() {
           </Table>
         </div>
       )}
-    </div>
+    </>
   );
 }

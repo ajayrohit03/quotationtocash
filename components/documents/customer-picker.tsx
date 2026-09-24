@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import type { Customer } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { QuickAddCustomerDialog } from "./quick-add-customer-dialog";
+
+// Dynamically imported: only ever opened from "+ Add new customer"
+// below, never needed for the picker's own initial render. Its own
+// import chain pulls in zod (lib/validation/customer.ts) purely for
+// react-hook-form's zodResolver — keeping it out of the document
+// builder's main chunk means editing/creating a document doesn't pay
+// for that validation library's parse/eval cost until this dialog is
+// actually opened.
+const QuickAddCustomerDialog = dynamic(() =>
+  import("./quick-add-customer-dialog").then((m) => m.QuickAddCustomerDialog),
+);
 
 function initials(name: string) {
   return name

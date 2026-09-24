@@ -1,4 +1,5 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
 import { Wallet, Clock3, Files, Inbox } from "lucide-react";
 import { prisma } from "@/lib/db/prisma";
@@ -20,7 +21,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { EditCustomerDialog } from "./edit-customer-dialog";
+// Dynamically imported — same rationale as AddCustomerDialog on the
+// customers list page (see that file's own comment).
+const EditCustomerDialog = dynamic(() =>
+  import("./edit-customer-dialog").then((m) => m.EditCustomerDialog),
+);
 
 const HEAD_CLASS = "bg-muted/40 text-xs font-semibold tracking-wide text-muted-foreground";
 

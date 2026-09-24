@@ -1,3 +1,4 @@
+import "server-only";
 import { Document, Page, View, Text, Image, StyleSheet, Font } from "@react-pdf/renderer";
 import { formatDateIST } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
