@@ -126,7 +126,12 @@ function createStyles(scale: number) {
       marginTop: sp(4),
       fontFamily: "Courier",
     },
-    logo: { width: 90, height: 32, marginBottom: 10, objectFit: "contain" },
+    // Row-aligned with the business name (see headerRow's inner View
+    // below) rather than stacked above it — smaller than the old
+    // stacked size (90x32) since it now shares a row with a single 14pt
+    // text line instead of anchoring its own block.
+    logo: { width: 60, height: 22, objectFit: "contain" },
+    logoNameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
     docTitle: {
       fontSize: fs(19),
       fontFamily: "Noto Sans",
@@ -153,7 +158,7 @@ function createStyles(scale: number) {
       fontSize: fs(10),
       fontFamily: "Noto Sans",
       fontWeight: "bold",
-      marginTop: sp(6),
+      marginTop: sp(3),
     },
     // One size smaller than the rest of the document (7/6.5 vs the
     // 7.5/9 the header/reference/totals blocks use) — the table is the
@@ -204,11 +209,11 @@ function createStyles(scale: number) {
       letterSpacing: 0.5,
     },
     grandTotalValue: { fontSize: fs(13), fontFamily: "Noto Sans", fontWeight: "bold" },
-    noteBlock: { marginTop: sp(7) },
-    noteBody: { fontSize: fs(9), color: "#3D4453", marginTop: sp(4), lineHeight: 1.5 },
+    noteBlock: { marginTop: sp(5) },
+    noteBody: { fontSize: fs(9), color: "#3D4453", marginTop: sp(3), lineHeight: 1.5 },
     paymentBlock: {
-      marginTop: sp(6),
-      padding: sp(6),
+      marginTop: sp(4),
+      padding: sp(5),
       backgroundColor: COLORS.paymentBg,
       borderWidth: 1,
       borderColor: COLORS.paymentBorder,
@@ -322,11 +327,13 @@ export function DocumentPdf({
 
         <View style={styles.headerRow}>
           <View>
-            {document.showLogo && business.logoUrl && (
-              // eslint-disable-next-line jsx-a11y/alt-text
-              <Image src={business.logoUrl} style={styles.logo} />
-            )}
-            <Text style={styles.businessName}>{business.name}</Text>
+            <View style={styles.logoNameRow}>
+              {document.showLogo && business.logoUrl && (
+                // eslint-disable-next-line jsx-a11y/alt-text
+                <Image src={business.logoUrl} style={styles.logo} />
+              )}
+              <Text style={styles.businessName}>{business.name}</Text>
+            </View>
             {business.address && <Text style={styles.addressLine}>{business.address}</Text>}
             {[business.city, business.state].filter(Boolean).length > 0 && (
               <Text style={styles.addressLine}>
@@ -354,6 +361,10 @@ export function DocumentPdf({
               {"\n"}
               {isQuotation ? "Valid until" : "Due date"}:{" "}
               {secondaryDate ? formatDateIST(secondaryDate) : "—"}
+              {"\n"}
+              {isQuotation ? "Validity" : "Payment terms"}: {terms || "—"}
+              {"\n"}
+              Currency: {document.currency}
             </Text>
             {document.irn && (
               <View style={{ marginTop: fs(8), width: 180, alignItems: "flex-end" }}>
@@ -408,17 +419,11 @@ export function DocumentPdf({
           </View>
           <View style={{ width: 250 }}>
             <Text style={styles.sectionLabel}>REFERENCE</Text>
-            <Text style={styles.addressLine}>
-              {isQuotation ? "Validity" : "Payment terms"}: {terms || "—"}
-              {"\n"}
-              Currency: {document.currency}
-              {document.showReferenceNumber && document.referenceNumber && (
-                <>
-                  {"\n"}
-                  Reference number: {document.referenceNumber}
-                </>
-              )}
-            </Text>
+            {document.showReferenceNumber && document.referenceNumber && (
+              <Text style={[styles.addressLine, { marginTop: fs(3) }]}>
+                Reference number: {document.referenceNumber}
+              </Text>
+            )}
             {/* One field per line, at the full 250pt column width —
                 not a 2-up sub-grid (that halved the usable width to
                 ~120pt, which is what caused a long label+value pair
@@ -429,7 +434,14 @@ export function DocumentPdf({
                 one side-by-side row, actually costing *more* total
                 height than the sub-grid it replaced). */}
             {document.customFieldValues.length > 0 && (
-              <View style={{ marginTop: fs(4) }}>
+              <View
+                style={{
+                  marginTop:
+                    document.showReferenceNumber && document.referenceNumber
+                      ? fs(4)
+                      : fs(3),
+                }}
+              >
                 {[...document.customFieldValues]
                   .sort((a, b) => a.sortOrder - b.sortOrder)
                   .map((entry) => (
@@ -748,7 +760,7 @@ export function DocumentPdf({
 
         {document.showSignature &&
           (business.signatureImageUrl || business.signatureSignatoryName) && (
-            <View style={{ marginTop: 16, alignItems: "flex-end" }}>
+            <View style={{ marginTop: fs(9), alignItems: "flex-end" }}>
               <Text style={[styles.sectionLabel, { textAlign: "right" }]}>
                 AUTHORISED SIGNATORY
               </Text>
