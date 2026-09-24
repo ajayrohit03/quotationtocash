@@ -126,11 +126,26 @@ function createStyles(scale: number) {
       marginTop: sp(4),
       fontFamily: "Courier",
     },
+    // Same block as gstinLine but 1pt smaller — the PAN/TAN/CIN/SWIFT
+    // line (businessIdentityLine) is the longest single line in the
+    // header (up to 4 "LABEL value" pairs joined together) and was
+    // wrapping to a second line at gstinLine's size, costing a full
+    // extra line of header height. A dedicated point size down gets it
+    // back to one line without shrinking the GSTIN row next to it.
+    identityLine: {
+      fontSize: fs(7.5),
+      color: COLORS.body,
+      marginTop: sp(4),
+      fontFamily: "Courier",
+    },
     // Row-aligned with the business name (see headerRow's inner View
-    // below) rather than stacked above it — smaller than the old
-    // stacked size (90x32) since it now shares a row with a single 14pt
-    // text line instead of anchoring its own block.
-    logo: { width: 60, height: 22, objectFit: "contain" },
+    // below) rather than stacked above it. Sized to match the web
+    // preview's own logo treatment (h-10/max-w-160px at CSS's 96dpi,
+    // ≈ 30/120pt at the PDF's 72dpi) rather than the cramped 60x22 box
+    // this used right after the row change — that read as "tiny" next
+    // to a 14pt bold business name, per direct client feedback on a
+    // real PDF.
+    logo: { width: 100, height: 30, objectFit: "contain" },
     logoNameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
     docTitle: {
       fontSize: fs(19),
@@ -145,7 +160,7 @@ function createStyles(scale: number) {
       color: "#3D4453",
     },
     docDates: { fontSize: fs(9), color: COLORS.body, marginTop: sp(8), lineHeight: 1.6 },
-    divider: { height: 1, backgroundColor: COLORS.border, marginVertical: sp(11) },
+    divider: { height: 1, backgroundColor: COLORS.border, marginVertical: sp(7) },
     refRow: { flexDirection: "row", gap: 32 },
     sectionLabel: {
       fontSize: fs(7.5),
@@ -186,7 +201,7 @@ function createStyles(scale: number) {
     },
     itemName: { fontSize: fs(8), fontFamily: "Noto Sans", fontWeight: "bold" },
     itemDesc: { fontSize: fs(6.5), color: COLORS.faint, marginTop: sp(1) },
-    totalsBlock: { width: 230, marginLeft: "auto", marginTop: sp(5) },
+    totalsBlock: { width: 230, marginLeft: "auto", marginTop: sp(3) },
     totalRow: {
       flexDirection: "row",
       justifyContent: "space-between",
@@ -199,8 +214,8 @@ function createStyles(scale: number) {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "baseline",
-      marginTop: sp(4),
-      padding: sp(6),
+      marginTop: sp(2),
+      padding: sp(5),
     },
     grandTotalLabel: {
       fontSize: fs(8),
@@ -209,18 +224,18 @@ function createStyles(scale: number) {
       letterSpacing: 0.5,
     },
     grandTotalValue: { fontSize: fs(13), fontFamily: "Noto Sans", fontWeight: "bold" },
-    noteBlock: { marginTop: sp(5) },
-    noteBody: { fontSize: fs(9), color: "#3D4453", marginTop: sp(3), lineHeight: 1.5 },
+    noteBlock: { marginTop: sp(1) },
+    noteBody: { fontSize: fs(9), color: "#3D4453", marginTop: sp(2), lineHeight: 1.5 },
     paymentBlock: {
-      marginTop: sp(4),
-      padding: sp(5),
+      marginTop: sp(1),
+      padding: sp(3),
       backgroundColor: COLORS.paymentBg,
       borderWidth: 1,
       borderColor: COLORS.paymentBorder,
     },
     footer: {
-      marginTop: 28,
-      paddingTop: 12,
+      marginTop: 14,
+      paddingTop: 10,
       borderTopWidth: 1,
       borderTopColor: COLORS.paymentBorder,
       flexDirection: "row",
@@ -346,7 +361,7 @@ export function DocumentPdf({
             {showGstinRow && business.gstin && (
               <Text style={styles.gstinLine}>GSTIN {business.gstin}</Text>
             )}
-            {identityLine && <Text style={styles.gstinLine}>{identityLine}</Text>}
+            {identityLine && <Text style={styles.identityLine}>{identityLine}</Text>}
           </View>
           <View style={{ alignItems: "flex-end" }}>
             <Text style={[styles.docTitle, { color: style.docTitleColor }]}>
@@ -666,7 +681,7 @@ export function DocumentPdf({
             </View>
           )}
           {isInvoice && (
-            <View style={[styles.totalRow, { paddingTop: 6 }]}>
+            <View style={[styles.totalRow, { paddingTop: 3 }]}>
               <Text style={styles.totalLabel}>
                 {document.creditBalance > 0 ? "Credit balance" : "Balance due"}
               </Text>
@@ -723,22 +738,29 @@ export function DocumentPdf({
           </View>
         )}
 
+        {/* fs(8) here, not noteBody's default fs(9) — Notes/Terms/Export
+            declaration are secondary content (per the spec's own
+            "acceptable to go slightly smaller" call), unlike
+            paymentBlock's Courier lines below, which stay at noteBody's
+            default size since option (b) already condensed those. */}
         {document.showNotes && document.notes && (
           <View style={styles.noteBlock}>
             <Text style={styles.sectionLabel}>NOTES</Text>
-            <Text style={styles.noteBody}>{document.notes}</Text>
+            <Text style={[styles.noteBody, { fontSize: fs(8) }]}>{document.notes}</Text>
           </View>
         )}
         {document.showTerms && document.termsText && (
           <View style={styles.noteBlock}>
             <Text style={styles.sectionLabel}>TERMS &amp; CONDITIONS</Text>
-            <Text style={styles.noteBody}>{document.termsText}</Text>
+            <Text style={[styles.noteBody, { fontSize: fs(8) }]}>{document.termsText}</Text>
           </View>
         )}
         {isForeignCurrency && document.lutDeclarationText && (
           <View style={styles.noteBlock}>
             <Text style={styles.sectionLabel}>EXPORT DECLARATION</Text>
-            <Text style={styles.noteBody}>{document.lutDeclarationText}</Text>
+            <Text style={[styles.noteBody, { fontSize: fs(8) }]}>
+              {document.lutDeclarationText}
+            </Text>
           </View>
         )}
         {document.showPayment && (
@@ -747,20 +769,40 @@ export function DocumentPdf({
             <Text style={[styles.noteBody, { fontFamily: "Courier" }]}>
               {business.name}
             </Text>
-            {bankLines.map((line) => (
-              <Text
-                key={line.label}
-                style={[styles.noteBody, { fontFamily: "Courier", marginTop: 1 }]}
-              >
-                {line.label}: {line.value}
-              </Text>
-            ))}
+            {/* Wrapping row, not one field per line — bank/account
+                holder/account number/IFSC/UPI could run to 5 lines at
+                fs(9)/1.5 line-height each, which was the direct cause
+                of page 2 spillover on an otherwise-fitting invoice.
+                flexWrap packs as many "Label: value" pairs per line as
+                the block's own width allows and only wraps the ones
+                that don't fit, rather than a hardcoded pairing that
+                would risk mismatched line lengths for a business with,
+                say, an unusually long account holder name. */}
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                marginTop: 1,
+              }}
+            >
+              {bankLines.map((line) => (
+                <Text
+                  key={line.label}
+                  style={[
+                    styles.noteBody,
+                    { fontFamily: "Courier", marginTop: 2, marginRight: 14 },
+                  ]}
+                >
+                  {line.label}: {line.value}
+                </Text>
+              ))}
+            </View>
           </View>
         )}
 
         {document.showSignature &&
           (business.signatureImageUrl || business.signatureSignatoryName) && (
-            <View style={{ marginTop: fs(9), alignItems: "flex-end" }}>
+            <View style={{ marginTop: fs(3), alignItems: "flex-end" }}>
               <Text style={[styles.sectionLabel, { textAlign: "right" }]}>
                 AUTHORISED SIGNATORY
               </Text>
@@ -768,11 +810,11 @@ export function DocumentPdf({
                 // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image has no alt prop
                 <Image
                   src={business.signatureImageUrl}
-                  style={{ width: 80, height: 40, marginTop: 4, objectFit: "contain" }}
+                  style={{ width: 80, height: 40, marginTop: 3, objectFit: "contain" }}
                 />
               )}
               {business.signatureSignatoryName && (
-                <Text style={{ fontSize: fs(9.5), marginTop: 4, textAlign: "right" }}>
+                <Text style={{ fontSize: fs(9.5), marginTop: 3, textAlign: "right" }}>
                   {business.signatureSignatoryName}
                 </Text>
               )}
