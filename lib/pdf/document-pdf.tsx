@@ -138,15 +138,19 @@ function createStyles(scale: number) {
       marginTop: sp(4),
       fontFamily: "Courier",
     },
-    // Row-aligned with the business name (see headerRow's inner View
-    // below) rather than stacked above it. Sized to match the web
-    // preview's own logo treatment (h-10/max-w-160px at CSS's 96dpi,
-    // ≈ 30/120pt at the PDF's 72dpi) rather than the cramped 60x22 box
-    // this used right after the row change — that read as "tiny" next
-    // to a 14pt bold business name, per direct client feedback on a
-    // real PDF.
-    logo: { width: 100, height: 30, objectFit: "contain" },
-    logoNameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    // A large square box (react-pdf's objectFit:"contain" letterboxes
+    // whatever the actual logo's own aspect ratio is within it, so a
+    // wide logotype and a literal square mark both render correctly
+    // sized rather than stretched) — matches the reference invoice's
+    // layout: a prominent square logo with the business name/address
+    // block beside it, not a small mark inline with just the name.
+    logo: { width: 60, height: 60, objectFit: "contain" },
+    // Logo + the *entire* name/address/GSTIN block sit in one row,
+    // vertically centered against the logo's height — not just logo +
+    // business name with address stacked below spanning full width
+    // (that read as "disconnected" per direct client feedback against
+    // a reference invoice where the whole block sits beside the logo).
+    headerLeftBlock: { flexDirection: "row", alignItems: "center", gap: 12 },
     docTitle: {
       fontSize: fs(19),
       fontFamily: "Noto Sans",
@@ -228,7 +232,7 @@ function createStyles(scale: number) {
     noteBody: { fontSize: fs(9), color: "#3D4453", marginTop: sp(2), lineHeight: 1.5 },
     paymentBlock: {
       marginTop: sp(1),
-      padding: sp(3),
+      padding: sp(2),
       backgroundColor: COLORS.paymentBg,
       borderWidth: 1,
       borderColor: COLORS.paymentBorder,
@@ -341,27 +345,36 @@ export function DocumentPdf({
         )}
 
         <View style={styles.headerRow}>
-          <View>
-            <View style={styles.logoNameRow}>
-              {document.showLogo && business.logoUrl && (
-                // eslint-disable-next-line jsx-a11y/alt-text
-                <Image src={business.logoUrl} style={styles.logo} />
-              )}
+          <View style={styles.headerLeftBlock}>
+            {document.showLogo && business.logoUrl && (
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <Image src={business.logoUrl} style={styles.logo} />
+            )}
+            {/* Constrained width — react-pdf's Text grows to fit its
+                content unless bounded, and the identity line
+                (PAN/TAN/CIN/SWIFT) is long enough to otherwise run
+                straight into the header's right column now that the
+                logo pushes this whole block wider than it was
+                stacked. Wraps onto a second line instead, same as
+                every other block in this file that bounds a width for
+                exactly this reason (BILL TO/REFERENCE columns, IRN
+                block, etc). */}
+            <View style={{ width: 260 }}>
               <Text style={styles.businessName}>{business.name}</Text>
-            </View>
-            {business.address && <Text style={styles.addressLine}>{business.address}</Text>}
-            {[business.city, business.state].filter(Boolean).length > 0 && (
+              {business.address && <Text style={styles.addressLine}>{business.address}</Text>}
+              {[business.city, business.state].filter(Boolean).length > 0 && (
+                <Text style={styles.addressLine}>
+                  {[business.city, business.state].filter(Boolean).join(", ")}
+                </Text>
+              )}
               <Text style={styles.addressLine}>
-                {[business.city, business.state].filter(Boolean).join(", ")}
+                {[business.email, business.phone].filter(Boolean).join("  ·  ")}
               </Text>
-            )}
-            <Text style={styles.addressLine}>
-              {[business.email, business.phone].filter(Boolean).join("  ·  ")}
-            </Text>
-            {showGstinRow && business.gstin && (
-              <Text style={styles.gstinLine}>GSTIN {business.gstin}</Text>
-            )}
-            {identityLine && <Text style={styles.identityLine}>{identityLine}</Text>}
+              {showGstinRow && business.gstin && (
+                <Text style={styles.gstinLine}>GSTIN {business.gstin}</Text>
+              )}
+              {identityLine && <Text style={styles.identityLine}>{identityLine}</Text>}
+            </View>
           </View>
           <View style={{ alignItems: "flex-end" }}>
             <Text style={[styles.docTitle, { color: style.docTitleColor }]}>
@@ -763,70 +776,78 @@ export function DocumentPdf({
             </Text>
           </View>
         )}
-        {document.showPayment && (
-          <View style={styles.paymentBlock}>
-            <Text style={styles.sectionLabel}>PAYMENT DETAILS</Text>
-            <Text style={[styles.noteBody, { fontFamily: "Courier" }]}>
-              {business.name}
-            </Text>
-            {/* Wrapping row, not one field per line — bank/account
-                holder/account number/IFSC/UPI could run to 5 lines at
-                fs(9)/1.5 line-height each, which was the direct cause
-                of page 2 spillover on an otherwise-fitting invoice.
-                flexWrap packs as many "Label: value" pairs per line as
-                the block's own width allows and only wraps the ones
-                that don't fit, rather than a hardcoded pairing that
-                would risk mismatched line lengths for a business with,
-                say, an unusually long account holder name. */}
-            <View
-              style={{
-                flexDirection: "row",
-                flexWrap: "wrap",
-                marginTop: 1,
-              }}
-            >
-              {bankLines.map((line) => (
-                <Text
-                  key={line.label}
-                  style={[
-                    styles.noteBody,
-                    { fontFamily: "Courier", marginTop: 2, marginRight: 14 },
-                  ]}
-                >
-                  {line.label}: {line.value}
-                </Text>
-              ))}
+        {/* Standard Indian invoice layout: payment details left, the
+            authorised signatory right, both in the same row — not
+            signature stacked below payment details, which cost an
+            extra row's worth of vertical space for no layout reason.
+            60/40 width split via flex ratios (6:4) rather than fixed
+            point widths, so it still divides correctly if the page's
+            own margins or fontSize scale ever change. Only rendered at
+            all when at least one side has something to show. */}
+        {(document.showPayment ||
+          (document.showSignature &&
+            (business.signatureImageUrl || business.signatureSignatoryName))) && (
+          <View style={{ flexDirection: "row", marginTop: fs(3) }}>
+            <View style={{ flex: 6, paddingRight: 12 }}>
+              {document.showPayment && (
+                <View style={styles.paymentBlock}>
+                  <Text style={styles.sectionLabel}>PAYMENT DETAILS</Text>
+                  <Text style={[styles.noteBody, { fontFamily: "Courier" }]}>
+                    {business.name}
+                  </Text>
+                  {/* One field per line — matches the web preview
+                      exactly (see document-render.tsx's own payment
+                      details block). A condensed flexWrap row was tried
+                      here to recover page-1 space, but reverted: it
+                      diverged from the web preview and read worse than
+                      the vertical space it saved, especially once this
+                      section had a whole second column (the signature)
+                      freed up by the row layout above instead. */}
+                  {bankLines.map((line) => (
+                    <Text
+                      key={line.label}
+                      style={[
+                        styles.noteBody,
+                        { fontFamily: "Courier", marginTop: 1, lineHeight: 1.3 },
+                      ]}
+                    >
+                      {line.label}: {line.value}
+                    </Text>
+                  ))}
+                </View>
+              )}
+            </View>
+            <View style={{ flex: 4, alignItems: "flex-end" }}>
+              {document.showSignature &&
+                (business.signatureImageUrl || business.signatureSignatoryName) && (
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text style={[styles.sectionLabel, { textAlign: "right" }]}>
+                      AUTHORISED SIGNATORY
+                    </Text>
+                    {business.signatureImageUrl && (
+                      // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image has no alt prop
+                      <Image
+                        src={business.signatureImageUrl}
+                        style={{ width: 80, height: 40, marginTop: 3, objectFit: "contain" }}
+                      />
+                    )}
+                    {business.signatureSignatoryName && (
+                      <Text style={{ fontSize: fs(9.5), marginTop: 3, textAlign: "right" }}>
+                        {business.signatureSignatoryName}
+                      </Text>
+                    )}
+                    {business.signatureDesignation && (
+                      <Text
+                        style={{ fontSize: fs(8), color: COLORS.muted, textAlign: "right" }}
+                      >
+                        {business.signatureDesignation}
+                      </Text>
+                    )}
+                  </View>
+                )}
             </View>
           </View>
         )}
-
-        {document.showSignature &&
-          (business.signatureImageUrl || business.signatureSignatoryName) && (
-            <View style={{ marginTop: fs(3), alignItems: "flex-end" }}>
-              <Text style={[styles.sectionLabel, { textAlign: "right" }]}>
-                AUTHORISED SIGNATORY
-              </Text>
-              {business.signatureImageUrl && (
-                // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image has no alt prop
-                <Image
-                  src={business.signatureImageUrl}
-                  style={{ width: 80, height: 40, marginTop: 3, objectFit: "contain" }}
-                />
-              )}
-              {business.signatureSignatoryName && (
-                <Text style={{ fontSize: fs(9.5), marginTop: 3, textAlign: "right" }}>
-                  {business.signatureSignatoryName}
-                </Text>
-              )}
-              {business.signatureDesignation && (
-                <Text
-                  style={{ fontSize: fs(8), color: COLORS.muted, textAlign: "right" }}
-                >
-                  {business.signatureDesignation}
-                </Text>
-              )}
-            </View>
-          )}
 
         {qrCodeDataUrl && (
           <View style={{ marginTop: 14, alignItems: "flex-end" }}>
