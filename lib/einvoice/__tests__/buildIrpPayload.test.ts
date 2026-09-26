@@ -31,6 +31,8 @@ const business: PreviewDocument["business"] = {
   signatureImageUrl: null,
   signatureSignatoryName: null,
   signatureDesignation: null,
+  logoSize: "md",
+  signatureSize: "md",
 };
 
 const sameStateCustomer: PreviewDocument["customer"] = {

@@ -13,6 +13,7 @@ import {
 } from "@/lib/documents/line-item-columns";
 import { businessIdentityLine } from "@/lib/documents/business-identity";
 import { applyRounding } from "@/lib/tax/applyRounding";
+import { ASSET_SIZE_SCALE } from "@/lib/documents/asset-size";
 
 // react-pdf hyphenates any word that overflows its container by default
 // (via the bundled `hyphen` package's syllable-break patterns) — no
@@ -320,6 +321,14 @@ export function DocumentPdf({
     ? null
     : resolveForeignCurrencyRateLabel(document.lineItems);
   const identityLine = businessIdentityLine(business);
+  // Independent of `scale` above (the document's own fontSize control)
+  // — this is the business-level logo/signature size preference, frozen
+  // into businessSnapshot at save time. Applied directly to each
+  // image's literal width/height below rather than threaded through
+  // createStyles, since createStyles only ever receives the fontSize
+  // scale, not the business snapshot.
+  const logoScale = ASSET_SIZE_SCALE[business.logoSize];
+  const signatureScale = ASSET_SIZE_SCALE[business.signatureSize];
   const showLutZeroRow = showTax && isForeignCurrency && taxBuckets.length === 0;
   const showInrSubline =
     isForeignCurrency && document.showInrEquivalent && document.inrExchangeRate != null;
@@ -348,7 +357,13 @@ export function DocumentPdf({
           <View style={styles.headerLeftBlock}>
             {document.showLogo && business.logoUrl && (
               // eslint-disable-next-line jsx-a11y/alt-text
-              <Image src={business.logoUrl} style={styles.logo} />
+              <Image
+                src={business.logoUrl}
+                style={[
+                  styles.logo,
+                  { width: 60 * logoScale, height: 60 * logoScale },
+                ]}
+              />
             )}
             {/* Constrained width — react-pdf's Text grows to fit its
                 content unless bounded, and the identity line
@@ -828,7 +843,12 @@ export function DocumentPdf({
                       // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image has no alt prop
                       <Image
                         src={business.signatureImageUrl}
-                        style={{ width: 80, height: 40, marginTop: 3, objectFit: "contain" }}
+                        style={{
+                          width: 80 * signatureScale,
+                          height: 40 * signatureScale,
+                          marginTop: 3,
+                          objectFit: "contain",
+                        }}
                       />
                     )}
                     {business.signatureSignatoryName && (

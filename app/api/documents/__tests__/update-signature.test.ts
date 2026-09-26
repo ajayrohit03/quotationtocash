@@ -79,6 +79,8 @@ const FROZEN_SNAPSHOT = {
   signatureImageUrl: "https://example.invalid/original-signature.png",
   signatureSignatoryName: "Original Signatory",
   signatureDesignation: "Original Designation",
+  logoSize: "md",
+  signatureSize: "md",
 };
 
 async function setupOrg() {
@@ -252,6 +254,26 @@ describe("PATCH /api/documents/[id]/update-signature", () => {
     expect(body.document.businessSnapshot.signatureImageUrl).toBe(
       FROZEN_SNAPSHOT.signatureImageUrl,
     );
+  });
+
+  it("updates the signature size on this document's snapshot only, never Business.signatureSize", async () => {
+    const { owner, business, makeDocument } = await setupOrg();
+    const invoice = await makeDocument("invoice", "sent");
+    await mockedAuthAs(owner.authProviderId);
+
+    const response = await patchSignature(invoice.id, { signatureSize: "xl" });
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.document.businessSnapshot.signatureSize).toBe("xl");
+    // Untouched — the document's other snapshot fields survive.
+    expect(body.document.businessSnapshot.signatureSignatoryName).toBe(
+      FROZEN_SNAPSHOT.signatureSignatoryName,
+    );
+
+    const liveBusiness = await prisma.business.findUniqueOrThrow({
+      where: { id: business.id },
+    });
+    expect(liveBusiness.signatureSize).toBe("md");
   });
 
   it("staff can update their own sent document — same invoices.edit permission tier", async () => {

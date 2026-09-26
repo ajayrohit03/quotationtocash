@@ -84,6 +84,22 @@ enum DocumentTemplate {
   @@map("document_template")
 }
 
+// Logo/signature image display size — a business-level preference
+// (see Business.logoSize/signatureSize below), frozen into
+// businessSnapshot at document-save time same as the images
+// themselves. "md" is the existing baseline rendered size in both
+// document-render.tsx and document-pdf.tsx before this feature; sm/lg/
+// xl scale relative to it (75%/133%/175% — see those files' own
+// LOGO_SIZE_SCALE/SIGNATURE_SIZE_SCALE comments).
+enum AssetSize {
+  sm
+  md
+  lg
+  xl
+
+  @@map("asset_size")
+}
+
 model Business {
   id      String  @id @default(uuid())
   name    String
@@ -110,6 +126,15 @@ model Business {
   signatureImageUrl      String? @map("signature_image_url")
   signatureSignatoryName String? @map("signature_signatory_name")
   signatureDesignation   String? @map("signature_designation")
+
+  // Display size for the logo/signature images — Settings > Business
+  // profile, a 4-step slider next to each image's own upload controls.
+  // Business-level, not per-document (same tier as the images
+  // themselves); frozen into businessSnapshot at save time, so a size
+  // change here never retroactively resizes an already-sent document —
+  // see lib/documents/snapshots.ts's BusinessSnapshot.
+  logoSize      AssetSize @default(md) @map("logo_size")
+  signatureSize AssetSize @default(md) @map("signature_size")
 
   gstEnabled       Boolean  @default(false) @map("gst_enabled")
   gstin            String?

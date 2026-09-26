@@ -1,4 +1,4 @@
-import type { Business, Customer } from "@prisma/client";
+import type { AssetSize, Business, Customer } from "@prisma/client";
 
 // Frozen copies stored on Document.customerSnapshot / businessSnapshot —
 // never re-derive a document's rendered content from the live Customer/
@@ -57,6 +57,8 @@ export type BusinessSnapshot = {
   signatureImageUrl: string | null;
   signatureSignatoryName: string | null;
   signatureDesignation: string | null;
+  logoSize: AssetSize;
+  signatureSize: AssetSize;
 };
 
 export function buildBusinessSnapshot(business: Business): BusinessSnapshot {
@@ -86,5 +88,7 @@ export function buildBusinessSnapshot(business: Business): BusinessSnapshot {
     signatureImageUrl: business.signatureImageUrl,
     signatureSignatoryName: business.signatureSignatoryName,
     signatureDesignation: business.signatureDesignation,
+    logoSize: business.logoSize,
+    signatureSize: business.signatureSize,
   };
 }

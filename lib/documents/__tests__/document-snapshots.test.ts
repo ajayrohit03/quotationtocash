@@ -285,4 +285,53 @@ describe("document snapshot immutability", () => {
     });
     expect(liveAfter.signatureSignatoryName).toBe("New Signatory");
   });
+
+  it("keeps the logo/signature size unchanged after the business's size preference changes", async () => {
+    const business = await createTestBusiness();
+    await prisma.business.update({
+      where: { id: business.id },
+      data: { logoSize: "xl", signatureSize: "sm" },
+    });
+    const liveBusiness = await prisma.business.findUniqueOrThrow({
+      where: { id: business.id },
+    });
+
+    const customer = await prisma.customer.create({
+      data: { businessId: business.id, name: "Test Customer" },
+    });
+    const document = await prisma.document.create({
+      data: {
+        businessId: business.id,
+        type: "invoice",
+        number: `TEST-${randomUUID()}`,
+        customerId: customer.id,
+        issueDate: new Date(),
+        customerSnapshot: buildCustomerSnapshot(customer),
+        businessSnapshot: buildBusinessSnapshot(liveBusiness),
+      },
+    });
+
+    // The size preference changes later, e.g. after sending this
+    // invoice — must not retroactively resize it.
+    await prisma.business.update({
+      where: { id: business.id },
+      data: { logoSize: "md", signatureSize: "xl" },
+    });
+
+    const refetched = await prisma.document.findUniqueOrThrow({
+      where: { id: document.id },
+    });
+    const snapshot = refetched.businessSnapshot as {
+      logoSize: string;
+      signatureSize: string;
+    };
+    expect(snapshot.logoSize).toBe("xl");
+    expect(snapshot.signatureSize).toBe("sm");
+
+    const liveAfter = await prisma.business.findUniqueOrThrow({
+      where: { id: business.id },
+    });
+    expect(liveAfter.logoSize).toBe("md");
+    expect(liveAfter.signatureSize).toBe("xl");
+  });
 });

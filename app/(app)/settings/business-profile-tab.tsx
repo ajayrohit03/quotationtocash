@@ -12,6 +12,7 @@ import { toSettingsBusiness, type SettingsBusiness } from "./types";
 import { INDIAN_STATES } from "@/lib/constants/indian-states";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SizeSlider } from "@/components/ui/size-slider";
 import {
   Select,
   SelectContent,
@@ -59,6 +60,8 @@ export function BusinessProfileTab({
       website: business.website ?? "",
       signatureSignatoryName: business.signatureSignatoryName ?? "",
       signatureDesignation: business.signatureDesignation ?? "",
+      logoSize: business.logoSize,
+      signatureSize: business.signatureSize,
     },
   });
 
@@ -177,62 +180,80 @@ export function BusinessProfileTab({
         </p>
       </div>
 
-      <div className="mt-5 flex items-center gap-5">
-        <div className="flex size-20 flex-none items-center justify-center overflow-hidden rounded-xl border border-dashed border-input bg-muted">
-          {business.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL
-            <img
-              src={business.logoUrl}
-              alt="Business logo"
-              className="size-full object-contain"
-            />
-          ) : (
-            <span className="font-mono text-[10px] text-muted-foreground">
-              No logo
-            </span>
-          )}
-        </div>
-        {!readOnly && (
-          <div className="flex gap-2">
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/svg+xml"
-              className="hidden"
-              onChange={handleLogoChange}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              disabled={uploading || removing}
-              onClick={() => inputRef.current?.click()}
-            >
-              {uploading
-                ? "Uploading…"
-                : business.logoUrl
-                  ? "Replace logo"
-                  : "Upload logo"}
-            </Button>
-            {business.logoUrl && (
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={uploading || removing}
-                onClick={handleRemoveLogo}
-              >
-                {removing ? "Removing…" : "Remove"}
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-
       <Form {...form}>
         <fieldset disabled={readOnly}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="mt-6 grid grid-cols-2 gap-4"
+            className="mt-5 grid grid-cols-2 gap-4"
           >
+            <div className="col-span-2 flex items-center gap-5">
+              <div className="flex size-20 flex-none items-center justify-center overflow-hidden rounded-xl border border-dashed border-input bg-muted">
+                {business.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL
+                  <img
+                    src={business.logoUrl}
+                    alt="Business logo"
+                    className="size-full object-contain"
+                  />
+                ) : (
+                  <span className="font-mono text-[10px] text-muted-foreground">
+                    No logo
+                  </span>
+                )}
+              </div>
+              {!readOnly && (
+                <div className="flex gap-2">
+                  <input
+                    ref={inputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                    className="hidden"
+                    onChange={handleLogoChange}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={uploading || removing}
+                    onClick={() => inputRef.current?.click()}
+                  >
+                    {uploading
+                      ? "Uploading…"
+                      : business.logoUrl
+                        ? "Replace logo"
+                        : "Upload logo"}
+                  </Button>
+                  {business.logoUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={uploading || removing}
+                      onClick={handleRemoveLogo}
+                    >
+                      {removing ? "Removing…" : "Remove"}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <FormField
+              control={form.control}
+              name="logoSize"
+              render={({ field }) => (
+                <FormItem className="col-span-2 max-w-xs">
+                  <FormLabel>Logo size</FormLabel>
+                  <FormControl>
+                    <SizeSlider
+                      value={field.value ?? "md"}
+                      onChange={field.onChange}
+                      disabled={readOnly}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="name"
@@ -410,6 +431,24 @@ export function BusinessProfileTab({
                 )}
               </div>
             </div>
+
+            <FormField
+              control={form.control}
+              name="signatureSize"
+              render={({ field }) => (
+                <FormItem className="col-span-2 max-w-xs">
+                  <FormLabel>Signature size</FormLabel>
+                  <FormControl>
+                    <SizeSlider
+                      value={field.value ?? "md"}
+                      onChange={field.onChange}
+                      disabled={readOnly}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

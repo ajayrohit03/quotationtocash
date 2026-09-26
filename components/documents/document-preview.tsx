@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import type { DocumentTemplate } from "@prisma/client";
+import type { AssetSize, DocumentTemplate } from "@prisma/client";
 import {
   canConvertQuotation,
   canFinalizeDocument,
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { SizeSlider } from "@/components/ui/size-slider";
 import {
   Dialog,
   DialogClose,
@@ -197,6 +198,9 @@ export function DocumentPreview({
   );
   const [signatureDesignationDraft, setSignatureDesignationDraft] = useState(
     document.business.signatureDesignation ?? "",
+  );
+  const [signatureSizeDraft, setSignatureSizeDraft] = useState<AssetSize>(
+    document.business.signatureSize,
   );
   const signatureFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -429,6 +433,7 @@ export function DocumentPreview({
     setSignatureImageUrlDraft(document.business.signatureImageUrl);
     setSignatureNameDraft(document.business.signatureSignatoryName ?? "");
     setSignatureDesignationDraft(document.business.signatureDesignation ?? "");
+    setSignatureSizeDraft(document.business.signatureSize);
     setSignatureDialogOpen(true);
   }
 
@@ -475,6 +480,7 @@ export function DocumentPreview({
           body: JSON.stringify({
             signatureSignatoryName: signatureNameDraft.trim() || null,
             signatureDesignation: signatureDesignationDraft.trim() || null,
+            signatureSize: signatureSizeDraft,
           }),
         },
       );
@@ -972,6 +978,10 @@ export function DocumentPreview({
                     ? "Replace image"
                     : "Upload image"}
               </Button>
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Signature size</Label>
+              <SizeSlider value={signatureSizeDraft} onChange={setSignatureSizeDraft} />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="signature-name">Signatory name</Label>

@@ -20,6 +20,7 @@ import {
 } from "@/lib/documents/line-item-columns";
 import { businessIdentityLine } from "@/lib/documents/business-identity";
 import { applyRounding } from "@/lib/tax/applyRounding";
+import { ASSET_SIZE_SCALE } from "@/lib/documents/asset-size";
 import { QRCodeSVG } from "qrcode.react";
 import type {
   PreviewAppearance,
@@ -196,6 +197,12 @@ export function DocumentRender({
     return formatCurrency(amount * (inrExchangeRate ?? 0), "INR");
   }
   const scale = (fontSize ?? DEFAULT_FONT_SIZE) / DEFAULT_FONT_SIZE;
+  // Independent of `scale` above (the document's own fontSize control)
+  // — the business-level logo/signature size preference, frozen into
+  // businessSnapshot at save time. "md" (1x) is this component's
+  // existing h-10/max-w-160px baseline for both images.
+  const logoScale = ASSET_SIZE_SCALE[business.logoSize];
+  const signatureScale = ASSET_SIZE_SCALE[business.signatureSize];
   // Live, not from totals.total — see PreviewAppearance's roundTotal
   // comment: recomputed from taxableAmount/cgst/sgst/igst (never
   // touched by rounding) plus the *current* toggle state, so flipping
@@ -229,7 +236,8 @@ export function DocumentRender({
               <img
                 src={business.logoUrl}
                 alt={business.name}
-                className="mb-4 h-10 max-w-[160px] object-contain object-left"
+                className="mb-4 object-contain object-left"
+                style={{ height: 40 * logoScale, maxWidth: 160 * logoScale }}
               />
             )}
             <div className="text-[length:calc(var(--doc-scale)*19px)] font-bold tracking-tight">{business.name}</div>
@@ -633,7 +641,8 @@ export function DocumentRender({
                   <img
                     src={business.signatureImageUrl}
                     alt="Signature"
-                    className="mt-1 h-10 max-w-[160px] object-contain object-right"
+                    className="mt-1 object-contain object-right"
+                    style={{ height: 40 * signatureScale, maxWidth: 160 * signatureScale }}
                   />
                 )}
                 {business.signatureSignatoryName && (

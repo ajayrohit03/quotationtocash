@@ -55,7 +55,10 @@ function patchSnapshot(
   patch: Partial<
     Pick<
       BusinessSnapshot,
-      "signatureImageUrl" | "signatureSignatoryName" | "signatureDesignation"
+      | "signatureImageUrl"
+      | "signatureSignatoryName"
+      | "signatureDesignation"
+      | "signatureSize"
     >
   >,
 ): BusinessSnapshot {
@@ -69,6 +72,9 @@ function patchSnapshot(
       : {}),
     ...(patch.signatureDesignation !== undefined
       ? { signatureDesignation: patch.signatureDesignation }
+      : {}),
+    ...(patch.signatureSize !== undefined
+      ? { signatureSize: patch.signatureSize }
       : {}),
   };
 }

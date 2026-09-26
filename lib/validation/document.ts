@@ -121,6 +121,10 @@ export const documentSignatureUpdateSchema = z.object({
   signatureImageUrl: z.string().trim().max(2000).nullable().optional(),
   signatureSignatoryName: z.string().trim().max(200).nullable().optional(),
   signatureDesignation: z.string().trim().max(200).nullable().optional(),
+  // Same narrow exception as the other three fields here — this
+  // document's own snapshot only, never Business.signatureSize. See
+  // update-signature/route.ts's own comment.
+  signatureSize: z.enum(["sm", "md", "lg", "xl"]).optional(),
 });
 
 export type DocumentSignatureUpdateInput = z.infer<
