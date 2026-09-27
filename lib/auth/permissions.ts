@@ -15,6 +15,13 @@ export const PERMISSIONS = [
   "customers.view", "customers.create", "customers.edit", "customers.delete",
   "products.view", "products.create", "products.edit", "products.delete",
   "vendors.view", "vendors.create", "vendors.edit", "vendors.delete",
+  "purchase_invoices.view", "purchase_invoices.create", "purchase_invoices.edit", "purchase_invoices.delete",
+  // Owner/admin only — never added to STAFF_PERMISSIONS or
+  // MANAGER_ONLY_PERMISSIONS below. Gates both approving a purchase
+  // invoice (Stage b) and recording/reversing a vendor payment (Stage
+  // c) — see docs/accounts-payable-phase1-design.md §8's explicit "no
+  // new permission needed for approval, reuse this same tier" call.
+  "purchase_invoices.pay",
   "reports.view",
   "users.manage",
   "organization.manage",
@@ -30,10 +37,11 @@ const STAFF_PERMISSIONS: readonly Permission[] = [
   "products.view", "products.create", "products.edit", "products.delete",
   // Vendor CRUD and purchase-invoice entry are operationally identical
   // to their sales-side counterparts — see docs/accounts-payable-
-  // phase1-design.md §8. Payment/approval-tier permissions
-  // (purchase_invoices.pay) are deliberately NOT here — owner/admin
-  // only, added in Stage c.
+  // phase1-design.md §8. purchase_invoices.pay is deliberately NOT
+  // here — owner/admin only (gates both approval, Stage b, and
+  // payments, Stage c).
   "vendors.view", "vendors.create", "vendors.edit", "vendors.delete",
+  "purchase_invoices.view", "purchase_invoices.create", "purchase_invoices.edit", "purchase_invoices.delete",
 ];
 
 // The only permission Manager adds on top of Staff's set (design doc §0)

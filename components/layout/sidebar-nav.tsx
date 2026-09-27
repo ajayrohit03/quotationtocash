@@ -7,6 +7,7 @@ import {
   FileText,
   Receipt,
   FileSpreadsheet,
+  FileInput,
   Users,
   Truck,
   Package,
@@ -17,16 +18,16 @@ import { cn } from "@/lib/utils";
 // Icon choices map to the original design export's own hand-drawn sidebar
 // icons (grid / document / document / person / box / gear) — using
 // lucide-react's equivalents rather than copying raw SVGs, since lucide
-// is already this app's established icon set. "Vendors" added per
-// docs/accounts-payable-phase1-design.md §3/§10a (Stage a). "Purchase
-// invoices" is deliberately NOT added yet — that route doesn't exist
-// until Stage b ships; a nav entry pointing nowhere would be a dead
-// link between stages.
+// is already this app's established icon set. "Vendors"/"Purchase
+// invoices" added per docs/accounts-payable-phase1-design.md §3 —
+// grouped after the sales document types, then the two counterparty-
+// management sections (Customers, Vendors) back to back.
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/quotations", label: "Quotations", icon: FileText },
   { href: "/invoices", label: "Invoices", icon: Receipt },
   { href: "/proforma-invoices", label: "Proforma invoices", icon: FileSpreadsheet },
+  { href: "/purchase-invoices", label: "Purchase invoices", icon: FileInput },
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/vendors", label: "Vendors", icon: Truck },
   { href: "/products", label: "Products", icon: Package },
