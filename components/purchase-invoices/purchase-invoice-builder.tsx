@@ -107,6 +107,14 @@ export function PurchaseInvoiceBuilder({
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  // Base UI's Select.Value only resolves a label by finding the matching
+  // SelectItem that has actually rendered inside the popup — on first
+  // paint with a value set from server data (editing an existing
+  // invoice), before the popup has ever been opened, there's nothing to
+  // find and it falls back to showing the raw id. Same fix as
+  // app/(app)/settings/team-tab.tsx's manager select: an explicit
+  // children render-function on SelectValue, not the implicit lookup.
+  const vendorNameById = new Map(vendors.map((vendor) => [vendor.id, vendor.name]));
 
   const form = useForm<BuilderFormValues>({
     resolver: zodResolver(builderFormSchema),
@@ -253,7 +261,9 @@ export function PurchaseInvoiceBuilder({
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select vendor" />
+                        <SelectValue placeholder="Select vendor">
+                          {(value: string) => vendorNameById.get(value) ?? value}
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>

@@ -55,7 +55,14 @@ export default async function PurchaseInvoiceDetailPage({
 
     return (
       <div className="flex flex-1 flex-col gap-6 p-6">
-        <h1 className="text-xl font-semibold tracking-tight">Edit purchase invoice</h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-xl font-semibold tracking-tight">Edit purchase invoice</h1>
+          <PurchaseInvoiceActions
+            id={purchaseInvoice.id}
+            status={purchaseInvoice.status}
+            vendorInvoiceNumber={purchaseInvoice.vendorInvoiceNumber}
+          />
+        </div>
         <PurchaseInvoiceBuilder
           mode="edit"
           purchaseInvoiceId={purchaseInvoice.id}
