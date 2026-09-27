@@ -143,6 +143,16 @@ describe("renderPurchaseInvoicePdf", () => {
     expect(buffer.subarray(0, 5).toString("utf-8")).toBe("%PDF-");
   });
 
+  it("shows FC columns when a line item has amountInr set, even if the invoice's own currency is still INR — the defensive detection added alongside the invoice-level check", async () => {
+    const buffer = await renderPurchaseInvoicePdf({
+      ...BASE_DATA,
+      currency: "INR",
+      exchangeRate: null,
+      lineItems: [{ ...BASE_DATA.lineItems[0]!, amountInr: BASE_DATA.lineItems[0]!.amount * 1.1 }],
+    });
+    expect(buffer.subarray(0, 5).toString("utf-8")).toBe("%PDF-");
+  });
+
   it("renders with no shipment fields and a single line item (minimal invoice)", async () => {
     const buffer = await renderPurchaseInvoicePdf({
       ...BASE_DATA,

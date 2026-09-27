@@ -177,7 +177,17 @@ function shipmentField(label: string, value: string | number | null) {
 
 export function PurchaseInvoicePdf({ purchaseInvoice }: { purchaseInvoice: PurchaseInvoicePdfData }) {
   const { vendor, business, lineItems } = purchaseInvoice;
-  const showFc = purchaseInvoice.currency !== "INR";
+  // FC columns show when the invoice's own settlement currency isn't
+  // INR, OR — defensively — when a line item actually carries FC data
+  // even if the invoice-level currency was somehow left at its "INR"
+  // default (e.g. an invoice entered before its currency field was set,
+  // still bookkeeping foreign-currency amounts per line). Detecting
+  // both, not just the invoice-level flag, matches the sales invoice
+  // PDF's own FX-column detection (lib/pdf/document-pdf.tsx via
+  // resolveLineItemColumns) rather than trusting a single upstream flag.
+  const showFc =
+    purchaseInvoice.currency !== "INR" ||
+    lineItems.some((item) => item.amountInr != null);
   const sameState = isSameState(vendor.state, business.placeOfSupply);
   const taxBuckets = groupTaxByRate(
     lineItems.map((item) => ({ amount: item.taxableAmount, gstRate: item.gstRate })),
@@ -277,38 +287,55 @@ export function PurchaseInvoicePdf({ purchaseInvoice }: { purchaseInvoice: Purch
 
         <View style={styles.table}>
           <View style={styles.tableHeaderRow}>
-            <Text style={[styles.tableHeaderCell, { width: "22%", textAlign: "left" }]}>Description</Text>
-            <Text style={[styles.tableHeaderCell, { width: "7%" }]}>SAC</Text>
-            <Text style={[styles.tableHeaderCell, { width: "8%" }]}>Qty/UOM</Text>
-            <Text style={[styles.tableHeaderCell, { width: "8%" }]}>Rate</Text>
-            {showFc && <Text style={[styles.tableHeaderCell, { width: "9%" }]}>Amount (FC)</Text>}
-            <Text style={[styles.tableHeaderCell, { width: showFc ? "9%" : "12%" }]}>Amount (INR)</Text>
-            <Text style={[styles.tableHeaderCell, { width: "9%" }]}>Taxable</Text>
-            <Text style={[styles.tableHeaderCell, { width: showFc ? "9%" : "9.3%" }]}>CGST</Text>
-            <Text style={[styles.tableHeaderCell, { width: showFc ? "9%" : "9.3%" }]}>SGST</Text>
-            <Text style={[styles.tableHeaderCell, { width: showFc ? "9%" : "9.4%" }]}>IGST</Text>
+            <Text style={[styles.tableHeaderCell, { width: showFc ? "18%" : "22%", textAlign: "left" }]}>Description</Text>
+            <Text style={[styles.tableHeaderCell, { width: showFc ? "6%" : "7%" }]}>SAC</Text>
+            <Text style={[styles.tableHeaderCell, { width: showFc ? "7%" : "8%" }]}>Qty/UOM</Text>
+            <Text style={[styles.tableHeaderCell, { width: showFc ? "7%" : "8%" }]}>{showFc ? "Rate (FC)" : "Rate"}</Text>
+            {showFc && <Text style={[styles.tableHeaderCell, { width: "7%" }]}>Ex. Rate</Text>}
+            {showFc && <Text style={[styles.tableHeaderCell, { width: "8%" }]}>Amount (FC)</Text>}
+            <Text style={[styles.tableHeaderCell, { width: showFc ? "8%" : "12%" }]}>Amount (INR)</Text>
+            <Text style={[styles.tableHeaderCell, { width: showFc ? "8%" : "9%" }]}>Taxable</Text>
+            <Text style={[styles.tableHeaderCell, { width: showFc ? "8%" : "9.3%" }]}>CGST</Text>
+            <Text style={[styles.tableHeaderCell, { width: showFc ? "8%" : "9.3%" }]}>SGST</Text>
+            <Text style={[styles.tableHeaderCell, { width: showFc ? "8%" : "9.4%" }]}>IGST</Text>
           </View>
-          {lineItems.map((item, index) => (
-            <View style={styles.tableRow} key={index}>
-              <Text style={[styles.tableCell, { width: "22%" }]}>{item.description}</Text>
-              <Text style={[styles.tableCell, { width: "7%", textAlign: "center" }]}>{item.sac || "—"}</Text>
-              <Text style={[styles.tableCell, { width: "8%", textAlign: "center" }]}>
-                {item.qty}
-                {item.unit ? ` ${item.unit}` : ""}
-              </Text>
-              <Text style={[styles.tableCell, { width: "8%", textAlign: "right" }]}>{formatCurrency(item.rate, purchaseInvoice.currency)}</Text>
-              {showFc && (
-                <Text style={[styles.tableCell, { width: "9%", textAlign: "right" }]}>{formatCurrency(item.amount, purchaseInvoice.currency)}</Text>
-              )}
-              <Text style={[styles.tableCell, { width: showFc ? "9%" : "12%", textAlign: "right" }]}>
-                {formatCurrency(item.amountInr ?? item.amount)}
-              </Text>
-              <Text style={[styles.tableCell, { width: "9%", textAlign: "right" }]}>{formatCurrency(item.taxableAmount)}</Text>
-              <Text style={[styles.tableCell, { width: showFc ? "9%" : "9.3%", textAlign: "right" }]}>{formatCurrency(item.cgst)}</Text>
-              <Text style={[styles.tableCell, { width: showFc ? "9%" : "9.3%", textAlign: "right" }]}>{formatCurrency(item.sgst)}</Text>
-              <Text style={[styles.tableCell, { width: showFc ? "9%" : "9.4%", textAlign: "right" }]}>{formatCurrency(item.igst)}</Text>
-            </View>
-          ))}
+          {lineItems.map((item, index) => {
+            // Per-line effective exchange rate: prefer the invoice's own
+            // stored rate (constant for the whole invoice, per design doc
+            // §1.2 — FX is invoice-level here, not per-line like sales
+            // LineItem); fall back to deriving it from this line's own
+            // amount/amountInr if the invoice-level rate is somehow
+            // unset but this line still carries FC data.
+            const effectiveExchangeRate =
+              purchaseInvoice.exchangeRate ??
+              (item.amountInr != null && item.amount !== 0 ? item.amountInr / item.amount : null);
+            return (
+              <View style={styles.tableRow} key={index}>
+                <Text style={[styles.tableCell, { width: showFc ? "18%" : "22%" }]}>{item.description}</Text>
+                <Text style={[styles.tableCell, { width: showFc ? "6%" : "7%", textAlign: "center" }]}>{item.sac || "—"}</Text>
+                <Text style={[styles.tableCell, { width: showFc ? "7%" : "8%", textAlign: "center" }]}>
+                  {item.qty}
+                  {item.unit ? ` ${item.unit}` : ""}
+                </Text>
+                <Text style={[styles.tableCell, { width: showFc ? "7%" : "8%", textAlign: "right" }]}>{formatCurrency(item.rate, purchaseInvoice.currency)}</Text>
+                {showFc && (
+                  <Text style={[styles.tableCell, { width: "7%", textAlign: "right" }]}>
+                    {effectiveExchangeRate != null ? effectiveExchangeRate.toFixed(4) : "—"}
+                  </Text>
+                )}
+                {showFc && (
+                  <Text style={[styles.tableCell, { width: "8%", textAlign: "right" }]}>{formatCurrency(item.amount, purchaseInvoice.currency)}</Text>
+                )}
+                <Text style={[styles.tableCell, { width: showFc ? "8%" : "12%", textAlign: "right" }]}>
+                  {formatCurrency(item.amountInr ?? item.amount)}
+                </Text>
+                <Text style={[styles.tableCell, { width: showFc ? "8%" : "9%", textAlign: "right" }]}>{formatCurrency(item.taxableAmount)}</Text>
+                <Text style={[styles.tableCell, { width: showFc ? "8%" : "9.3%", textAlign: "right" }]}>{formatCurrency(item.cgst)}</Text>
+                <Text style={[styles.tableCell, { width: showFc ? "8%" : "9.3%", textAlign: "right" }]}>{formatCurrency(item.sgst)}</Text>
+                <Text style={[styles.tableCell, { width: showFc ? "8%" : "9.4%", textAlign: "right" }]}>{formatCurrency(item.igst)}</Text>
+              </View>
+            );
+          })}
         </View>
 
         {taxBuckets.length > 0 && (

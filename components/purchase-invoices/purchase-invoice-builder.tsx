@@ -77,14 +77,23 @@ const builderFormSchema = z.object({
 
 type BuilderFormValues = z.infer<typeof builderFormSchema>;
 
-const EMPTY_LINE_ITEM: PurchaseLineItemInput = {
-  description: "",
-  sac: "",
-  qty: 1,
-  unit: "",
-  rate: 0,
-  gstRate: null,
-};
+// A factory, not a shared constant — react-hook-form's useFieldArray
+// docs explicitly warn against passing the same object reference to
+// multiple append() calls (or reusing it as both an append() argument
+// and the array's own initial defaultValues): doing so can bind
+// multiple rows to the same underlying reference instead of giving each
+// row its own independent value. A fresh object per call is the only
+// safe pattern.
+function createEmptyLineItem(): PurchaseLineItemInput {
+  return {
+    description: "",
+    sac: "",
+    qty: 1,
+    unit: "",
+    rate: 0,
+    gstRate: null,
+  };
+}
 
 function toStr(value: number | Date | null | undefined): string {
   if (value == null) return "";
@@ -149,7 +158,7 @@ export function PurchaseInvoiceBuilder({
       customsDocRef: initialValues?.customsDocRef ?? "",
       termsOfShipment: initialValues?.termsOfShipment ?? "",
       notes: initialValues?.notes ?? "",
-      lineItems: initialValues?.lineItems ?? [EMPTY_LINE_ITEM],
+      lineItems: initialValues?.lineItems ?? [createEmptyLineItem()],
     },
   });
 
@@ -286,7 +295,7 @@ export function PurchaseInvoiceBuilder({
                   <FormItem>
                     <FormLabel>Vendor invoice no.</FormLabel>
                     <FormControl>
-                      <Input placeholder="POL/2026/0142" {...field} />
+                      <Input placeholder="POL/2026/0142" {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -299,7 +308,7 @@ export function PurchaseInvoiceBuilder({
                   <FormItem>
                     <FormLabel>Invoice date</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="date" {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -312,7 +321,7 @@ export function PurchaseInvoiceBuilder({
                   <FormItem>
                     <FormLabel>Due date</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="date" {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -330,6 +339,7 @@ export function PurchaseInvoiceBuilder({
                       <Input
                         className="uppercase"
                         {...field}
+                        value={field.value ?? ""}
                         onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                       />
                     </FormControl>
@@ -345,7 +355,7 @@ export function PurchaseInvoiceBuilder({
                     <FormItem>
                       <FormLabel>Exchange rate (to INR)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.000001" {...field} />
+                        <Input type="number" step="0.000001" {...field} value={field.value ?? ""} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -407,7 +417,7 @@ export function PurchaseInvoiceBuilder({
                   <FormItem>
                     <FormLabel>{label}</FormLabel>
                     <FormControl>
-                      <Input type={type ?? "text"} {...field} />
+                      <Input type={type ?? "text"} {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -424,7 +434,7 @@ export function PurchaseInvoiceBuilder({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => append(EMPTY_LINE_ITEM)}
+              onClick={() => append(createEmptyLineItem())}
             >
               <Plus className="size-4" /> Add line
             </Button>
@@ -440,7 +450,7 @@ export function PurchaseInvoiceBuilder({
                       <FormItem>
                         <FormLabel className="text-xs">Description</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} value={field.value ?? ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -455,7 +465,7 @@ export function PurchaseInvoiceBuilder({
                       <FormItem>
                         <FormLabel className="text-xs">SAC</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} value={field.value ?? ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -474,6 +484,7 @@ export function PurchaseInvoiceBuilder({
                             type="number"
                             step="0.01"
                             {...field}
+                            value={field.value ?? ""}
                             onChange={(e) => field.onChange(Number(e.target.value))}
                           />
                         </FormControl>
@@ -490,7 +501,7 @@ export function PurchaseInvoiceBuilder({
                       <FormItem>
                         <FormLabel className="text-xs">UOM</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} value={field.value ?? ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -509,6 +520,7 @@ export function PurchaseInvoiceBuilder({
                             type="number"
                             step="0.01"
                             {...field}
+                            value={field.value ?? ""}
                             onChange={(e) => field.onChange(Number(e.target.value))}
                           />
                         </FormControl>
@@ -573,7 +585,7 @@ export function PurchaseInvoiceBuilder({
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Textarea rows={3} {...field} />
+                    <Textarea rows={3} {...field} value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
