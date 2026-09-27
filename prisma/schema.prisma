@@ -177,14 +177,14 @@ model Business {
   // Credentials from einvoice1.gst.gov.in — never required to create or
   // send a document; only consulted by the (future) IRN-generation call
   // and by the "Generate IRN" button's own enabled/disabled state.
-  irpClientId     String? @map("irp_client_id")
-  irpClientSecret String? @map("irp_client_secret")
-  irpUsername     String? @map("irp_username")
+  irpClientId       String? @map("irp_client_id")
+  irpClientSecret   String? @map("irp_client_secret")
+  irpUsername       String? @map("irp_username")
   // The GSTIN registered for e-invoicing — kept separate from the
   // business's own `gstin` above since IRP registration can, in edge
   // cases, be under a different GSTIN than the one on the document
   // header (e.g. a business with multiple registrations).
-  irpGstin String? @map("irp_gstin")
+  irpGstin          String? @map("irp_gstin")
 
   // Pre-fill defaults for new documents (Settings > Documents) — never
   // applied retroactively to documents that already exist.
@@ -200,6 +200,7 @@ model Business {
 
   members                BusinessMember[]
   customers              Customer[]
+  vendors                Vendor[]
   products               Product[]
   documents              Document[]
   documentCounters       DocumentCounter[]
@@ -309,6 +310,50 @@ model Customer {
 
   @@index([businessId])
   @@map("customers")
+}
+
+// See docs/accounts-payable-phase1-design.md §1.1. Separate from
+// Customer — a vendor is who bills us, needs its own bank details/PAN/
+// CIN, and must never contaminate Customer's queries with a role
+// discriminator (design doc's own reasoning after that section's
+// prisma block).
+model Vendor {
+  id         String @id @default(uuid())
+  businessId String @map("business_id")
+
+  name    String
+  email   String?
+  phone   String?
+  address String?
+  city    String?
+  state   String?
+  gstin   String?
+
+  pan String?
+  cin String?
+
+  // Bank details of the VENDOR — who Accounts Payable owes money to,
+  // same shape as Business's own bank fields for the identical reason
+  // (design doc §1.1).
+  bankName          String? @map("bank_name")
+  accountHolderName String? @map("account_holder_name")
+  accountNumber     String? @map("account_number")
+  ifscCode          String? @map("ifsc_code")
+  upiId             String? @map("upi_id")
+  swiftCode         String? @map("swift_code")
+
+  // Soft-delete — a Vendor referenced by a PurchaseInvoice can't be
+  // hard-deleted (onDelete: Restrict on that FK, once it exists in
+  // Stage b), same rationale as BusinessMember.isActive.
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("vendors")
 }
 
 model Product {
@@ -426,12 +471,12 @@ model Document {
   // document-render.tsx/document-pdf.tsx's IRN/QR block) — not derived
   // from whether `irn` happens to be set, so a future "cancelled" state
   // (irn still present, but no longer valid) has somewhere to live.
-  einvoiceStatus  EinvoiceStatus @default(none) @map("einvoice_status")
-  irn             String?        @map("irn")
-  irnGeneratedAt  DateTime?      @map("irn_generated_at")
-  irnAckNo        String?        @map("irn_ack_no")
-  irnAckDate      String?        @map("irn_ack_date")
-  einvoiceQrCode  String?        @map("einvoice_qr_code")
+  einvoiceStatus EinvoiceStatus @default(none) @map("einvoice_status")
+  irn            String?        @map("irn")
+  irnGeneratedAt DateTime?      @map("irn_generated_at")
+  irnAckNo       String?        @map("irn_ack_no")
+  irnAckDate     String?        @map("irn_ack_date")
+  einvoiceQrCode String?        @map("einvoice_qr_code")
 
   showLogo            Boolean @default(true) @map("show_logo")
   showGstinRow        Boolean @default(true) @map("show_gstin_row")

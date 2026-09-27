@@ -7,6 +7,7 @@ import {
   Receipt,
   FileSpreadsheet,
   Users,
+  Truck,
   Package,
   Inbox,
 } from "lucide-react";
@@ -35,6 +36,7 @@ const QUICK_ACTIONS = [
   { href: "/invoices/new", label: "Create invoice", icon: Receipt },
   { href: "/proforma-invoices/new", label: "Create proforma invoice", icon: FileSpreadsheet },
   { href: "/customers", label: "Add customer", icon: Users },
+  { href: "/vendors", label: "Add vendor", icon: Truck },
   { href: "/products", label: "Add product", icon: Package },
 ];
 

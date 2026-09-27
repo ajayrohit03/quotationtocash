@@ -14,6 +14,7 @@ export const PERMISSIONS = [
   "invoices.view", "invoices.create", "invoices.edit", "invoices.delete",
   "customers.view", "customers.create", "customers.edit", "customers.delete",
   "products.view", "products.create", "products.edit", "products.delete",
+  "vendors.view", "vendors.create", "vendors.edit", "vendors.delete",
   "reports.view",
   "users.manage",
   "organization.manage",
@@ -27,6 +28,12 @@ const STAFF_PERMISSIONS: readonly Permission[] = [
   "invoices.view", "invoices.create", "invoices.edit", "invoices.delete",
   "customers.view", "customers.create", "customers.edit", "customers.delete",
   "products.view", "products.create", "products.edit", "products.delete",
+  // Vendor CRUD and purchase-invoice entry are operationally identical
+  // to their sales-side counterparts — see docs/accounts-payable-
+  // phase1-design.md §8. Payment/approval-tier permissions
+  // (purchase_invoices.pay) are deliberately NOT here — owner/admin
+  // only, added in Stage c.
+  "vendors.view", "vendors.create", "vendors.edit", "vendors.delete",
 ];
 
 // The only permission Manager adds on top of Staff's set (design doc §0)
