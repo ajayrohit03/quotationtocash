@@ -18,14 +18,6 @@ export const purchaseLineItemInputSchema = z.object({
 
 export type PurchaseLineItemInput = z.infer<typeof purchaseLineItemInputSchema>;
 
-// Creation is minimal — just the vendor, mirroring documentCreateSchema's
-// own "empty draft, then PATCH content in" shape (design doc §5).
-export const purchaseInvoiceCreateSchema = z.object({
-  vendorId: z.string().min(1, "Select a vendor"),
-});
-
-export type PurchaseInvoiceCreateInput = z.infer<typeof purchaseInvoiceCreateSchema>;
-
 export const purchaseInvoiceUpdateSchema = z.object({
   vendorId: z.string().min(1).optional(),
   vendorInvoiceNumber: z.string().trim().min(1).max(100).optional(),
@@ -68,3 +60,20 @@ export const purchaseInvoiceUpdateSchema = z.object({
 });
 
 export type PurchaseInvoiceUpdateInput = z.infer<typeof purchaseInvoiceUpdateSchema>;
+
+// Creation accepts the full payload in one call — vendorId plus every
+// field purchaseInvoiceUpdateSchema accepts (vendorId itself becomes
+// required here). A caller that only wants the minimal "empty draft,
+// then PATCH content in" flow the builder UI uses (design doc §5) can
+// still POST with just { vendorId } and everything else omitted/
+// optional — nothing about that flow breaks. What changes is that a
+// single POST with the full payload (line items, shipment details,
+// dates, etc.) now works too, rather than silently dropping every
+// field beyond vendorId the way a bare z.object({ vendorId }) schema
+// used to (extra keys are stripped, not rejected, by a non-strict zod
+// object schema — the exact gap a direct API test surfaced).
+export const purchaseInvoiceCreateSchema = purchaseInvoiceUpdateSchema.extend({
+  vendorId: z.string().min(1, "Select a vendor"),
+});
+
+export type PurchaseInvoiceCreateInput = z.infer<typeof purchaseInvoiceCreateSchema>;

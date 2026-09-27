@@ -144,6 +144,14 @@ async function cancelPurchaseInvoice(id: string) {
   );
 }
 
+async function getPurchaseInvoice(id: string) {
+  const { GET } = await import("@/app/api/purchase-invoices/[id]/route");
+  return GET(
+    new NextRequest(`http://localhost/api/purchase-invoices/${id}`, { method: "GET" }),
+    { params: Promise.resolve({ id }) },
+  );
+}
+
 describe("POST /api/purchase-invoices", () => {
   it("creates an empty received invoice for a real vendor", async () => {
     const { owner, vendor } = await setupOrg();
@@ -163,6 +171,60 @@ describe("POST /api/purchase-invoices", () => {
 
     const response = await createPurchaseInvoice({ vendorId: other.vendor.id });
     expect(response.status).toBe(404);
+  });
+
+  it("saves shipment fields and line items when the full payload is sent in a single POST — the exact case a direct API test surfaced as previously silently dropped", async () => {
+    const { owner, vendor } = await setupOrg();
+    await mockedAuthAs(owner.authProviderId);
+
+    const response = await createPurchaseInvoice({
+      vendorId: vendor.id,
+      vendorInvoiceNumber: "MAABKG000482/26-27",
+      vendorInvoiceDate: "2026-02-01",
+      vesselVoyage: "APL SAVANNAH / 0NNO3W1MA",
+      jobRef: "MAABKG000482/26-27",
+      lineItems: [
+        { description: "OCEAN FREIGHT", qty: 1, rate: 32000, gstRate: 18 },
+      ],
+    });
+    expect(response.status).toBe(201);
+    const created = await response.json();
+
+    // The bug the user found: a GET immediately after showed these as
+    // null/[] because POST's schema only ever accepted vendorId. Confirm
+    // both the create response AND a subsequent GET reflect real data.
+    expect(created.purchaseInvoice.vesselVoyage).toBe("APL SAVANNAH / 0NNO3W1MA");
+    expect(created.purchaseInvoice.lineItems).toHaveLength(1);
+    expect(created.purchaseInvoice.lineItems[0].description).toBe("OCEAN FREIGHT");
+
+    const getResponse = await getPurchaseInvoice(created.purchaseInvoice.id);
+    expect(getResponse.status).toBe(200);
+    const fetched = await getResponse.json();
+    expect(fetched.purchaseInvoice.vesselVoyage).toBe("APL SAVANNAH / 0NNO3W1MA");
+    expect(fetched.purchaseInvoice.jobRef).toBe("MAABKG000482/26-27");
+    expect(fetched.purchaseInvoice.lineItems).toHaveLength(1);
+    expect(fetched.purchaseInvoice.lineItems[0].description).toBe("OCEAN FREIGHT");
+    expect(fetched.purchaseInvoice.cgst).toBe("2880");
+    expect(fetched.purchaseInvoice.sgst).toBe("2880");
+  });
+
+  it("still supports the minimal vendorId-only create — the builder UI's own two-step flow keeps working", async () => {
+    const { owner, vendor } = await setupOrg();
+    await mockedAuthAs(owner.authProviderId);
+
+    const response = await createPurchaseInvoice({ vendorId: vendor.id });
+    const created = await response.json();
+    expect(created.purchaseInvoice.vendorInvoiceNumber).toBe("");
+    expect(created.purchaseInvoice.lineItems).toEqual([]);
+
+    const patchResponse = await patchPurchaseInvoice(created.purchaseInvoice.id, {
+      vendorInvoiceNumber: "POL-0001",
+      lineItems: [{ description: "Documentation", qty: 1, rate: 500 }],
+    });
+    expect(patchResponse.status).toBe(200);
+    const patched = await patchResponse.json();
+    expect(patched.purchaseInvoice.vendorInvoiceNumber).toBe("POL-0001");
+    expect(patched.purchaseInvoice.lineItems).toHaveLength(1);
   });
 });
 
