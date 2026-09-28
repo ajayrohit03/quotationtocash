@@ -1,6 +1,6 @@
 import { Fragment } from "react";
 import type { CSSProperties, ReactNode } from "react";
-import type { DocumentType } from "@prisma/client";
+import type { AssetSize, DocumentType } from "@prisma/client";
 import { formatDateIST } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
 import type {
@@ -94,6 +94,8 @@ export function DocumentRender({
   irnAckDate,
   einvoiceQrCode,
   fontSize,
+  logoSize,
+  signatureSize,
   business,
   customer,
   customFieldValues,
@@ -142,6 +144,8 @@ export function DocumentRender({
   irnAckDate: string | null;
   einvoiceQrCode: string | null;
   fontSize: number | null;
+  logoSize: AssetSize;
+  signatureSize: AssetSize;
   business: BusinessSnapshot;
   customer: CustomerSnapshot;
   customFieldValues: CustomFieldValueSnapshot[];
@@ -198,11 +202,12 @@ export function DocumentRender({
   }
   const scale = (fontSize ?? DEFAULT_FONT_SIZE) / DEFAULT_FONT_SIZE;
   // Independent of `scale` above (the document's own fontSize control)
-  // — the business-level logo/signature size preference, frozen into
-  // businessSnapshot at save time. "md" (1x) is this component's
-  // existing h-10/max-w-160px baseline for both images.
-  const logoScale = ASSET_SIZE_SCALE[business.logoSize];
-  const signatureScale = ASSET_SIZE_SCALE[business.signatureSize];
+  // — this document's own logo/signature size field (schema.prisma's
+  // Document.logoSize comment), not read from the business snapshot.
+  // "md" (1x) is this component's existing h-10/max-w-160px baseline
+  // for both images.
+  const logoScale = ASSET_SIZE_SCALE[logoSize];
+  const signatureScale = ASSET_SIZE_SCALE[signatureSize];
   // Live, not from totals.total — see PreviewAppearance's roundTotal
   // comment: recomputed from taxableAmount/cgst/sgst/igst (never
   // touched by rounding) plus the *current* toggle state, so flipping

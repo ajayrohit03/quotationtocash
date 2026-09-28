@@ -286,7 +286,20 @@ describe("document snapshot immutability", () => {
     expect(liveAfter.signatureSignatoryName).toBe("New Signatory");
   });
 
-  it("keeps the logo/signature size unchanged after the business's size preference changes", async () => {
+  // logoSize/signatureSize deliberately moved OUT of businessSnapshot
+  // (schema.prisma's Document.logoSize comment) — they're real
+  // per-document columns now, copied from the business's current
+  // preference once at creation (POST /api/documents), then their own
+  // independently-editable field from that point on, same tier as
+  // template/accentColor. Unlike every other snapshot field, changing
+  // them later is a deliberate feature (Problem B: a display
+  // preference has no compliance reason to stay frozen) — signatureSize
+  // stays adjustable even after send via PATCH .../update-signature.
+  // What this test actually guards: a document's own field, once set,
+  // doesn't drift just because Business's separate preference changes
+  // later — the same "captured once, then independent" invariant every
+  // other appearance field (template, accentColor) already has.
+  it("keeps a document's own logo/signature size unchanged after the business's separate preference changes, until explicitly updated", async () => {
     const business = await createTestBusiness();
     await prisma.business.update({
       where: { id: business.id },
@@ -299,6 +312,8 @@ describe("document snapshot immutability", () => {
     const customer = await prisma.customer.create({
       data: { businessId: business.id, name: "Test Customer" },
     });
+    // Mirrors POST /api/documents: copies the business's current
+    // preference in at creation time.
     const document = await prisma.document.create({
       data: {
         businessId: business.id,
@@ -308,11 +323,13 @@ describe("document snapshot immutability", () => {
         issueDate: new Date(),
         customerSnapshot: buildCustomerSnapshot(customer),
         businessSnapshot: buildBusinessSnapshot(liveBusiness),
+        logoSize: liveBusiness.logoSize,
+        signatureSize: liveBusiness.signatureSize,
       },
     });
 
-    // The size preference changes later, e.g. after sending this
-    // invoice — must not retroactively resize it.
+    // The business's own preference changes later — must not
+    // retroactively resize this already-created document.
     await prisma.business.update({
       where: { id: business.id },
       data: { logoSize: "md", signatureSize: "xl" },
@@ -321,12 +338,8 @@ describe("document snapshot immutability", () => {
     const refetched = await prisma.document.findUniqueOrThrow({
       where: { id: document.id },
     });
-    const snapshot = refetched.businessSnapshot as {
-      logoSize: string;
-      signatureSize: string;
-    };
-    expect(snapshot.logoSize).toBe("xl");
-    expect(snapshot.signatureSize).toBe("sm");
+    expect(refetched.logoSize).toBe("xl");
+    expect(refetched.signatureSize).toBe("sm");
 
     const liveAfter = await prisma.business.findUniqueOrThrow({
       where: { id: business.id },

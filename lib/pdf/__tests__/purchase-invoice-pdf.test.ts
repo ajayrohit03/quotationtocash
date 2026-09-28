@@ -86,8 +86,6 @@ const BASE_DATA: PurchaseInvoicePdfData = {
     signatureImageUrl: null,
     signatureSignatoryName: null,
     signatureDesignation: null,
-    logoSize: "md",
-    signatureSize: "md",
   },
   lineItems: [
     {

@@ -200,7 +200,7 @@ export function DocumentPreview({
     document.business.signatureDesignation ?? "",
   );
   const [signatureSizeDraft, setSignatureSizeDraft] = useState<AssetSize>(
-    document.business.signatureSize,
+    document.signatureSize,
   );
   const signatureFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -219,6 +219,17 @@ export function DocumentPreview({
     roundTotal: document.roundTotal,
     showInrEquivalent: document.showInrEquivalent,
     fontSize: document.fontSize,
+    // Not live-editable via this Customize-sidebar draft/autosave —
+    // there's no slider for either yet (logoSize has no UI control at
+    // all currently; signatureSize is only ever changed via the
+    // separate "Update signature" dialog, which PATCHes
+    // .../update-signature directly and triggers its own
+    // router.refresh() — see that handler). Carried here only to
+    // satisfy PreviewAppearance's shape for the DocumentRender prop
+    // below, which itself reads the real values from the dedicated
+    // logoSize/signatureSize props, not from this object.
+    logoSize: document.logoSize,
+    signatureSize: document.signatureSize,
   });
 
   const lastSaved = useRef(appearance);
@@ -433,7 +444,7 @@ export function DocumentPreview({
     setSignatureImageUrlDraft(document.business.signatureImageUrl);
     setSignatureNameDraft(document.business.signatureSignatoryName ?? "");
     setSignatureDesignationDraft(document.business.signatureDesignation ?? "");
-    setSignatureSizeDraft(document.business.signatureSize);
+    setSignatureSizeDraft(document.signatureSize);
     setSignatureDialogOpen(true);
   }
 
@@ -708,6 +719,8 @@ export function DocumentPreview({
             creditBalance={document.creditBalance}
             showRecordedBy
             fontSize={appearance.fontSize}
+            logoSize={document.logoSize}
+            signatureSize={document.signatureSize}
             currency={document.currency}
             inrExchangeRate={document.inrExchangeRate}
             lutDeclarationText={document.lutDeclarationText}

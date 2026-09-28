@@ -127,6 +127,8 @@ export async function POST(request: NextRequest) {
         createdByUserId: user.id,
         template: business.documentTemplate,
         accentColor: business.accentColor,
+        logoSize: business.logoSize,
+        signatureSize: business.signatureSize,
         showTax: business.gstEnabled,
         notes: business.defaultNotes,
         termsText: business.defaultTermsText,

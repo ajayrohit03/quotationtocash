@@ -58,6 +58,8 @@ export function toPreviewDocument(
     roundTotal: document.roundTotal,
     showInrEquivalent: document.showInrEquivalent,
     fontSize: document.fontSize,
+    logoSize: document.logoSize,
+    signatureSize: document.signatureSize,
     // Snapshots are stored as Json — cast back to the shape they were
     // always written in (see lib/documents/snapshots.ts).
     business: document.businessSnapshot as unknown as BusinessSnapshot,

@@ -79,8 +79,6 @@ const FROZEN_SNAPSHOT = {
   signatureImageUrl: "https://example.invalid/original-signature.png",
   signatureSignatoryName: "Original Signatory",
   signatureDesignation: "Original Designation",
-  logoSize: "md",
-  signatureSize: "md",
 };
 
 async function setupOrg() {
@@ -256,7 +254,7 @@ describe("PATCH /api/documents/[id]/update-signature", () => {
     );
   });
 
-  it("updates the signature size on this document's snapshot only, never Business.signatureSize", async () => {
+  it("updates the signature size on this document's own field only, never Business.signatureSize", async () => {
     const { owner, business, makeDocument } = await setupOrg();
     const invoice = await makeDocument("invoice", "sent");
     await mockedAuthAs(owner.authProviderId);
@@ -264,7 +262,9 @@ describe("PATCH /api/documents/[id]/update-signature", () => {
     const response = await patchSignature(invoice.id, { signatureSize: "xl" });
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body.document.businessSnapshot.signatureSize).toBe("xl");
+    // signatureSize is a real Document column, not part of
+    // businessSnapshot — see schema.prisma's Document.logoSize comment.
+    expect(body.document.signatureSize).toBe("xl");
     // Untouched — the document's other snapshot fields survive.
     expect(body.document.businessSnapshot.signatureSignatoryName).toBe(
       FROZEN_SNAPSHOT.signatureSignatoryName,

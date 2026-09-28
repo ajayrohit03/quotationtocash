@@ -69,6 +69,8 @@ export default async function PublicDocumentPage({
           currency={previewDocument.currency}
           inrExchangeRate={previewDocument.inrExchangeRate}
           fontSize={previewDocument.fontSize}
+          logoSize={previewDocument.logoSize}
+          signatureSize={previewDocument.signatureSize}
           lutDeclarationText={previewDocument.lutDeclarationText}
           irn={previewDocument.irn}
           irnAckNo={previewDocument.irnAckNo}
@@ -95,6 +97,8 @@ export default async function PublicDocumentPage({
             roundTotal: previewDocument.roundTotal,
             showInrEquivalent: previewDocument.showInrEquivalent,
             fontSize: previewDocument.fontSize,
+            logoSize: previewDocument.logoSize,
+            signatureSize: previewDocument.signatureSize,
           }}
         />
       </div>

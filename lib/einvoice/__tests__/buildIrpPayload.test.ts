@@ -31,8 +31,6 @@ const business: PreviewDocument["business"] = {
   signatureImageUrl: null,
   signatureSignatoryName: null,
   signatureDesignation: null,
-  logoSize: "md",
-  signatureSize: "md",
 };
 
 const sameStateCustomer: PreviewDocument["customer"] = {
@@ -114,6 +112,8 @@ function makeDocument(overrides: Partial<PreviewDocument> = {}): PreviewDocument
     roundTotal: false,
     showInrEquivalent: false,
     fontSize: null,
+    logoSize: "md",
+    signatureSize: "md",
     einvoiceStatus: "none",
     irn: null,
     irnGeneratedAt: null,

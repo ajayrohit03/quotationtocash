@@ -322,13 +322,13 @@ export function DocumentPdf({
     : resolveForeignCurrencyRateLabel(document.lineItems);
   const identityLine = businessIdentityLine(business);
   // Independent of `scale` above (the document's own fontSize control)
-  // — this is the business-level logo/signature size preference, frozen
-  // into businessSnapshot at save time. Applied directly to each
-  // image's literal width/height below rather than threaded through
-  // createStyles, since createStyles only ever receives the fontSize
-  // scale, not the business snapshot.
-  const logoScale = ASSET_SIZE_SCALE[business.logoSize];
-  const signatureScale = ASSET_SIZE_SCALE[business.signatureSize];
+  // — this document's own logo/signature size field (schema.prisma's
+  // Document.logoSize comment), not read from the business snapshot.
+  // Applied directly to each image's literal width/height below rather
+  // than threaded through createStyles, since createStyles only ever
+  // receives the fontSize scale.
+  const logoScale = ASSET_SIZE_SCALE[document.logoSize];
+  const signatureScale = ASSET_SIZE_SCALE[document.signatureSize];
   const showLutZeroRow = showTax && isForeignCurrency && taxBuckets.length === 0;
   const showInrSubline =
     isForeignCurrency && document.showInrEquivalent && document.inrExchangeRate != null;

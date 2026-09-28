@@ -28,8 +28,6 @@ const base: BusinessSnapshot = {
   signatureImageUrl: null,
   signatureSignatoryName: null,
   signatureDesignation: null,
-  logoSize: "md",
-  signatureSize: "md",
 };
 
 describe("businessIdentityLine", () => {

@@ -1,4 +1,4 @@
-import type { DocumentTemplate, DocumentType, EinvoiceStatus } from "@prisma/client";
+import type { AssetSize, DocumentTemplate, DocumentType, EinvoiceStatus } from "@prisma/client";
 import type {
   BusinessSnapshot,
   CustomerSnapshot,
@@ -72,6 +72,11 @@ export type PreviewAppearance = {
   // Base font size in points (7-12); null means "use the template's own
   // default." See schema.prisma's Document.fontSize comment.
   fontSize: number | null;
+  // Real per-document fields, not part of BusinessSnapshot — see
+  // schema.prisma's Document.logoSize comment for why they moved out of
+  // the frozen snapshot.
+  logoSize: AssetSize;
+  signatureSize: AssetSize;
 };
 
 export type PreviewDocument = PreviewAppearance & {

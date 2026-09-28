@@ -26,13 +26,25 @@ const EDIT_PERMISSION: Record<DocumentType, Permission> = {
 // the whole document isn't a reasonable answer, but nothing else here
 // gets the same treatment: name, address, GSTIN, bank details, customer
 // details, and line items all stay exactly as frozen. Both handlers
-// below surgically overwrite only the signature keys inside the
-// existing businessSnapshot JSON blob — everything else in that blob
-// (and the rest of the document) is read, spread, and rewritten
-// byte-for-byte unchanged. Deliberately never touches the live
-// Business.signature* columns — this document's copy diverges from the
-// business's own profile from this point on, same as every other
+// below surgically overwrite only the signature image/name/designation
+// keys inside the existing businessSnapshot JSON blob — everything else
+// in that blob (and the rest of the document) is read, spread, and
+// rewritten byte-for-byte unchanged. Deliberately never touches the
+// live Business.signature* columns — this document's copy diverges from
+// the business's own profile from this point on, same as every other
 // frozen snapshot field already does.
+//
+// signatureSize is handled differently: it's Document.signatureSize, a
+// real per-document column (schema.prisma's own comment), not part of
+// businessSnapshot at all — logo/signature size was deliberately moved
+// out of the frozen snapshot entirely (it's a presentation preference,
+// not compliance data like GSTIN/address/bank details, so there's no
+// reason changing it should be blocked once a document is sent). It
+// stays handled by this same route rather than the general appearance-
+// update flow (PATCH /api/documents/:id, draft-only) specifically so it
+// keeps the one property signatureSize already had: adjustable even
+// after a document has been sent, same as the other three signature
+// fields here.
 async function loadEditableDocument(
   context: BusinessContext,
   documentId: string,
@@ -53,13 +65,7 @@ class NotFoundError extends Error {}
 function patchSnapshot(
   current: BusinessSnapshot,
   patch: Partial<
-    Pick<
-      BusinessSnapshot,
-      | "signatureImageUrl"
-      | "signatureSignatoryName"
-      | "signatureDesignation"
-      | "signatureSize"
-    >
+    Pick<BusinessSnapshot, "signatureImageUrl" | "signatureSignatoryName" | "signatureDesignation">
   >,
 ): BusinessSnapshot {
   return {
@@ -72,9 +78,6 @@ function patchSnapshot(
       : {}),
     ...(patch.signatureDesignation !== undefined
       ? { signatureDesignation: patch.signatureDesignation }
-      : {}),
-    ...(patch.signatureSize !== undefined
-      ? { signatureSize: patch.signatureSize }
       : {}),
   };
 }
@@ -91,11 +94,15 @@ export async function PATCH(
     const document = await loadEditableDocument(context, id);
 
     const input = documentSignatureUpdateSchema.parse(await request.json());
+    const { signatureSize, ...snapshotPatch } = input;
     const currentSnapshot = document.businessSnapshot as unknown as BusinessSnapshot;
 
     const updated = await prisma.document.update({
       where: { id: document.id },
-      data: { businessSnapshot: patchSnapshot(currentSnapshot, input) },
+      data: {
+        businessSnapshot: patchSnapshot(currentSnapshot, snapshotPatch),
+        ...(signatureSize !== undefined ? { signatureSize } : {}),
+      },
     });
 
     return NextResponse.json({ document: updated });

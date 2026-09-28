@@ -612,6 +612,30 @@ model Document {
   // the PDF renderer (direct per-Text fontSize multiplication).
   fontSize    Int?             @map("font_size")
 
+  // Logo/signature display size — real per-document fields, same tier
+  // as template/accentColor/fontSize above, NOT frozen inside
+  // businessSnapshot the way they originally were. Two problems with
+  // the snapshot approach: (a) a document created before this feature
+  // shipped had no size keys in its snapshot at all, and could only
+  // pick one up by being re-saved — silently broken for every
+  // pre-existing draft, permanently stuck for anything already sent;
+  // (b) logo/signature size is a pure presentation preference, not
+  // compliance data like GSTIN/address/bank details — there's no legal
+  // reason freezing it at save time was ever the right call, unlike
+  // those fields. @default(md) means the migration that added these
+  // columns backfilled every existing row (drafts and already-sent
+  // documents alike) with a real value immediately — no re-save
+  // needed. New documents get the business's current preference copied
+  // in at creation time (POST /api/documents, same as template/
+  // accentColor); from then on this is this document's own field,
+  // editable via the normal appearance-update flow while still a draft
+  // (appearanceUpdateSchema), and signatureSize additionally stays
+  // adjustable after send via POST/PATCH .../update-signature (the same
+  // narrow non-frozen exception that route already carved out — see
+  // its own comment).
+  logoSize      AssetSize @default(md) @map("logo_size")
+  signatureSize AssetSize @default(md) @map("signature_size")
+
   // E-invoicing (IRP/GST) — scaffolding only, no API call made anywhere
   // yet (see Business.einvoicingEnabled's own comment). irn is the
   // 64-char Invoice Reference Number IRP returns once generation is
