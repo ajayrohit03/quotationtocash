@@ -14,6 +14,17 @@ export const purchaseLineItemInputSchema = z.object({
   // before this schema ever sees the request — same "provenance only"
   // rule as LineItem's own foreignCurrency fields.
   amountInr: z.number().min(0).nullable().optional(),
+
+  // Per-line FC provenance — see PurchaseLineItem.rateFC's own schema
+  // comment. Pure display data: amountFC is recomputed server-side from
+  // rateFC * qty when rateFC is present (never trusted from the
+  // client, same "never trust a client-submitted total" rule as every
+  // other computed money field), so whatever the client sends for it
+  // is informational only.
+  rateFC: z.number().min(0).nullable().optional(),
+  exRate: z.number().positive().nullable().optional(),
+  fcCurrency: z.string().trim().length(3).nullable().optional(),
+  amountFC: z.number().min(0).nullable().optional(),
 });
 
 export type PurchaseLineItemInput = z.infer<typeof purchaseLineItemInputSchema>;

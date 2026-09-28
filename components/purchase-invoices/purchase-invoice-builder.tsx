@@ -116,6 +116,7 @@ export function PurchaseInvoiceBuilder({
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [debugPayload, setDebugPayload] = useState<string | null>(null);
   // Base UI's Select.Value only resolves a label by finding the matching
   // SelectItem that has actually rendered inside the popup — on first
   // paint with a value set from server data (editing an existing
@@ -179,6 +180,16 @@ export function PurchaseInvoiceBuilder({
   async function onSubmit(values: BuilderFormValues) {
     setSubmitting(true);
     try {
+      // Diagnostic for the "does the form actually hold what was
+      // typed" question — the live RHF-tracked values, exactly as
+      // handleSubmit resolved them, logged before anything is built
+      // from them or sent. If the browser console shows the entered
+      // text/numbers here but the saved record still shows old data,
+      // the bug is downstream (network payload construction or the
+      // API); if this log itself already shows stale/default values,
+      // the bug is upstream of submit (an input not actually updating
+      // RHF's state) and would be the very next thing to chase.
+      console.log("[purchase-invoice-builder] form values at submit:", values);
       let id = purchaseInvoiceId;
 
       if (mode === "create") {
@@ -594,7 +605,36 @@ export function PurchaseInvoiceBuilder({
           </CardContent>
         </Card>
 
+        {debugPayload && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">
+                Current form values (not submitted)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <pre className="max-h-96 overflow-auto rounded-lg bg-muted p-3 text-xs">
+                {debugPayload}
+              </pre>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="flex justify-end gap-2">
+          {/* Diagnostic-only: shows exactly what react-hook-form
+              currently holds for every field, without submitting —
+              lets a live browser session confirm whether typed values
+              actually made it into form state before worrying about
+              anything downstream (the network request, the API). Not
+              a permanent product feature; safe to remove once the
+              live-data investigation this was added for is resolved. */}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setDebugPayload(JSON.stringify(form.getValues(), null, 2))}
+          >
+            Preview form values
+          </Button>
           <Button type="submit" disabled={submitting}>
             {submitting ? "Saving…" : "Save purchase invoice"}
           </Button>

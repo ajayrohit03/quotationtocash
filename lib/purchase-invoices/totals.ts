@@ -79,3 +79,37 @@ export function calculatePurchaseInvoiceTotals(
 
   return { subtotal, taxableAmount: subtotal, cgst, sgst, igst, total };
 }
+
+export type PurchaseLineFcInput = {
+  qty: Decimal | number | string;
+  rateFC?: Decimal | number | string | null;
+  exRate?: Decimal | number | string | null;
+  fcCurrency?: string | null;
+  amountFC?: Decimal | number | string | null;
+};
+
+export type PurchaseLineFcFields = {
+  rateFC: Decimal | null;
+  exRate: Decimal | null;
+  fcCurrency: string | null;
+  amountFC: Decimal | null;
+};
+
+// Per-line FC provenance — see PurchaseLineItem.rateFC's own schema
+// comment. amountFC is always recomputed here (qty * rateFC) when
+// rateFC is present, never trusted verbatim from the client — same
+// "never trust a client-submitted total" rule as amount/taxableAmount
+// above; whatever the client sent for amountFC is ignored once rateFC
+// is set. rateFC/exRate/fcCurrency are pure provenance, stored as
+// given (same "provenance only" rule as LineItem's own
+// foreignCurrency/foreignRate).
+export function resolvePurchaseLineFcFields(item: PurchaseLineFcInput): PurchaseLineFcFields {
+  const rateFC = item.rateFC != null ? new Decimal(item.rateFC) : null;
+  const amountFC = rateFC != null ? new Decimal(item.qty).mul(rateFC).toDecimalPlaces(2) : null;
+  return {
+    rateFC,
+    exRate: item.exRate != null ? new Decimal(item.exRate) : null,
+    fcCurrency: item.fcCurrency ?? null,
+    amountFC,
+  };
+}

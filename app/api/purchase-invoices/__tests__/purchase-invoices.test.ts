@@ -208,6 +208,35 @@ describe("POST /api/purchase-invoices", () => {
     expect(fetched.purchaseInvoice.sgst).toBe("2880");
   });
 
+  it("saves per-line FC fields (rateFC/exRate/fcCurrency) and computes amountFC server-side, never trusting a client-submitted amountFC", async () => {
+    const { owner, vendor } = await setupOrg();
+    await mockedAuthAs(owner.authProviderId);
+
+    const response = await createPurchaseInvoice({
+      vendorId: vendor.id,
+      lineItems: [
+        {
+          description: "Ocean Freight",
+          qty: 2,
+          rate: 6660, // INR-equivalent rate, unused in this assertion
+          rateFC: 80,
+          exRate: 83.25,
+          fcCurrency: "USD",
+          // Deliberately wrong — must be ignored and recomputed as
+          // qty * rateFC = 2 * 80 = 160, not trusted verbatim.
+          amountFC: 999999,
+        },
+      ],
+    });
+    expect(response.status).toBe(201);
+    const created = await response.json();
+    const line = created.purchaseInvoice.lineItems[0];
+    expect(line.rateFC).toBe("80");
+    expect(line.exRate).toBe("83.25");
+    expect(line.fcCurrency).toBe("USD");
+    expect(line.amountFC).toBe("160");
+  });
+
   it("still supports the minimal vendorId-only create — the builder UI's own two-step flow keeps working", async () => {
     const { owner, vendor } = await setupOrg();
     await mockedAuthAs(owner.authProviderId);

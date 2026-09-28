@@ -96,9 +96,19 @@ const styles = StyleSheet.create({
   totalsBlock: { alignItems: "flex-end", marginTop: 10 },
   totalsRow: { flexDirection: "row", justifyContent: "space-between", width: 220 },
   totalsLabel: { fontSize: 8.5, color: COLORS.body },
-  totalsValue: { fontSize: 8.5, fontFamily: "Courier" },
+  // Noto Sans, not Courier — see lib/pdf/document-pdf.tsx's own comment
+  // on why: Courier (like Helvetica) has no ₹ glyph, so pdfkit silently
+  // substitutes a fallback mark that renders as a small blob raised
+  // above the baseline, visually indistinguishable from superscript
+  // text. This file's own identityLine correctly reserves Courier for
+  // GSTIN/PAN/CIN codes, which are plain alphanumeric and never contain
+  // ₹ — these two styles are for formatCurrency() output, which always
+  // does, so they must stay on the page's own Noto Sans (already
+  // registered with a real ₹ glyph), matching document-pdf.tsx's own
+  // grandTotalValue precedent exactly.
+  totalsValue: { fontSize: 8.5, fontFamily: "Noto Sans" },
   netTotalLabel: { fontSize: 9.5, fontFamily: "Noto Sans", fontWeight: "bold" },
-  netTotalValue: { fontSize: 9.5, fontFamily: "Courier", fontWeight: "bold" },
+  netTotalValue: { fontSize: 9.5, fontFamily: "Noto Sans", fontWeight: "bold" },
   wordsLine: { fontSize: 8, marginTop: 6, fontFamily: "Noto Sans", fontWeight: "bold" },
   bankBlock: { marginTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 8 },
   bankRow: { flexDirection: "row", marginBottom: 2 },
@@ -123,6 +133,10 @@ export type PurchaseInvoicePdfLineItem = {
   sgst: number;
   igst: number;
   cess: number;
+  rateFC: number | null;
+  exRate: number | null;
+  fcCurrency: string | null;
+  amountFC: number | null;
 };
 
 export type PurchaseInvoicePdfData = {
@@ -177,15 +191,17 @@ function shipmentField(label: string, value: string | number | null) {
 
 export function PurchaseInvoicePdf({ purchaseInvoice }: { purchaseInvoice: PurchaseInvoicePdfData }) {
   const { vendor, business, lineItems } = purchaseInvoice;
-  // FC columns show when the invoice's own settlement currency isn't
-  // INR, OR — defensively — when a line item actually carries FC data
-  // even if the invoice-level currency was somehow left at its "INR"
-  // default (e.g. an invoice entered before its currency field was set,
-  // still bookkeeping foreign-currency amounts per line). Detecting
-  // both, not just the invoice-level flag, matches the sales invoice
-  // PDF's own FX-column detection (lib/pdf/document-pdf.tsx via
-  // resolveLineItemColumns) rather than trusting a single upstream flag.
+  // FC columns show when any line item actually carries its own FC rate
+  // (PurchaseLineItem.rateFC — the real per-line provenance data, same
+  // "detect from the data, not a single upstream flag" approach the
+  // sales invoice PDF's own FX-column detection uses), OR when the
+  // invoice's own settlement currency isn't INR, OR when a line
+  // otherwise carries an amountInr distinct from its own amount. Any of
+  // the three is sufficient — a business might set per-line FC data
+  // without ever touching the invoice-level currency field, or vice
+  // versa.
   const showFc =
+    lineItems.some((item) => item.rateFC != null) ||
     purchaseInvoice.currency !== "INR" ||
     lineItems.some((item) => item.amountInr != null);
   const sameState = isSameState(vendor.state, business.placeOfSupply);
@@ -300,13 +316,18 @@ export function PurchaseInvoicePdf({ purchaseInvoice }: { purchaseInvoice: Purch
             <Text style={[styles.tableHeaderCell, { width: showFc ? "8%" : "9.4%" }]}>IGST</Text>
           </View>
           {lineItems.map((item, index) => {
-            // Per-line effective exchange rate: prefer the invoice's own
-            // stored rate (constant for the whole invoice, per design doc
-            // §1.2 — FX is invoice-level here, not per-line like sales
-            // LineItem); fall back to deriving it from this line's own
-            // amount/amountInr if the invoice-level rate is somehow
-            // unset but this line still carries FC data.
+            // Prefer this line's own FC provenance (PurchaseLineItem.
+            // rateFC/exRate/amountFC/fcCurrency — the real per-line data
+            // added specifically so this doesn't have to be inferred).
+            // Fall back to the invoice-level exchangeRate/currency, then
+            // to deriving a rate from amountInr, for a line entered
+            // before per-line FC fields existed or that only ever used
+            // the invoice-level fields.
+            const rateFC = item.rateFC ?? item.rate;
+            const fcCurrency = item.fcCurrency ?? purchaseInvoice.currency;
+            const amountFC = item.amountFC ?? item.amount;
             const effectiveExchangeRate =
+              item.exRate ??
               purchaseInvoice.exchangeRate ??
               (item.amountInr != null && item.amount !== 0 ? item.amountInr / item.amount : null);
             return (
@@ -317,14 +338,16 @@ export function PurchaseInvoicePdf({ purchaseInvoice }: { purchaseInvoice: Purch
                   {item.qty}
                   {item.unit ? ` ${item.unit}` : ""}
                 </Text>
-                <Text style={[styles.tableCell, { width: showFc ? "7%" : "8%", textAlign: "right" }]}>{formatCurrency(item.rate, purchaseInvoice.currency)}</Text>
+                <Text style={[styles.tableCell, { width: showFc ? "7%" : "8%", textAlign: "right" }]}>
+                  {showFc ? formatCurrency(rateFC, fcCurrency) : formatCurrency(item.rate, purchaseInvoice.currency)}
+                </Text>
                 {showFc && (
                   <Text style={[styles.tableCell, { width: "7%", textAlign: "right" }]}>
                     {effectiveExchangeRate != null ? effectiveExchangeRate.toFixed(4) : "—"}
                   </Text>
                 )}
                 {showFc && (
-                  <Text style={[styles.tableCell, { width: "8%", textAlign: "right" }]}>{formatCurrency(item.amount, purchaseInvoice.currency)}</Text>
+                  <Text style={[styles.tableCell, { width: "8%", textAlign: "right" }]}>{formatCurrency(amountFC, fcCurrency)}</Text>
                 )}
                 <Text style={[styles.tableCell, { width: showFc ? "8%" : "12%", textAlign: "right" }]}>
                   {formatCurrency(item.amountInr ?? item.amount)}

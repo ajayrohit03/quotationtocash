@@ -475,6 +475,21 @@ model PurchaseLineItem {
   // doc §1.3.
   amountInr Decimal? @map("amount_inr") @db.Decimal(12, 2)
 
+  // Per-line foreign-currency provenance — mirrors LineItem's own
+  // foreignCurrency/foreignRate/exchangeRate fields (schema.prisma's
+  // comment on those): pure provenance/display, never read by the tax
+  // engine or by `amount`/`taxableAmount`/`amountInr` above, which stay
+  // the single values calculatePurchaseLineTotals ever computes from.
+  // Lets a single invoice's line items each carry their own FC rate/
+  // currency/exchange-rate/converted-amount for display (the reference
+  // PDF's own "Currency", "Ex. Rate", "Invoice Amount (FC)" columns),
+  // independent of — and in addition to — PurchaseInvoice's own
+  // invoice-level currency/exchangeRate.
+  rateFC     Decimal? @map("rate_fc") @db.Decimal(12, 2)
+  exRate     Decimal? @map("ex_rate") @db.Decimal(12, 6)
+  fcCurrency String?  @map("fc_currency")
+  amountFC   Decimal? @map("amount_fc") @db.Decimal(12, 2)
+
   taxableAmount Decimal  @map("taxable_amount") @db.Decimal(12, 2)
   gstRate       Decimal? @map("gst_rate") @db.Decimal(5, 2)
   cgst          Decimal  @default(0) @db.Decimal(12, 2)

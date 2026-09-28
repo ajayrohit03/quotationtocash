@@ -81,6 +81,10 @@ export async function POST(
         sgst: Number(item.sgst),
         igst: Number(item.igst),
         cess: Number(item.cess),
+        rateFC: item.rateFC ? Number(item.rateFC) : null,
+        exRate: item.exRate ? Number(item.exRate) : null,
+        fcCurrency: item.fcCurrency,
+        amountFC: item.amountFC ? Number(item.amountFC) : null,
       })),
     };
 

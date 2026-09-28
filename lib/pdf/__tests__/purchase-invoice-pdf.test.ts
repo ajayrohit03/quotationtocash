@@ -104,6 +104,10 @@ const BASE_DATA: PurchaseInvoicePdfData = {
       sgst: 2880,
       igst: 0,
       cess: 0,
+      rateFC: null,
+      exRate: null,
+      fcCurrency: null,
+      amountFC: null,
     },
     {
       description: "Documentation Charges",
@@ -119,6 +123,10 @@ const BASE_DATA: PurchaseInvoicePdfData = {
       sgst: 468,
       igst: 0,
       cess: 0,
+      rateFC: null,
+      exRate: null,
+      fcCurrency: null,
+      amountFC: null,
     },
   ],
 };
@@ -139,6 +147,24 @@ describe("renderPurchaseInvoicePdf", () => {
         ...item,
         amountInr: item.amount * 83.25,
       })),
+    });
+    expect(buffer.subarray(0, 5).toString("utf-8")).toBe("%PDF-");
+  });
+
+  it("shows FC columns driven by a line item's own rateFC/exRate/amountFC/fcCurrency, even when the invoice's own currency stays INR", async () => {
+    const buffer = await renderPurchaseInvoicePdf({
+      ...BASE_DATA,
+      currency: "INR",
+      exchangeRate: null,
+      lineItems: [
+        {
+          ...BASE_DATA.lineItems[0]!,
+          rateFC: 384,
+          exRate: 83.25,
+          fcCurrency: "USD",
+          amountFC: 384,
+        },
+      ],
     });
     expect(buffer.subarray(0, 5).toString("utf-8")).toBe("%PDF-");
   });

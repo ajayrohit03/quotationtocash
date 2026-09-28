@@ -9,7 +9,7 @@ import { purchaseInvoiceCreateSchema } from "@/lib/validation/purchase-invoice";
 import { buildBusinessSnapshot } from "@/lib/documents/snapshots";
 import { buildVendorSnapshot } from "@/lib/purchase-invoices/snapshots";
 import { purchaseInvoiceScopeWhere } from "@/lib/purchase-invoices/visibility";
-import { calculatePurchaseInvoiceTotals } from "@/lib/purchase-invoices/totals";
+import { calculatePurchaseInvoiceTotals, resolvePurchaseLineFcFields } from "@/lib/purchase-invoices/totals";
 import { isSameState } from "@/lib/tax/calculateGST";
 import { applyRounding } from "@/lib/tax/applyRounding";
 
@@ -139,6 +139,8 @@ export async function POST(request: NextRequest) {
                             .toDecimalPlaces(2)
                         : null;
 
+                  const fc = resolvePurchaseLineFcFields(item);
+
                   return {
                     description: item.description,
                     sac: item.sac ?? null,
@@ -153,6 +155,10 @@ export async function POST(request: NextRequest) {
                     sgst: lineTotals.sgst,
                     igst: lineTotals.igst,
                     sortOrder: index,
+                    rateFC: fc.rateFC,
+                    exRate: fc.exRate,
+                    fcCurrency: fc.fcCurrency,
+                    amountFC: fc.amountFC,
                   };
                 }),
               },
