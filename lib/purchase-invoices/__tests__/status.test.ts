@@ -4,11 +4,13 @@ import {
   PURCHASE_INVOICE_STATUSES,
   canApprovePurchaseInvoice,
   canCancelPurchaseInvoice,
+  canRecordVendorPayment,
   deriveVendorInvoiceStatus,
   isEditablePurchaseInvoice,
   requireApprovablePurchaseInvoice,
   requireCancellablePurchaseInvoice,
   requireEditablePurchaseInvoice,
+  requireRecordableVendorPayment,
 } from "@/lib/purchase-invoices/status";
 
 describe("isEditablePurchaseInvoice", () => {
@@ -62,6 +64,31 @@ describe("canCancelPurchaseInvoice / requireCancellablePurchaseInvoice", () => {
 
   it("throws for a cancelled invoice — a dead end, not reversible", () => {
     expect(() => requireCancellablePurchaseInvoice("cancelled")).toThrow(ForbiddenError);
+  });
+});
+
+describe("canRecordVendorPayment / requireRecordableVendorPayment", () => {
+  it("received and cancelled cannot take a payment", () => {
+    expect(canRecordVendorPayment("received")).toBe(false);
+    expect(canRecordVendorPayment("cancelled")).toBe(false);
+  });
+
+  it("approved, partially_paid, and paid can all take a payment (overpayment becomes credit)", () => {
+    expect(canRecordVendorPayment("approved")).toBe(true);
+    expect(canRecordVendorPayment("partially_paid")).toBe(true);
+    expect(canRecordVendorPayment("paid")).toBe(true);
+  });
+
+  it("throws for a received invoice — nothing real to pay against yet", () => {
+    expect(() => requireRecordableVendorPayment("received")).toThrow(ForbiddenError);
+  });
+
+  it("throws for a cancelled invoice", () => {
+    expect(() => requireRecordableVendorPayment("cancelled")).toThrow(ForbiddenError);
+  });
+
+  it("does not throw for approved", () => {
+    expect(() => requireRecordableVendorPayment("approved")).not.toThrow();
   });
 });
 

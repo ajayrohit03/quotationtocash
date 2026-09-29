@@ -57,6 +57,29 @@ export function requireCancellablePurchaseInvoice(status: PurchaseInvoiceStatus)
   }
 }
 
+// A received (unapproved) invoice has nothing real to pay against yet —
+// same "draft has no recordable payment" reasoning as
+// lib/documents/status.ts's canRecordPayment — and a cancelled one is a
+// dead end. Every other status (including an already-fully-paid
+// invoice — overpayment becomes credit, see creditBalance below) is
+// fair game. See docs/accounts-payable-phase1-design.md §7.
+export function canRecordVendorPayment(status: PurchaseInvoiceStatus): boolean {
+  return status !== "received" && status !== "cancelled";
+}
+
+export function requireRecordableVendorPayment(status: PurchaseInvoiceStatus): void {
+  if (!canRecordVendorPayment(status)) {
+    throw new ForbiddenError(
+      `Payments can't be recorded on this purchase invoice in its current status ("${status}").`,
+    );
+  }
+}
+
+// remainingBalance/creditBalance are the exact same two pure functions
+// lib/documents/status.ts already exports, un-opinionated about
+// direction (design doc §7) — reused directly there, not reimplemented
+// here.
+
 // Mirrors lib/documents/status.ts's deriveInvoiceStatus() — same shape,
 // AP vocabulary. Called only inside the same transaction as every
 // VendorPayment create/reverse (Stage c), never recomputed lazily at

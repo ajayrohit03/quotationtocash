@@ -27,6 +27,10 @@ export async function GET(
       include: {
         vendor: true,
         lineItems: { orderBy: { sortOrder: "asc" } },
+        payments: {
+          orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }],
+          include: { recordedBy: true },
+        },
       },
     });
     if (!purchaseInvoice) {

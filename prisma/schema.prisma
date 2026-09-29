@@ -236,6 +236,8 @@ model User {
   recordedPayments        Payment[]
   // Historical attribution only, same rationale as createdDocuments above.
   createdPurchaseInvoices PurchaseInvoice[]
+  // Historical attribution only, same rationale as createdDocuments above.
+  recordedVendorPayments  VendorPayment[]
 
   // Historical attribution only, same rationale as createdDocuments above
   // — see docs/invitation-onboarding-design.md §2.
@@ -448,6 +450,7 @@ model PurchaseInvoice {
   vendor    Vendor             @relation(fields: [vendorId], references: [id], onDelete: Restrict)
   createdBy User?              @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   lineItems PurchaseLineItem[]
+  payments  VendorPayment[]
 
   @@index([businessId])
   @@index([businessId, status])
@@ -506,6 +509,39 @@ model PurchaseLineItem {
 
   @@index([purchaseInvoiceId])
   @@map("purchase_line_items")
+}
+
+// See docs/accounts-payable-phase1-design.md §1.5/§7. Field-for-field
+// identical shape to Payment (deliberately — same audit-trail
+// reasoning), just its own table and its own FK target: a nullable
+// polymorphic invoiceId/purchaseInvoiceId pair on one shared table
+// would invite a row with both or neither set, and Payment.amount
+// (received) vs this.amount (paid out) are semantically opposite
+// directions, not just a label swap. PurchaseInvoice.amountPaid is the
+// maintained running total kept in sync with this table in the same
+// transaction as every insert/delete here — same "frozen, not
+// live-recomputed" shape as Payment/Document.amountPaid.
+model VendorPayment {
+  id                String   @id @default(uuid())
+  purchaseInvoiceId String   @map("purchase_invoice_id")
+  amount            Decimal  @db.Decimal(12, 2)
+  method            String?
+  paidAt            DateTime @map("paid_at")
+  note              String?
+
+  // Null for backfilled/pre-tracking rows — never backfilled with a
+  // guessed user, onDelete: SetNull like every other historical-
+  // attribution field so a removed user doesn't take payment history
+  // down with them.
+  recordedByUserId String? @map("recorded_by_user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  purchaseInvoice PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id], onDelete: Cascade)
+  recordedBy      User?           @relation(fields: [recordedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([purchaseInvoiceId, paidAt])
+  @@map("vendor_payments")
 }
 
 model Product {
