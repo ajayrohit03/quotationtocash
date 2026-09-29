@@ -67,13 +67,18 @@ export const appearanceUpdateSchema = z.object({
   // default." A user-controlled escape hatch for documents with many
   // columns/long text; see schema.prisma's Document.fontSize comment.
   fontSize: z.number().int().min(7).max(12).nullable().optional(),
-  // Real per-document field (schema.prisma's Document.logoSize comment)
-  // — editable through the normal draft-only appearance flow, same
-  // tier as template/accentColor/fontSize above. signatureSize is
-  // deliberately NOT here: it keeps its own separate, wider path (PATCH
-  // /api/documents/:id/update-signature) that stays available even
-  // after a document has been sent — see that route's own comment.
+  // Real per-document fields (schema.prisma's Document.logoSize
+  // comment) — editable through the normal draft-only appearance flow
+  // (the Customize sidebar's LOGO SIZE / SIGNATURE SIZE sliders), same
+  // tier as template/accentColor/fontSize above. signatureSize is ALSO
+  // still reachable via the separate, wider PATCH
+  // /api/documents/:id/update-signature path (documentSignatureUpdateSchema)
+  // — that route stays the only way to adjust it once a document has
+  // left draft, same one deliberate exception it already carved out for
+  // the other signature fields; this schema's own copy only ever
+  // applies while still a draft, like every other appearance field.
   logoSize: z.enum(["sm", "md", "lg", "xl"]).optional(),
+  signatureSize: z.enum(["sm", "md", "lg", "xl"]).optional(),
 });
 
 export type AppearanceUpdateInput = z.infer<typeof appearanceUpdateSchema>;

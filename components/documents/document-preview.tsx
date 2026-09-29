@@ -219,15 +219,14 @@ export function DocumentPreview({
     roundTotal: document.roundTotal,
     showInrEquivalent: document.showInrEquivalent,
     fontSize: document.fontSize,
-    // Not live-editable via this Customize-sidebar draft/autosave —
-    // there's no slider for either yet (logoSize has no UI control at
-    // all currently; signatureSize is only ever changed via the
-    // separate "Update signature" dialog, which PATCHes
-    // .../update-signature directly and triggers its own
-    // router.refresh() — see that handler). Carried here only to
-    // satisfy PreviewAppearance's shape for the DocumentRender prop
-    // below, which itself reads the real values from the dedicated
-    // logoSize/signatureSize props, not from this object.
+    // Live-editable via this Customize-sidebar draft/autosave, same as
+    // template/accentColor/fontSize above — see the LOGO SIZE/SIGNATURE
+    // SIZE sliders below. signatureSize is also still reachable via the
+    // separate "Update signature" dialog (PATCHes .../update-signature
+    // directly, works even after send) — the two paths write the same
+    // underlying Document.signatureSize field, just from different UI
+    // entry points for different situations (draft-time appearance
+    // tweak here vs. a post-send correction there).
     logoSize: document.logoSize,
     signatureSize: document.signatureSize,
   });
@@ -502,6 +501,20 @@ export function DocumentPreview({
       }
       toast.success("Signature updated on this document.");
       setSignatureDialogOpen(false);
+      // The Customize sidebar's own SIGNATURE SIZE slider lives in local
+      // `appearance` state, read live by the preview below for instant
+      // feedback — same reason every other appearance field does. This
+      // dialog is the one other path that can change signatureSize
+      // (see documentSignatureUpdateSchema's own comment), so update
+      // that local state directly here too, in the same event handler
+      // that just confirmed the save succeeded — not a useEffect
+      // syncing from the refreshed `document` prop, which this
+      // codebase's stricter lint rules disallow doing via ref-tracked
+      // comparisons. router.refresh() below still handles every other
+      // field this dialog touches (signatureImageUrl, name, designation
+      // aren't part of `appearance`).
+      setAppearance((prev) => ({ ...prev, signatureSize: signatureSizeDraft }));
+      lastSaved.current = { ...lastSaved.current, signatureSize: signatureSizeDraft };
       router.refresh();
     } catch {
       toast.error("Couldn't update the signature. Try again.");
@@ -719,8 +732,8 @@ export function DocumentPreview({
             creditBalance={document.creditBalance}
             showRecordedBy
             fontSize={appearance.fontSize}
-            logoSize={document.logoSize}
-            signatureSize={document.signatureSize}
+            logoSize={appearance.logoSize}
+            signatureSize={appearance.signatureSize}
             currency={document.currency}
             inrExchangeRate={document.inrExchangeRate}
             lutDeclarationText={document.lutDeclarationText}
@@ -832,6 +845,28 @@ export function DocumentPreview({
                   updateAppearance({ fontSize: Number(e.target.value) })
                 }
                 className="w-full accent-primary disabled:cursor-not-allowed"
+              />
+            </div>
+
+            <div className="border-b border-border px-4 py-4">
+              <div className="mb-2.5 text-xs font-semibold tracking-wide text-muted-foreground">
+                LOGO SIZE
+              </div>
+              <SizeSlider
+                value={appearance.logoSize}
+                disabled={!editable}
+                onChange={(value) => updateAppearance({ logoSize: value })}
+              />
+            </div>
+
+            <div className="border-b border-border px-4 py-4">
+              <div className="mb-2.5 text-xs font-semibold tracking-wide text-muted-foreground">
+                SIGNATURE SIZE
+              </div>
+              <SizeSlider
+                value={appearance.signatureSize}
+                disabled={!editable}
+                onChange={(value) => updateAppearance({ signatureSize: value })}
               />
             </div>
 
