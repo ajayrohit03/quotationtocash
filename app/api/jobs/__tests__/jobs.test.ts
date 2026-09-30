@@ -200,6 +200,19 @@ describe("PATCH /api/jobs/[id]", () => {
     expect(body.job.status).toBe("closed");
   });
 
+  it("reopens a closed job — the toggle is not a one-way door", async () => {
+    const { owner } = await setupOrg();
+    await mockedAuthAs(owner.authProviderId);
+    const created = await createJob({ jobRef: "REOPEN-ME" });
+    const { job } = await created.json();
+    await patchJob(job.id, { status: "closed" });
+
+    const response = await patchJob(job.id, { status: "open" });
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.job.status).toBe("open");
+  });
+
   it("staff can close a job — no separate permission from jobs.edit", async () => {
     const { owner, staff } = await setupOrg();
     await mockedAuthAs(owner.authProviderId);

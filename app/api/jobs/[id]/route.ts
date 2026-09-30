@@ -35,6 +35,7 @@ export async function GET(
           status: true,
           issueDate: true,
           total: true,
+          currency: true,
           customer: { select: { id: true, name: true } },
         },
       }),
