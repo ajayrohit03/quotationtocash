@@ -10,6 +10,7 @@ import {
   FileInput,
   Users,
   Truck,
+  Briefcase,
   Package,
   Settings,
 } from "lucide-react";
@@ -21,7 +22,11 @@ import { cn } from "@/lib/utils";
 // is already this app's established icon set. "Vendors"/"Purchase
 // invoices" added per docs/accounts-payable-phase1-design.md §3 —
 // grouped after the sales document types, then the two counterparty-
-// management sections (Customers, Vendors) back to back.
+// management sections (Customers, Vendors) back to back. "Jobs" added
+// per docs/job-pnl-phase2-design.md §2, between Vendors and Products —
+// a cross-cutting label applied *to* documents (the same category
+// Products already occupies), not a counterparty or a document type
+// itself, and conceptually downstream of both Customers and Vendors.
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/quotations", label: "Quotations", icon: FileText },
@@ -30,6 +35,7 @@ const NAV_ITEMS = [
   { href: "/purchase-invoices", label: "Purchase invoices", icon: FileInput },
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/vendors", label: "Vendors", icon: Truck },
+  { href: "/jobs", label: "Jobs", icon: Briefcase },
   { href: "/products", label: "Products", icon: Package },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

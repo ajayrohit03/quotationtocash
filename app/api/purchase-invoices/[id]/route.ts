@@ -77,6 +77,16 @@ export async function PATCH(
       vendor = found;
     }
 
+    // Same ownership check as vendorId above.
+    if (input.jobId) {
+      const foundJob = await prisma.job.findFirst({
+        where: { id: input.jobId, businessId: business.id },
+      });
+      if (!foundJob) {
+        return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      }
+    }
+
     const { lineItems, vendorId: _vendorId, ...contentFields } = input;
     void _vendorId;
 

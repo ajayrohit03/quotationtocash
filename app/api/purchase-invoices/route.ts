@@ -76,6 +76,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
     }
 
+    if (input.jobId) {
+      const foundJob = await prisma.job.findFirst({
+        where: { id: input.jobId, businessId: business.id },
+      });
+      if (!foundJob) {
+        return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      }
+    }
+
     const { lineItems, vendorId: _vendorId, ...contentFields } = input;
     void _vendorId;
 

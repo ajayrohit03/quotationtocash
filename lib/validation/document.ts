@@ -89,6 +89,10 @@ export const documentUpdateSchema = appearanceUpdateSchema.extend({
   // route handler rather than a raw P2002.
   number: z.string().trim().min(1, "Number can't be empty").max(50).optional(),
   customerId: z.string().min(1).optional(),
+  // Optional job link — see docs/job-pnl-phase2-design.md §5.1. Nullable
+  // (not just optional): explicitly sending null clears an existing
+  // link, same as every other nullable document field.
+  jobId: z.string().min(1).nullable().optional(),
   issueDate: z.coerce.date().optional(),
   dueDate: z.coerce.date().nullable().optional(),
   validUntil: z.coerce.date().nullable().optional(),

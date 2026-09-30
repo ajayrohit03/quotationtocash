@@ -22,6 +22,7 @@ export const PERMISSIONS = [
   // c) — see docs/accounts-payable-phase1-design.md §8's explicit "no
   // new permission needed for approval, reuse this same tier" call.
   "purchase_invoices.pay",
+  "jobs.view", "jobs.create", "jobs.edit", "jobs.delete",
   "reports.view",
   "users.manage",
   "organization.manage",
@@ -42,6 +43,12 @@ const STAFF_PERMISSIONS: readonly Permission[] = [
   // payments, Stage c).
   "vendors.view", "vendors.create", "vendors.edit", "vendors.delete",
   "purchase_invoices.view", "purchase_invoices.create", "purchase_invoices.edit", "purchase_invoices.delete",
+  // Same flat CRUD tier as Vendor/Customer management — see
+  // docs/job-pnl-phase2-design.md §6's reasoning for why this is NOT
+  // gated behind reports.view (Manager-only): a Job's own
+  // billed/cost/margin summary is just a recombination of numbers
+  // Staff can already see individually on the linked documents.
+  "jobs.view", "jobs.create", "jobs.edit", "jobs.delete",
 ];
 
 // The only permission Manager adds on top of Staff's set (design doc §0)

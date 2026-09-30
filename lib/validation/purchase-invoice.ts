@@ -31,6 +31,9 @@ export type PurchaseLineItemInput = z.infer<typeof purchaseLineItemInputSchema>;
 
 export const purchaseInvoiceUpdateSchema = z.object({
   vendorId: z.string().min(1).optional(),
+  // Optional job link — see docs/job-pnl-phase2-design.md §1.2/§5.2.
+  // Independent of the free-text jobRef shipment field below.
+  jobId: z.string().min(1).nullable().optional(),
   vendorInvoiceNumber: z.string().trim().min(1).max(100).optional(),
   vendorInvoiceDate: z.coerce.date().optional(),
   dueDate: z.coerce.date().nullable().optional(),

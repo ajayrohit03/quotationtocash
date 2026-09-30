@@ -17,6 +17,9 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   expired: { bg: "#FEF3F2", text: "#B42318" },
   partially_paid: { bg: "#FFFAEB", text: "#B45309" },
   cancelled: { bg: "#F3F4F7", text: "#8A92A6" },
+  // Job status vocabulary — see docs/job-pnl-phase2-design.md §4.
+  open: { bg: "#EFF6FF", text: "#1D4ED8" },
+  closed: { bg: "#F3F4F7", text: "#8A92A6" },
 };
 
 function statusLabel(status: string): string {

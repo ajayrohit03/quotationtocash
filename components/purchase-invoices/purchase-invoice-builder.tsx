@@ -7,10 +7,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Plus, Trash2 } from "lucide-react";
+import type { Job } from "@prisma/client";
 import {
   purchaseLineItemInputSchema,
   type PurchaseLineItemInput,
 } from "@/lib/validation/purchase-invoice";
+import { JobPicker } from "@/components/jobs/job-picker";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -104,12 +107,16 @@ function toStr(value: number | Date | null | undefined): string {
 export function PurchaseInvoiceBuilder({
   mode,
   vendors,
+  jobs,
+  initialJob,
   gstEnabled,
   purchaseInvoiceId,
   initialValues,
 }: {
   mode: "create" | "edit";
   vendors: { id: string; name: string }[];
+  jobs: Job[];
+  initialJob?: Job | null;
   gstEnabled: boolean;
   purchaseInvoiceId?: string;
   initialValues?: Partial<BuilderFormValues>;
@@ -117,6 +124,13 @@ export function PurchaseInvoiceBuilder({
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [debugPayload, setDebugPayload] = useState<string | null>(null);
+  // Optional job link — see docs/job-pnl-phase2-design.md §1.2/§5.2.
+  // Kept as plain local state (not part of the react-hook-form schema
+  // above) since JobPicker needs the full Job object to render, not
+  // just an id — same shape document-builder.tsx's own `job` state
+  // uses.
+  const [job, setJob] = useState<Job | null>(initialJob ?? null);
+  const [allJobs, setAllJobs] = useState(jobs);
   // Base UI's Select.Value only resolves a label by finding the matching
   // SelectItem that has actually rendered inside the popup — on first
   // paint with a value set from server data (editing an existing
@@ -208,6 +222,7 @@ export function PurchaseInvoiceBuilder({
 
       const payload = {
         vendorId: values.vendorId,
+        jobId: job?.id ?? null,
         vendorInvoiceNumber: values.vendorInvoiceNumber,
         vendorInvoiceDate: values.vendorInvoiceDate,
         dueDate: values.dueDate || null,
@@ -384,6 +399,15 @@ export function PurchaseInvoiceBuilder({
                     <FormLabel className="!mt-0">Round total</FormLabel>
                   </FormItem>
                 )}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Job</Label>
+              <JobPicker
+                jobs={allJobs}
+                selected={job}
+                onChange={setJob}
+                onJobCreated={(created) => setAllJobs((prev) => [created, ...prev])}
               />
             </div>
           </CardContent>

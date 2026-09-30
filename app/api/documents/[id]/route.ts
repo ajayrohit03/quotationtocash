@@ -115,6 +115,19 @@ export async function PATCH(
       customer = found;
     }
 
+    // Same ownership check as customerId above — a job id from another
+    // business must 404, not silently link across tenants (the FK alone
+    // only guarantees the row exists somewhere, not that it's this
+    // business's own).
+    if (input.jobId) {
+      const foundJob = await prisma.job.findFirst({
+        where: { id: input.jobId, businessId: business.id },
+      });
+      if (!foundJob) {
+        return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      }
+    }
+
     const { lineItems, status, ...contentFields } = input;
 
     // Resolved once here and stored on each LineItem — never re-resolved

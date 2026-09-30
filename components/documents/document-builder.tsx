@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Prisma, type Customer, type DocumentType } from "@prisma/client";
+import { Prisma, type Customer, type DocumentType, type Job } from "@prisma/client";
 import {
   calculateDocumentTotals,
   type DocumentTotals,
@@ -37,6 +37,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { CustomerPicker } from "./customer-picker";
+import { JobPicker } from "@/components/jobs/job-picker";
 import { LineItemsEditor, newLineItemKey } from "./line-items-editor";
 import { TotalsSummary } from "./totals-summary";
 import type {
@@ -73,6 +74,8 @@ export type BuilderDocument = {
   number: string;
   status: string;
   customer: Customer;
+  // Optional — see docs/job-pnl-phase2-design.md §5.1.
+  job: Job | null;
   issueDate: Date;
   dueDate: Date | null;
   validUntil: Date | null;
@@ -119,6 +122,7 @@ export function DocumentBuilder({
   document,
   business,
   customers,
+  jobs,
   products,
   customFieldDefinitions,
   lineItemCustomFieldDefinitions,
@@ -126,6 +130,7 @@ export function DocumentBuilder({
   document: BuilderDocument;
   business: BuilderBusiness;
   customers: Customer[];
+  jobs: Job[];
   products: BuilderProduct[];
   customFieldDefinitions: BuilderCustomFieldDefinition[];
   lineItemCustomFieldDefinitions: BuilderCustomFieldDefinition[];
@@ -147,6 +152,8 @@ export function DocumentBuilder({
   const editable = isEditableStatus(document.status);
 
   const [customer, setCustomer] = useState(document.customer);
+  const [job, setJob] = useState(document.job);
+  const [allJobs, setAllJobs] = useState(jobs);
   const [allCustomers, setAllCustomers] = useState(customers);
   const [number, setNumber] = useState(document.number);
   const [issueDate, setIssueDate] = useState(toDateInputValue(document.issueDate));
@@ -256,6 +263,7 @@ export function DocumentBuilder({
     () =>
       JSON.stringify({
         customerId: customer.id,
+        jobId: job?.id ?? null,
         number,
         issueDate,
         secondaryDate,
@@ -271,6 +279,7 @@ export function DocumentBuilder({
       }),
     [
       customer.id,
+      job?.id,
       number,
       issueDate,
       secondaryDate,
@@ -303,6 +312,7 @@ export function DocumentBuilder({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customerId: customer.id,
+          jobId: job?.id ?? null,
           number,
           issueDate: issueDate ? new Date(issueDate).toISOString() : undefined,
           ...(isQuotation
@@ -553,6 +563,18 @@ export function DocumentBuilder({
                     placeholder="e.g. a PO number or project code"
                     value={referenceNumber}
                     onChange={(e) => setReferenceNumber(e.target.value)}
+                    disabled={!editable}
+                  />
+                </div>
+                <div className="col-span-2 grid gap-1.5 sm:col-span-3">
+                  <Label>Job</Label>
+                  <JobPicker
+                    jobs={allJobs}
+                    selected={job}
+                    onChange={setJob}
+                    onJobCreated={(created) =>
+                      setAllJobs((prev) => [created, ...prev])
+                    }
                     disabled={!editable}
                   />
                 </div>

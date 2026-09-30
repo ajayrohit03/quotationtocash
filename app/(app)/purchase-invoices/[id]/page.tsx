@@ -36,6 +36,7 @@ export default async function PurchaseInvoiceDetailPage({
     where: { id, businessId: business.id, ...(await purchaseInvoiceScopeWhere("view")) },
     include: {
       vendor: true,
+      job: true,
       lineItems: { orderBy: { sortOrder: "asc" } },
       payments: {
         orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }],
@@ -48,11 +49,17 @@ export default async function PurchaseInvoiceDetailPage({
   }
 
   if (purchaseInvoice.status === "received") {
-    const vendors = await prisma.vendor.findMany({
-      where: { businessId: business.id, isActive: true },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true },
-    });
+    const [vendors, jobs] = await Promise.all([
+      prisma.vendor.findMany({
+        where: { businessId: business.id, isActive: true },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      }),
+      prisma.job.findMany({
+        where: { businessId: business.id },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
     // A vendor that's since been deactivated but is still this invoice's
     // own vendor must still appear as a selectable option, or the form
     // can't even render its current value.
@@ -73,6 +80,8 @@ export default async function PurchaseInvoiceDetailPage({
         <PurchaseInvoiceBuilder
           mode="edit"
           purchaseInvoiceId={purchaseInvoice.id}
+          jobs={jobs}
+          initialJob={purchaseInvoice.job}
           vendors={vendors}
           gstEnabled={business.gstEnabled}
           initialValues={{

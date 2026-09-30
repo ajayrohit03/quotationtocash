@@ -35,6 +35,7 @@ export async function DocumentEditorPage({
     where: { id, businessId: business.id, type, ...(await documentScopeWhere("mutate")) },
     include: {
       customer: true,
+      job: true,
       lineItems: { orderBy: { sortOrder: "asc" } },
     },
   });
@@ -42,9 +43,13 @@ export async function DocumentEditorPage({
     notFound();
   }
 
-  const [customers, products, customFieldDefinitions, lineItemCustomFieldDefinitions] =
+  const [customers, jobs, products, customFieldDefinitions, lineItemCustomFieldDefinitions] =
     await Promise.all([
       prisma.customer.findMany({
+        where: { businessId: business.id },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.job.findMany({
         where: { businessId: business.id },
         orderBy: { createdAt: "desc" },
       }),
@@ -86,6 +91,7 @@ export async function DocumentEditorPage({
     number: document.number,
     status: document.status,
     customer: document.customer,
+    job: document.job,
     issueDate: document.issueDate,
     dueDate: document.dueDate,
     validUntil: document.validUntil,
@@ -172,6 +178,7 @@ export async function DocumentEditorPage({
       document={builderDocument}
       business={builderBusiness}
       customers={customers}
+      jobs={jobs}
       products={builderProducts}
       customFieldDefinitions={builderCustomFieldDefinitions}
       lineItemCustomFieldDefinitions={builderLineItemCustomFieldDefinitions}
