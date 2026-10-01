@@ -69,6 +69,7 @@ export function toPreviewDocument(
     lineItems: document.lineItems.map((item) => ({
       name: item.name,
       description: item.description ?? "",
+      sac: item.sac,
       qty: Number(item.qty),
       rate: Number(item.rate),
       gstRate: item.gstRate == null ? null : Number(item.gstRate),

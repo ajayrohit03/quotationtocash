@@ -108,7 +108,14 @@ async function ProductsContent({
             <TableBody>
               {products.map((product) => (
                 <TableRow key={product.id}>
-                  <TableCell className="font-medium">{product.name}</TableCell>
+                  <TableCell className="font-medium">
+                    {product.name}
+                    {product.sacCode && (
+                      <div className="mt-0.5 font-mono text-xs text-muted-foreground">
+                        {product.sacCode}
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="max-w-xs truncate text-muted-foreground">
                     {product.description || "—"}
                   </TableCell>

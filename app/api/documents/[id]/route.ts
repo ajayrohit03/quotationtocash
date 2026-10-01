@@ -262,6 +262,7 @@ export async function PATCH(
               productId: item.productId ?? null,
               name: item.name,
               description: item.description ?? null,
+              sac: item.sac ?? null,
               qty: item.qty,
               rate: item.rate,
               discountPct: item.discountPct ?? 0,

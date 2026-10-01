@@ -74,6 +74,7 @@ function makeDocument(overrides: Partial<PreviewDocument> = {}): PreviewDocument
       {
         name: "Consulting services",
         description: "",
+        sac: null,
         qty: 2,
         rate: 5000,
         gstRate: 18,
@@ -212,6 +213,7 @@ describe("buildIrpPayload — mixed GST rates across line items", () => {
           {
             name: "18% item",
             description: "",
+        sac: null,
             qty: 1,
             rate: 1000,
             gstRate: 18,
@@ -224,6 +226,7 @@ describe("buildIrpPayload — mixed GST rates across line items", () => {
           {
             name: "5% item",
             description: "",
+        sac: null,
             qty: 1,
             rate: 1000,
             gstRate: 5,
@@ -236,6 +239,7 @@ describe("buildIrpPayload — mixed GST rates across line items", () => {
           {
             name: "0% item",
             description: "",
+        sac: null,
             qty: 1,
             rate: 1000,
             gstRate: 0,
@@ -284,6 +288,7 @@ describe("buildIrpPayload — USD export invoice", () => {
           {
             name: "Export service",
             description: "",
+        sac: null,
             qty: 1,
             rate: 1000,
             gstRate: 0,
@@ -319,19 +324,54 @@ describe("buildIrpPayload — missing optional fields", () => {
     expect(payload.SellerDtls.Addr1).toBe("");
     expect(payload.BuyerDtls.Gstin).toBe("");
     expect(payload.BuyerDtls.Ph).toBe("");
-    // No dedicated HSN/SAC column anywhere in this app yet — see
-    // lookupHsnCode's own comment — so a line item with no matching
-    // custom field must produce an empty string, not throw.
+    // No LineItem.sac set and no matching custom field either — must
+    // produce an empty string, not throw (see lookupHsnCode's own
+    // comment; HSN specifically still has no dedicated column).
     expect(payload.ItemList[0].HsnCd).toBe("");
   });
 
-  it("picks up an HSN/SAC custom field by label when one is present", () => {
+  it("prefers LineItem.sac over the custom-field fallback", () => {
     const payload = buildIrpPayload(
       makeDocument({
         lineItems: [
           {
             name: "Ocean freight",
             description: "",
+            sac: "996521",
+            qty: 1,
+            rate: 10000,
+            gstRate: 18,
+            amount: 10000,
+            foreignCurrency: null,
+            foreignRate: null,
+            exchangeRate: null,
+            // A stale/conflicting custom field must lose to the real
+            // column — never silently preferred just because it's
+            // checked second.
+            customFieldValues: [
+              {
+                definitionId: "cf1",
+                label: "SAC Code",
+                type: "text",
+                value: "000000",
+                sortOrder: 0,
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(payload.ItemList[0].HsnCd).toBe("996521");
+  });
+
+  it("falls back to an HSN/SAC custom field by label when LineItem.sac is null — the pre-column legacy path", () => {
+    const payload = buildIrpPayload(
+      makeDocument({
+        lineItems: [
+          {
+            name: "Ocean freight",
+            description: "",
+            sac: null,
             qty: 1,
             rate: 10000,
             gstRate: 18,

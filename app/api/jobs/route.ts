@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
         businessId: business.id,
         jobRef: input.jobRef,
         description: input.description ?? null,
+        exchangeRate: input.exchangeRate ?? null,
         createdByUserId: user.id,
       },
     });

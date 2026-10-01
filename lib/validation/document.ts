@@ -5,6 +5,10 @@ export const lineItemInputSchema = z.object({
   productId: z.string().min(1).nullable().optional(),
   name: z.string().trim().min(1, "Item name is required").max(300),
   description: z.string().trim().max(1000).optional(),
+  // Services Accounting Code — see schema.prisma's LineItem.sac
+  // comment. Soft hint only, no hard validation, same tier as every
+  // other identifier-shaped field in this app.
+  sac: z.string().trim().max(20).optional(),
   qty: z.number().positive("Quantity must be greater than 0"),
   rate: z.number().min(0, "Rate can't be negative"),
   discountPct: z.number().min(0).max(100).optional(),

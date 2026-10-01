@@ -7,6 +7,9 @@ export const productCreateSchema = z.object({
   unit: z.string().trim().max(50).optional(),
   price: z.number().min(0, "Price can't be negative"),
   gstRate: z.number().min(0).max(100).optional(),
+  // Soft UI hint only (e.g. "996521"), no hard validation — same tier
+  // as sku/unit above.
+  sacCode: z.string().trim().max(20).optional(),
 });
 
 export type ProductCreateInput = z.infer<typeof productCreateSchema>;
@@ -18,6 +21,7 @@ export const productUpdateSchema = z.object({
   unit: z.string().trim().max(50).nullable().optional(),
   price: z.number().min(0).optional(),
   gstRate: z.number().min(0).max(100).nullable().optional(),
+  sacCode: z.string().trim().max(20).nullable().optional(),
 });
 
 export type ProductUpdateInput = z.infer<typeof productUpdateSchema>;

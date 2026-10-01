@@ -25,6 +25,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -38,7 +39,7 @@ export function AddJobDialog() {
 
   const form = useForm<JobCreateFormValues, unknown, JobCreateInput>({
     resolver: zodResolver(jobCreateSchema),
-    defaultValues: { jobRef: "", description: "" },
+    defaultValues: { jobRef: "", description: "", exchangeRate: undefined },
   });
 
   async function onSubmit(values: JobCreateInput) {
@@ -98,6 +99,32 @@ export function AddJobDialog() {
                   <FormControl>
                     <Input placeholder="Optional" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="exchangeRate"
+              render={({ field: { onChange, value, ...field } }) => (
+                <FormItem>
+                  <FormLabel>Default exchange rate (e.g. 84.50)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.0001}
+                      value={value ?? ""}
+                      onChange={(e) =>
+                        onChange(e.target.value === "" ? undefined : e.target.valueAsNumber)
+                      }
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Pre-fills the exchange rate on new line items for this job.
+                    Can still be overridden per line.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

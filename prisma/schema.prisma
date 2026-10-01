@@ -389,6 +389,16 @@ model Job {
 
   description String?
 
+  // A default/pre-fill exchange rate, not an override — see
+  // lib/validation/job.ts's own comment. Document/PurchaseInvoice
+  // builders read this once, when a job is selected, to pre-fill a new
+  // FC line item's own exRate field; changing it here never
+  // retroactively touches a line item that already copied a value from
+  // it (same "captured once, then independent" rule as every other
+  // pre-fill-from-business-default field in this app, e.g.
+  // Document.accentColor's own comment).
+  exchangeRate Decimal? @map("exchange_rate") @db.Decimal(12, 6)
+
   status JobStatus @default(open)
 
   createdByUserId String?  @map("created_by_user_id")
@@ -605,6 +615,12 @@ model Product {
   unit        String?
   price       Decimal  @db.Decimal(12, 2)
   gstRate     Decimal? @map("gst_rate") @db.Decimal(5, 2)
+  // Services Accounting Code — same meaning as PurchaseLineItem.sac,
+  // soft UI hint only (e.g. "996521"), no hard validation. Copied onto
+  // a Document's LineItem.sac when this product is added to a line
+  // item (document-builder.tsx's addFromProduct), same pattern as
+  // price/description.
+  sacCode     String?  @map("sac_code")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -815,6 +831,14 @@ model LineItem {
 
   name        String
   description String?
+  // Services Accounting Code — no dedicated column existed before this
+  // (see lib/einvoice/buildIrpPayload.ts's own lookupHsnCode comment,
+  // which previously had to guess from a freeform custom field labeled
+  // "SAC"/"HSN"). Pure provenance/display, like foreignCurrency below —
+  // never read by any tax calculation. Auto-populated from
+  // Product.sacCode when a line is added from a product
+  // (document-builder.tsx's addFromProduct), editable per-line after.
+  sac         String?
   qty         Decimal  @db.Decimal(12, 2)
   // In Document.currency, always — the single value calculateDocumentTotals
   // / calculateGST read. See docs/custom-fields-and-multicurrency-design.md

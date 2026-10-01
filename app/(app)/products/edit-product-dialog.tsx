@@ -61,6 +61,7 @@ export function EditProductDialog({
       unit: product.unit ?? "",
       price: Number(product.price),
       gstRate: product.gstRate === null ? undefined : Number(product.gstRate),
+      sacCode: product.sacCode ?? "",
     },
   });
 
@@ -206,6 +207,19 @@ export function EditProductDialog({
                 />
               )}
             </div>
+            <FormField
+              control={form.control}
+              name="sacCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>SAC code</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. 996521" {...field} value={field.value ?? ""} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <DialogFooter className="mt-2">
               <DialogClose render={<Button type="button" variant="outline" />}>
                 Cancel

@@ -111,6 +111,7 @@ export async function DocumentEditorPage({
       productId: item.productId,
       name: item.name,
       description: item.description ?? "",
+      sac: item.sac ?? "",
       qty: Number(item.qty),
       rate: Number(item.rate),
       discountPct: Number(item.discountPct),
@@ -147,6 +148,7 @@ export async function DocumentEditorPage({
     unit: product.unit,
     price: Number(product.price),
     gstRate: product.gstRate == null ? null : Number(product.gstRate),
+    sacCode: product.sacCode,
   }));
 
   const builderCustomFieldDefinitions: BuilderCustomFieldDefinition[] =

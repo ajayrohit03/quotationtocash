@@ -177,6 +177,20 @@ export function PurchaseInvoiceBuilder({
     },
   });
 
+  // Job.exchangeRate is a default/pre-fill, not a live override (same
+  // rule as document-builder.tsx's own handleJobChange). This builder
+  // has no per-line rateFC/exRate inputs yet — PurchaseLineItem gained
+  // those columns in an earlier round (schema/API/PDF only, UI
+  // deliberately deferred at the time) — so the only real "exchange
+  // rate" field to pre-fill today is the invoice-level one below.
+  // Never overwrites a value the user already typed.
+  function handleJobChange(newJob: Job | null) {
+    setJob(newJob);
+    if (newJob?.exchangeRate == null) return;
+    if (form.getValues("exchangeRate")?.trim()) return;
+    form.setValue("exchangeRate", String(Number(newJob.exchangeRate)));
+  }
+
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "lineItems",
@@ -406,7 +420,7 @@ export function PurchaseInvoiceBuilder({
               <JobPicker
                 jobs={allJobs}
                 selected={job}
-                onChange={setJob}
+                onChange={handleJobChange}
                 onJobCreated={(created) => setAllJobs((prev) => [created, ...prev])}
               />
             </div>

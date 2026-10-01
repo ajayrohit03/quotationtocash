@@ -829,6 +829,23 @@ export function DocumentPdf({
                       {line.label}: {line.value}
                     </Text>
                   ))}
+                  {/* PDF-only, export invoices only — not part of the
+                      shared paymentDetailsLines() helper (which also
+                      feeds the web preview/public share view), since
+                      Swift code is only ever relevant for an
+                      international wire against a non-INR invoice.
+                      Same skip-if-blank rule as every other bank field
+                      above. */}
+                  {isForeignCurrency && business.swiftCode && (
+                    <Text
+                      style={[
+                        styles.noteBody,
+                        { fontFamily: "Courier", marginTop: 1, lineHeight: 1.3 },
+                      ]}
+                    >
+                      Swift Code: {business.swiftCode}
+                    </Text>
+                  )}
                 </View>
               )}
             </View>

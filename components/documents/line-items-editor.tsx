@@ -40,6 +40,7 @@ export function LineItemsEditor({
   gstDefaultRate,
   customFieldDefinitions,
   documentCurrency = "INR",
+  jobExchangeRate = null,
   onChange,
   disabled = false,
 }: {
@@ -54,6 +55,10 @@ export function LineItemsEditor({
   // default GST% to 0 (still editable, not hard-locked — see
   // docs/foreign-currency-invoicing-design.md).
   documentCurrency?: string;
+  // Default/pre-fill only (schema.prisma's Job.exchangeRate comment) —
+  // used as a new row's initial exchangeRate when one is added while a
+  // job with a rate is selected. Never touches an existing row.
+  jobExchangeRate?: number | null;
   onChange: (items: LocalLineItem[]) => void;
   disabled?: boolean;
 }) {
@@ -182,13 +187,14 @@ export function LineItemsEditor({
         productId: product.id,
         name: product.name,
         description: product.description ?? "",
+        sac: product.sacCode ?? "",
         qty: 1,
         rate: product.price,
         discountPct: 0,
         gstRate: isForeignCurrency ? 0 : null,
         foreignCurrency: null,
         foreignRate: null,
-        exchangeRate: null,
+        exchangeRate: jobExchangeRate,
         customFieldValues: [],
       },
     ]);
@@ -202,13 +208,14 @@ export function LineItemsEditor({
         productId: null,
         name: "",
         description: "",
+        sac: "",
         qty: 1,
         rate: 0,
         discountPct: 0,
         gstRate: isForeignCurrency ? 0 : null,
         foreignCurrency: null,
         foreignRate: null,
-        exchangeRate: null,
+        exchangeRate: jobExchangeRate,
         customFieldValues: [],
       },
     ]);
@@ -301,6 +308,16 @@ export function LineItemsEditor({
                             updateItem(item.key, { description: e.target.value })
                           }
                           className="h-8 text-xs text-muted-foreground"
+                          disabled={disabled}
+                        />
+                        <Input
+                          placeholder="SAC code (optional)"
+                          autoComplete="off"
+                          value={item.sac}
+                          onChange={(e) =>
+                            updateItem(item.key, { sac: e.target.value })
+                          }
+                          className="h-8 w-32 font-mono text-xs text-muted-foreground"
                           disabled={disabled}
                         />
                       </div>

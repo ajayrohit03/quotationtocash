@@ -220,6 +220,33 @@ export function DocumentBuilder({
     );
   }, [lineItems, customer, products, business]);
 
+  // Job.exchangeRate is a default/pre-fill, not a live override — see
+  // schema.prisma's own comment. Copied in once, right here, at the
+  // moment a job is selected: any FC line item that doesn't already
+  // have its own exchangeRate gets this job's rate as a real, editable
+  // starting value (the recompute matches updateForeignFields' own
+  // formula below in line-items-editor.tsx). A line that already has a
+  // rate — typed by hand, or pre-filled from a previous job — is left
+  // alone; this never overwrites an existing value. Changing the job's
+  // rate later (a separate action, from the Edit job dialog) never
+  // revisits lines already pre-filled here.
+  function handleJobChange(newJob: typeof job) {
+    setJob(newJob);
+    if (newJob?.exchangeRate == null) return;
+    const rate = Number(newJob.exchangeRate);
+    setLineItems((prev) =>
+      prev.map((item) => {
+        if (item.exchangeRate != null) return item;
+        if (item.foreignCurrency == null && item.foreignRate == null) return item;
+        const next = { ...item, exchangeRate: rate };
+        if (next.foreignRate != null) {
+          next.rate = Math.round(next.foreignRate * rate * 100) / 100;
+        }
+        return next;
+      }),
+    );
+  }
+
   // The document's own persisted totals, as-is — including whichever of
   // CGST+SGST vs IGST was actually frozen (e.g. by conversion), not
   // re-derived from the customer's current state.
@@ -339,6 +366,7 @@ export function DocumentBuilder({
             productId: item.productId,
             name: item.name,
             description: item.description || undefined,
+            sac: item.sac || undefined,
             qty: item.qty,
             rate: item.rate,
             discountPct: item.discountPct,
@@ -571,7 +599,7 @@ export function DocumentBuilder({
                   <JobPicker
                     jobs={allJobs}
                     selected={job}
-                    onChange={setJob}
+                    onChange={handleJobChange}
                     onJobCreated={(created) =>
                       setAllJobs((prev) => [created, ...prev])
                     }
@@ -665,6 +693,7 @@ export function DocumentBuilder({
                 gstDefaultRate={business.gstDefaultRate}
                 customFieldDefinitions={lineItemCustomFieldDefinitions}
                 documentCurrency={currency}
+                jobExchangeRate={job?.exchangeRate == null ? null : Number(job.exchangeRate)}
                 onChange={setLineItems}
                 disabled={!editable}
               />

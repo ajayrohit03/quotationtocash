@@ -13,6 +13,8 @@ import type { CustomFieldValueSnapshot } from "@/lib/documents/custom-fields";
 export type PreviewLineItem = {
   name: string;
   description: string;
+  // Services Accounting Code — see schema.prisma's LineItem.sac comment.
+  sac: string | null;
   qty: number;
   rate: number;
   gstRate: number | null;

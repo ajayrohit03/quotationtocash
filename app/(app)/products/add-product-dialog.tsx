@@ -45,6 +45,7 @@ export function AddProductDialog({ gstEnabled }: { gstEnabled: boolean }) {
       unit: "",
       price: 0,
       gstRate: undefined,
+      sacCode: "",
     },
   });
 
@@ -187,6 +188,19 @@ export function AddProductDialog({ gstEnabled }: { gstEnabled: boolean }) {
                 />
               )}
             </div>
+            <FormField
+              control={form.control}
+              name="sacCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>SAC code</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. 996521" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <DialogFooter className="mt-2">
               <DialogClose render={<Button type="button" variant="outline" />}>
                 Cancel

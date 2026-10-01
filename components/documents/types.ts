@@ -15,6 +15,7 @@ export type BuilderProduct = {
   unit: string | null;
   price: number;
   gstRate: number | null;
+  sacCode: string | null;
 };
 
 // A line item as edited in the builder, before it's ever sent to the
@@ -27,6 +28,9 @@ export type LocalLineItem = {
   productId: string | null;
   name: string;
   description: string;
+  // Services Accounting Code — see schema.prisma's LineItem.sac
+  // comment. Pure provenance/display, never read by the tax engine.
+  sac: string;
   qty: number;
   rate: number;
   discountPct: number;

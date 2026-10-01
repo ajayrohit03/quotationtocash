@@ -89,15 +89,17 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-// A line item's HSN/SAC code has no dedicated column anywhere in this
-// app (see schema.prisma's LineItem model) — freight/logistics
-// customers have been entering it as a custom field labeled "SAC Code"
-// or "HSN Code" (see this session's freight examples), so this is a
-// best-effort lookup, not a real data source. TODO(irp-integration):
-// add a dedicated LineItem.hsnCode column once the real IRP call needs
-// this to be reliable rather than best-effort — IRP will reject a
-// payload with a blank HsnCd.
+// LineItem.sac (schema.prisma's own comment) is now a real column —
+// prefer it directly. Still falls back to the old best-effort custom-
+// field lookup for a line item entered before this field existed (or
+// for an HSN code specifically, which still has no dedicated column):
+// freight/logistics customers have been entering it as a custom field
+// labeled "SAC Code" or "HSN Code" (see this session's freight
+// examples). TODO(irp-integration): add a dedicated LineItem.hsnCode
+// column too, once the real IRP call needs HSN to be reliable rather
+// than best-effort — IRP will reject a payload with a blank HsnCd.
 function lookupHsnCode(item: PreviewDocument["lineItems"][number]): string {
+  if (item.sac) return item.sac;
   const match = item.customFieldValues.find((v) => /hsn|sac/i.test(v.label));
   return match ? String(match.value) : "";
 }
