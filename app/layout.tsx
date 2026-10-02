@@ -22,9 +22,48 @@ const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
 });
 
+const SITE_TITLE = "QuotationToCash — GST-ready invoicing for Indian businesses";
+const SITE_DESCRIPTION =
+  "Professional GST-compliant invoicing software for Indian businesses. Create quotations, tax invoices, track payments, manage vendors and see per-job profit — all in one place.";
+
 export const metadata: Metadata = {
-  title: "QuotationToCash",
-  description: "Quotations and invoices for small businesses, built for Indian GST.",
+  metadataBase: new URL("https://www.quotationtocash.com"),
+  title: { default: SITE_TITLE, template: "%s | QuotationToCash" },
+  description: SITE_DESCRIPTION,
+  keywords: [
+    "GST invoice software India",
+    "online invoicing India",
+    "GST billing software",
+    "tax invoice generator",
+    "quotation to invoice",
+    "accounts payable India",
+    "freight invoice software",
+    "Indian SME invoicing",
+  ],
+  authors: [{ name: "QuotationToCash" }],
+  openGraph: {
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    url: "https://www.quotationtocash.com",
+    siteName: "QuotationToCash",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "QuotationToCash — From Quote to Revenue",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "QuotationToCash — GST-ready invoicing",
+    description: SITE_DESCRIPTION,
+    images: ["/og-image.png"],
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

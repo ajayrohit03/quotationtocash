@@ -3,10 +3,26 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Show } from "@clerk/nextjs";
 
+// Inherits title/description/OpenGraph from the root layout. Canonical is
+// set here, not in the layout, so it doesn't stamp "/" onto every other route.
 export const metadata: Metadata = {
-  title: "QuotationToCash — GST-ready invoicing for every Indian business",
+  alternates: { canonical: "https://www.quotationtocash.com" },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "QuotationToCash",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  url: "https://www.quotationtocash.com",
   description:
-    "Quotations, invoices, payment tracking, purchase invoices and per-job margin — GST-ready from day one.",
+    "GST-compliant invoicing software for Indian businesses. Create quotations, tax invoices, track payments, manage vendors and see per-job profit.",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "INR",
+  },
 };
 
 const NAV = [
@@ -132,6 +148,12 @@ function Logo({ className }: { className?: string }) {
 export default function Home() {
   return (
     <div className="bg-white text-navy">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       {/* 1. Nav */}
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-navy/85 backdrop-blur-md">
         <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
