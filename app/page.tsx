@@ -377,6 +377,9 @@ export default function Home() {
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <p className={eyebrow}>Pricing</p>
             <h2 className={h2}>Simple pricing that grows with you.</h2>
+            <p className="mt-3 text-sm text-navy/70">
+              Try Growth free for 14 days. Starter is free forever.
+            </p>
             <div className="mt-12 grid gap-5 lg:grid-cols-3">
               {PLANS.map((p) => (
                 <article
