@@ -84,6 +84,17 @@ enum DocumentTemplate {
   @@map("document_template")
 }
 
+// Billing tier — see docs/feature-flags-and-plans-design.md. "free" is
+// the landing page's "Starter ₹0" tier.
+enum Plan {
+  free
+  starter
+  growth
+  enterprise
+
+  @@map("plan")
+}
+
 // Logo/signature image display size — a business-level preference
 // (see Business.logoSize/signatureSize below), frozen into
 // businessSnapshot at document-save time same as the images
@@ -194,6 +205,19 @@ model Business {
   defaultTermsText     String? @map("default_terms_text")
 
   onboardingCompletedAt DateTime? @map("onboarding_completed_at")
+
+  // Read ONLY through lib/plans/feature-enabled.ts — never compare `plan`
+  // directly in feature code. Set by the admin API route only, no in-app
+  // UI. planOverrides is Record<FeatureKey, boolean>: true grants a
+  // feature the plan lacks, false revokes one it has, absent = follow
+  // the plan. planNote doubles as the audit trail (one shared admin
+  // password means planUpdatedByUserId can't be a verified identity —
+  // it only records whatever the admin caller sent, or null).
+  plan                Plan      @default(free)
+  planOverrides       Json?     @map("plan_overrides")
+  planNote            String?   @map("plan_note")
+  planUpdatedAt       DateTime? @map("plan_updated_at")
+  planUpdatedByUserId String?   @map("plan_updated_by_user_id")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

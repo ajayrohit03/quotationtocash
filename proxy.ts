@@ -13,11 +13,17 @@ import { clerkMiddleware } from "@clerk/nextjs/server";
 // the raw Host header (via lib/documents/public-access.ts), which proved
 // more reliable in testing than threading it through a middleware
 // rewrite's search params.
+//
+// /api/admin/* is excluded from this middleware entirely (see matcher
+// below — BOTH entries need the exclusion, the first one also matches
+// /api/*): it authenticates with ADMIN_PASSWORD in the route handler
+// itself (lib/admin/auth.ts), never with Clerk. See
+// docs/feature-flags-and-plans-design.md §5.
 export default clerkMiddleware();
 
 export const config = {
   matcher: [
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api|trpc)(.*)",
+    "/((?!_next|api/admin(?:/|$)|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/(api(?!/admin(?:/|$))|trpc)(.*)",
   ],
 };

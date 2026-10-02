@@ -11,6 +11,9 @@ const serverSchema = {
   CLERK_SECRET_KEY: z.string().min(1),
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.string().min(1),
+  // Bearer secret for /api/admin/* — see lib/admin/auth.ts. Minimum
+  // length is enforced here so a weak value fails closed, not open.
+  ADMIN_PASSWORD: z.string().min(16),
 } as const;
 
 const clientSchema = {
