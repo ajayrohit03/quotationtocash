@@ -66,9 +66,10 @@ export const PLAN_LIMITS = {
 } as const satisfies Record<Plan, Record<string, number | null>>;
 
 // Document layouts each plan may choose. growth+ is all five (also what a
-// true "layouts.all_five" override grants). NOTE: Business.documentTemplate
-// currently defaults to "classic", which free does not include — resolve
-// that (migrate default / grandfather) before enforcing this.
+// true "layouts.all_five" override grants). Business.documentTemplate
+// defaults to "modern" (free's only layout) for new businesses; existing
+// businesses keep whatever they already stored — decide grandfathering
+// before enforcing this.
 export const PLAN_LAYOUTS = {
   free: ["modern"],
   starter: ["classic", "modern", "minimal"],

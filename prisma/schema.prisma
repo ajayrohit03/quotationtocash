@@ -174,7 +174,7 @@ model Business {
   ifscCode          String? @map("ifsc_code")
   upiId             String? @map("upi_id")
 
-  documentTemplate DocumentTemplate @default(classic) @map("document_template")
+  documentTemplate DocumentTemplate @default(modern) @map("document_template")
   accentColor      String           @default("#4F46E5") @map("accent_color")
 
   // E-invoicing (IRP/GST) scaffolding — see docs on lib/einvoice/. No API
