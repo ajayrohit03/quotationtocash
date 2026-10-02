@@ -93,7 +93,7 @@ const PLANS = [
       "Multi-currency",
       "All 5 layouts",
     ],
-    cta: "Start free",
+    cta: "Start 14-day free trial",
     href: "/sign-up",
     featured: true,
   },
@@ -205,7 +205,9 @@ export default function Home() {
 
             <div className="relative mx-auto w-full max-w-md py-8">
               <div className="rounded-3xl border border-white/15 bg-white/10 p-8 shadow-2xl backdrop-blur-xl">
-                <Logo className="h-auto w-full" />
+                <div className="flex items-center justify-center rounded-2xl bg-white px-6 py-4">
+                  <Logo className="h-auto w-full" />
+                </div>
               </div>
               <div className="animate-float absolute -top-2 -left-2 rounded-xl bg-white px-4 py-3 text-navy shadow-xl sm:-left-8">
                 <p className="text-xs text-navy/60">INV-2026-0009 paid</p>
