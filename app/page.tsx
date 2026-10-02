@@ -135,8 +135,12 @@ export default function Home() {
       {/* 1. Nav */}
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-navy/85 backdrop-blur-md">
         <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" aria-label="QuotationToCash home">
-            <Logo className="h-10 w-auto" />
+          <Link
+            href="/"
+            aria-label="QuotationToCash home"
+            className="rounded-lg bg-white/95 px-2.5 py-1"
+          >
+            <Logo className="h-8 w-auto" />
           </Link>
           <ul className="hidden items-center gap-8 md:flex">
             {NAV.map((n) => (
@@ -435,7 +439,9 @@ export default function Home() {
       {/* 10. Footer */}
       <footer className="bg-navy-mid text-white/70">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 sm:px-6 md:flex-row">
-          <Logo className="h-9 w-auto" />
+          <span className="rounded-lg bg-white/95 px-2.5 py-1">
+            <Logo className="h-8 w-auto" />
+          </span>
           <ul className="flex flex-wrap justify-center gap-6 text-sm">
             {NAV.map((n) => (
               <li key={n.href}>
