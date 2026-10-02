@@ -27,6 +27,12 @@ const EditCustomerDialog = dynamic(() =>
   import("./edit-customer-dialog").then((m) => m.EditCustomerDialog),
 );
 
+const DOCUMENT_BASE_PATH: Record<"quotation" | "invoice" | "proforma", string> = {
+  quotation: "quotations",
+  invoice: "invoices",
+  proforma: "proforma-invoices",
+};
+
 const HEAD_CLASS = "bg-muted/40 text-xs font-semibold tracking-wide text-muted-foreground";
 
 export default async function CustomerDetailPage({
@@ -178,7 +184,7 @@ export default async function CustomerDetailPage({
                   <TableRow key={doc.id} className="cursor-pointer">
                     <TableCell className="p-0">
                       <Link
-                        href={`/${doc.type === "quotation" ? "quotations" : "invoices"}/${doc.id}`}
+                        href={`/${DOCUMENT_BASE_PATH[doc.type]}/${doc.id}`}
                         className="block px-4 py-2.5 font-mono text-sm"
                       >
                         {doc.number}
