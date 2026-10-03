@@ -25,18 +25,6 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  // TEMPORARY DIAGNOSTIC — remove after diagnosis. Logs lengths and
-  // match booleans only, never any characters of the secret or token.
-  const diagToken = request.headers.get("authorization")?.replace("Bearer ", "") ?? "";
-  const diagEnv = process.env.ADMIN_PASSWORD ?? "";
-  console.log(
-    "ADMIN_PASSWORD set:", !!process.env.ADMIN_PASSWORD,
-    "env length:", diagEnv.length,
-    "token length:", diagToken.length,
-    "first3 match:", diagEnv.length > 0 && diagEnv.slice(0, 3) === diagToken.slice(0, 3),
-    "token has edge whitespace:", diagToken !== diagToken.trim(),
-    "exact match:", diagEnv.length > 0 && diagEnv === diagToken,
-  );
   try {
     await requireAdmin(request);
     const { id } = await params;
