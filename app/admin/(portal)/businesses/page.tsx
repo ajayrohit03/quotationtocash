@@ -47,9 +47,14 @@ export default async function AdminBusinessesPage({
           </thead>
           <tbody>
             {businesses.map((b) => (
-              <tr key={b.id} className="border-t border-white/5 hover:bg-navy-light/50">
+              <tr key={b.id} className="relative cursor-pointer border-t border-white/5 hover:bg-navy-light/50">
                 <td className="px-4 py-2">
-                  <Link href={`/businesses/${b.id}`} className="font-medium hover:text-brand-green">
+                  {/* Stretched link: the ::after covers the whole row (tr is relative),
+                      so the entire row is clickable while staying a real link. */}
+                  <Link
+                    href={`/businesses/${b.id}`}
+                    className="font-medium after:absolute after:inset-0 hover:text-brand-green"
+                  >
                     {b.name}
                   </Link>
                   <div className="text-xs text-slate-500">{b.email}</div>
