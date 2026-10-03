@@ -25,6 +25,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  // TEMPORARY DIAGNOSTIC — remove after confirming the env var reaches the function.
+  console.log("ADMIN_PASSWORD set:", !!process.env.ADMIN_PASSWORD, "length:", process.env.ADMIN_PASSWORD?.length ?? 0);
   try {
     await requireAdmin(request);
     const { id } = await params;
