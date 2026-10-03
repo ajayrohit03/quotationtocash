@@ -1,9 +1,24 @@
 // Pure host/path routing for proxy.ts, kept separate so it's unit-testable.
-// Any hostname starting "admin." is the admin site (admin.quotationtocash.com
-// in prod, admin.localhost in dev — *.localhost resolves with no setup).
+// Two internal sites share the same mechanism, picked by the first label
+// of the Host header (prod: admin./app.quotationtocash.com; dev:
+// admin./app.localhost — *.localhost resolves with no setup):
+//   admin.* -> /admin/*      (business management)
+//   app.*   -> /analytics/*  (platform analytics)
+function hostname(hostHeader: string | null | undefined): string {
+  return (hostHeader ?? "").split(":")[0].toLowerCase();
+}
+
 export function isAdminHost(hostHeader: string | null | undefined): boolean {
-  const hostname = (hostHeader ?? "").split(":")[0].toLowerCase();
-  return hostname.startsWith("admin.");
+  return hostname(hostHeader).startsWith("admin.");
+}
+
+export function isAnalyticsHost(hostHeader: string | null | undefined): boolean {
+  return hostname(hostHeader).startsWith("app.");
+}
+
+// Either internal site: no Clerk middleware, no Clerk provider.
+export function isInternalHost(hostHeader: string | null | undefined): boolean {
+  return isAdminHost(hostHeader) || isAnalyticsHost(hostHeader);
 }
 
 export type AdminRouting =
@@ -11,26 +26,23 @@ export type AdminRouting =
   | { kind: "rewrite"; pathname: string }
   | { kind: "notFound" };
 
-// On the admin host every page path maps onto the app's /admin/* routes
+const isUnder = (pathname: string, prefix: string) =>
+  pathname === prefix || pathname.startsWith(`${prefix}/`);
+
+// On an internal host every page path maps onto that site's route prefix
 // (/login -> /admin/login). /api/admin/* never reaches proxy.ts (matcher
-// exclusion) and is served as-is; any other /api/* on the admin host is
-// refused so no Clerk-authenticated route is reachable there without
-// Clerk middleware. On every other host, /admin/* does not exist.
+// exclusion) and is served as-is; any other /api/* is refused so no
+// Clerk-authenticated route is reachable without Clerk middleware. A
+// site's own prefix is not directly addressable, and both prefixes are
+// 404 on every non-matching host.
 export function resolveAdminRouting(
   hostHeader: string | null | undefined,
   pathname: string,
 ): AdminRouting {
-  const onAdminHost = isAdminHost(hostHeader);
-  const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
+  const site = isAdminHost(hostHeader) ? "/admin" : isAnalyticsHost(hostHeader) ? "/analytics" : null;
+  const touchesInternalPrefix = isUnder(pathname, "/admin") || isUnder(pathname, "/analytics");
 
-  if (!onAdminHost) {
-    return isAdminPath ? { kind: "notFound" } : { kind: "pass" };
-  }
-  if (pathname === "/api" || pathname.startsWith("/api/")) {
-    return { kind: "notFound" };
-  }
-  if (isAdminPath) {
-    return { kind: "notFound" };
-  }
-  return { kind: "rewrite", pathname: pathname === "/" ? "/admin" : `/admin${pathname}` };
+  if (!site) return touchesInternalPrefix ? { kind: "notFound" } : { kind: "pass" };
+  if (isUnder(pathname, "/api") || touchesInternalPrefix) return { kind: "notFound" };
+  return { kind: "rewrite", pathname: pathname === "/" ? site : `${site}${pathname}` };
 }

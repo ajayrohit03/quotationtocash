@@ -154,3 +154,44 @@ describe("GET /api/admin/businesses", () => {
     });
   });
 });
+
+describe("POST /api/admin/businesses/[id]/internal", () => {
+  async function postInternal(id: string, headers: Record<string, string>, body: unknown) {
+    const { POST } = await import("../businesses/[id]/internal/route");
+    return POST(req(`/api/admin/businesses/${id}/internal`, { method: "POST", headers, body }), {
+      params: Promise.resolve({ id }),
+    });
+  }
+
+  it("requires admin auth", async () => {
+    const b = await makeBusiness();
+    expect((await postInternal(b.id, {}, { isInternal: true })).status).toBe(401);
+    expect((await prisma.business.findUniqueOrThrow({ where: { id: b.id } })).isInternal).toBe(false);
+  });
+
+  it("toggles isInternal on and off", async () => {
+    const b = await makeBusiness();
+    const headers = { cookie: await sessionCookie(), origin: `http://${HOST}` };
+    expect((await postInternal(b.id, headers, { isInternal: true })).status).toBe(200);
+    expect((await prisma.business.findUniqueOrThrow({ where: { id: b.id } })).isInternal).toBe(true);
+    expect((await postInternal(b.id, headers, { isInternal: false })).status).toBe(200);
+    expect((await prisma.business.findUniqueOrThrow({ where: { id: b.id } })).isInternal).toBe(false);
+  });
+
+  it("rejects bad bodies (400) and unknown businesses (404)", async () => {
+    const b = await makeBusiness();
+    const headers = { authorization: `Bearer ${PASSWORD}` };
+    expect((await postInternal(b.id, headers, { isInternal: "yes" })).status).toBe(400);
+    expect((await postInternal(b.id, headers, { isInternal: true, extra: 1 })).status).toBe(400);
+    expect((await postInternal(randomUUID(), headers, { isInternal: true })).status).toBe(404);
+  });
+
+  it("is reflected in the admin list's isInternal flag", async () => {
+    const { GET } = await import("../businesses/route");
+    const unique = `Zi${randomUUID().slice(0, 8)}`;
+    const b = await makeBusiness(`${unique} Co`);
+    await postInternal(b.id, { authorization: `Bearer ${PASSWORD}` }, { isInternal: true });
+    const res = await GET(req(`/api/admin/businesses?q=${unique.toLowerCase()}`, { headers: { cookie: await sessionCookie() } }));
+    expect((await res.json()).businesses[0].isInternal).toBe(true);
+  });
+});

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isAdminHost, resolveAdminRouting } from "../host";
+import { isAdminHost, isAnalyticsHost, isInternalHost, resolveAdminRouting } from "../host";
 
 describe("isAdminHost", () => {
   it("matches admin.* hosts with or without port, any case", () => {
@@ -50,5 +50,34 @@ describe("resolveAdminRouting", () => {
     expect(resolveAdminRouting(main, "/dashboard")).toEqual({ kind: "pass" });
     expect(resolveAdminRouting(main, "/administrator")).toEqual({ kind: "pass" });
     expect(resolveAdminRouting("acme.quotationtocash.com", "/public/documents/x")).toEqual({ kind: "pass" });
+  });
+});
+
+describe("analytics host (app.*)", () => {
+  const app = "app.quotationtocash.com";
+
+  it("matches app.* hosts only — not look-alikes", () => {
+    expect(isAnalyticsHost(app)).toBe(true);
+    expect(isAnalyticsHost("APP.localhost:3000")).toBe(true);
+    for (const h of ["application.quotationtocash.com", "apple.quotationtocash.com", "myapp.quotationtocash.com", "www.quotationtocash.com", "admin.quotationtocash.com", "", null]) {
+      expect(isAnalyticsHost(h)).toBe(false);
+    }
+    expect(isInternalHost(app)).toBe(true);
+    expect(isInternalHost("admin.quotationtocash.com")).toBe(true);
+    expect(isInternalHost("www.quotationtocash.com")).toBe(false);
+  });
+
+  it("rewrites onto /analytics/* and hides every other prefix", () => {
+    expect(resolveAdminRouting(app, "/")).toEqual({ kind: "rewrite", pathname: "/analytics" });
+    expect(resolveAdminRouting(app, "/login")).toEqual({ kind: "rewrite", pathname: "/analytics/login" });
+    expect(resolveAdminRouting(app, "/analytics")).toEqual({ kind: "notFound" });
+    expect(resolveAdminRouting(app, "/admin/businesses")).toEqual({ kind: "notFound" });
+    expect(resolveAdminRouting(app, "/api/jobs")).toEqual({ kind: "notFound" });
+  });
+
+  it("makes /analytics 404 on the admin and main hosts, and /admin 404 on app.", () => {
+    expect(resolveAdminRouting("admin.quotationtocash.com", "/analytics")).toEqual({ kind: "notFound" });
+    expect(resolveAdminRouting("www.quotationtocash.com", "/analytics/login")).toEqual({ kind: "notFound" });
+    expect(resolveAdminRouting("www.quotationtocash.com", "/analytics-report")).toEqual({ kind: "pass" });
   });
 });

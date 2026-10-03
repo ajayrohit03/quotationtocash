@@ -6,6 +6,7 @@ import { formatDateIST } from "@/lib/dates";
 import { FEATURE_KEYS } from "@/lib/plans/catalog";
 import { isFeatureKey } from "@/lib/plans/feature-enabled";
 import { PlanBadge } from "../../../_components/plan-badge";
+import { InternalToggle } from "./internal-toggle";
 import { PlanEditor } from "./plan-editor";
 
 function parseOverrides(value: unknown): Record<string, boolean> {
@@ -56,6 +57,8 @@ export default async function AdminBusinessDetailPage({
         </div>
         <div className="flex gap-2"><dt className="text-slate-400">Plan note</dt><dd>{business.planNote || "—"}</dd></div>
       </dl>
+
+      <InternalToggle businessId={business.id} initial={business.isInternal} />
 
       <h2 className="font-display mt-8 text-sm font-bold tracking-wide text-slate-400 uppercase">Usage</h2>
       <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">

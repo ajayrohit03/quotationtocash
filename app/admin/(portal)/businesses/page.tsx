@@ -57,6 +57,11 @@ export default async function AdminBusinessesPage({
                   >
                     {b.name}
                   </Link>
+                  {b.isInternal && (
+                    <span className="ml-2 rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-slate-300 uppercase">
+                      internal
+                    </span>
+                  )}
                   <div className="text-xs text-slate-500">{b.email}</div>
                 </td>
                 <td className="px-4 py-2">

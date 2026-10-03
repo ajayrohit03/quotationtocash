@@ -219,6 +219,11 @@ model Business {
   planUpdatedAt       DateTime? @map("plan_updated_at")
   planUpdatedByUserId String?   @map("plan_updated_by_user_id")
 
+  // Excluded from every analytics query (lib/analytics/queries.ts) —
+  // test fixtures, the owner's own businesses, etc. Toggled from the
+  // admin business detail page; never exposed in the customer app.
+  isInternal Boolean @default(false) @map("is_internal")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

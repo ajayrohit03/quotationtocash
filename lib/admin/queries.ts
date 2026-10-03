@@ -74,7 +74,7 @@ export async function listBusinessesWithStats(query?: string) {
   const businesses = await prisma.business.findMany({
     where: q ? { name: { contains: q, mode: "insensitive" } } : {},
     orderBy: { createdAt: "desc" },
-    select: { id: true, name: true, email: true, plan: true, createdAt: true },
+    select: { id: true, name: true, email: true, plan: true, isInternal: true, createdAt: true },
   });
   const stats = await statsByBusiness(businesses.map((b) => b.id));
   return businesses.map((b) => ({ ...b, stats: stats.get(b.id) ?? { ...EMPTY } }));
@@ -85,7 +85,7 @@ export async function getBusinessDetail(id: string) {
     where: { id },
     select: {
       id: true, name: true, email: true, plan: true, planOverrides: true, planNote: true,
-      planUpdatedAt: true, createdAt: true,
+      planUpdatedAt: true, isInternal: true, createdAt: true,
     },
   });
   if (!business) return null;

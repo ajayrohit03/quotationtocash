@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function LoginForm() {
+export function LoginForm({ redirectTo = "/businesses" }: { redirectTo?: string }) {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +20,7 @@ export function LoginForm() {
         body: JSON.stringify({ password }),
       });
       if (res.ok) {
-        router.replace("/businesses");
+        router.replace(redirectTo);
         router.refresh();
         return;
       }
