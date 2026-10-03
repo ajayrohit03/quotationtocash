@@ -4,6 +4,8 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from "@clerk/ui/themes";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { headers } from "next/headers";
+import { isAdminHost } from "@/lib/admin/host";
 import "./globals.css";
 
 const instrumentSans = Instrument_Sans({
@@ -66,18 +68,22 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
-  return (
-    <ClerkProvider appearance={{ theme: shadcn }}>
-      <html
-        lang="en"
-        className={`${instrumentSans.variable} ${ibmPlexMono.variable} ${bricolage.variable} h-full antialiased`}
-      >
-        <body className="min-h-full flex flex-col">
-          <TooltipProvider>{children}</TooltipProvider>
-          <Toaster />
-        </body>
-      </html>
-    </ClerkProvider>
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const html = (
+    <html
+      lang="en"
+      className={`${instrumentSans.variable} ${ibmPlexMono.variable} ${bricolage.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col">
+        <TooltipProvider>{children}</TooltipProvider>
+        <Toaster />
+      </body>
+    </html>
   );
+
+  // The admin site has its own cookie auth and bypasses Clerk middleware
+  // (proxy.ts) — don't load Clerk's provider/script there at all.
+  if (isAdminHost((await headers()).get("host"))) return html;
+
+  return <ClerkProvider appearance={{ theme: shadcn }}>{html}</ClerkProvider>;
 }

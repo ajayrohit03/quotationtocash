@@ -64,11 +64,13 @@ describe("POST /api/admin/businesses/[id]/plan — auth", () => {
 
   it("rate limits repeated attempts from one IP", async () => {
     const b = await makeBusiness();
-    let last = 0;
-    for (let i = 0; i < 22; i++) {
-      last = (await call(b.id, { plan: "growth" }, "Bearer nope")).status;
+    // Fixed one-minute windows: a slow run can straddle a boundary and
+    // reset the count, so allow enough attempts to hit the limit in one.
+    const statuses: number[] = [];
+    for (let i = 0; i < 45 && !statuses.includes(429); i++) {
+      statuses.push((await call(b.id, { plan: "growth" }, "Bearer nope")).status);
     }
-    expect(last).toBe(429);
+    expect(statuses).toContain(429);
   });
 });
 
