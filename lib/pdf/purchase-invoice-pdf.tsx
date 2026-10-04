@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   metaValue: { fontSize: 8.5 },
   shipmentGrid: { flexDirection: "row", flexWrap: "wrap" },
   shipmentCell: { width: "33.33%", marginBottom: 6, paddingRight: 6 },
-  shipmentLabel: { fontSize: 7, color: COLORS.muted },
+  shipmentLabel: { fontSize: 7, fontFamily: "Noto Sans", fontWeight: "bold", color: COLORS.muted },
   shipmentValue: { fontSize: 8.5, marginTop: 1 },
   table: { borderWidth: 1, borderColor: COLORS.border, marginTop: 4 },
   tableHeaderRow: {
