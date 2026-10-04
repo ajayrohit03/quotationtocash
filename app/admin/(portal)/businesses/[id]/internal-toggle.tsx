@@ -35,29 +35,34 @@ export function InternalToggle({ businessId, initial }: { businessId: string; in
   }
 
   return (
-    <div className="mt-3 flex items-center gap-3 text-sm">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={value}
-        aria-label="Internal business"
-        disabled={busy}
-        onClick={toggle}
-        className={
-          "relative h-5 w-9 rounded-full transition disabled:opacity-50 " + (value ? "bg-brand-green" : "bg-white/20")
-        }
-      >
-        <span
+    <div className="mt-3">
+      <div className="flex items-center gap-3 text-sm">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={value}
+          aria-label="Internal business"
+          disabled={busy}
+          onClick={toggle}
           className={
-            "absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform " +
-            (value ? "translate-x-4" : "")
+            "relative h-5 w-9 rounded-full transition disabled:opacity-50 " + (value ? "bg-brand-green" : "bg-white/20")
           }
-        />
-      </button>
-      <span>
-        Internal business <span className="text-slate-400">— excluded from analytics</span>
-      </span>
-      {error && <span role="alert" className="text-red-400">{error}</span>}
+        >
+          <span
+            className={
+              "absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform " +
+              (value ? "translate-x-4" : "")
+            }
+          />
+        </button>
+        <span>
+          Internal business <span className="text-slate-400">— excluded from analytics</span>
+        </span>
+        {error && <span role="alert" className="text-red-400">{error}</span>}
+      </div>
+      <p className="mt-1 text-xs text-slate-500">
+        Mark your own test/internal businesses as Internal to exclude them from analytics.
+      </p>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import type { AssetSize, DocumentType } from "@prisma/client";
 import { formatDateIST } from "@/lib/dates";
 import { formatCurrency } from "@/lib/format";
+import { amountInWords } from "@/lib/purchase-invoices/amount-in-words";
 import type {
   BusinessSnapshot,
   CustomerSnapshot,
@@ -528,6 +529,11 @@ export function DocumentRender({
                 {formatCurrency(grandTotal, currency)}
               </span>
             </div>
+            {currency === "INR" && (
+              <div className="mt-1 px-3 text-right text-[length:calc(var(--doc-scale)*11px)] font-bold text-[#565E72]">
+                {amountInWords(grandTotal, "INR")}
+              </div>
+            )}
             {showInrSubline && (
               <div className="flex justify-between px-3 pt-1 text-[length:calc(var(--doc-scale)*12px)] text-[#8A92A6]">
                 <span>INR equivalent</span>

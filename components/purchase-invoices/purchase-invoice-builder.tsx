@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -79,6 +79,130 @@ const builderFormSchema = z.object({
 });
 
 type BuilderFormValues = z.infer<typeof builderFormSchema>;
+
+const roundToPaise = (n: number) => Math.round(n * 100) / 100;
+
+// Per-line foreign-currency provenance (PurchaseLineItem.rateFC / exRate /
+// fcCurrency). The currency input is always there; the rate and exchange
+// rate inputs appear only once a currency is entered, and clearing the
+// currency clears both. amountFC is never sent — the server recomputes it
+// from qty * rateFC. When the invoice itself is in INR, the line's INR
+// `rate` is derived from rateFC * exRate (the same relationship the sales
+// builder's FC mode uses); the user can still overtype it afterwards.
+function LineFcFields({
+  form,
+  index,
+  invoiceIsInr,
+  jobExchangeRate,
+}: {
+  form: UseFormReturn<BuilderFormValues>;
+  index: number;
+  invoiceIsInr: boolean;
+  jobExchangeRate: number | null;
+}) {
+  const fcCurrency = useWatch({ control: form.control, name: `lineItems.${index}.fcCurrency` });
+  const hasFc = (fcCurrency ?? "").trim() !== "";
+
+  function deriveRate() {
+    if (!invoiceIsInr) return;
+    const rateFC = form.getValues(`lineItems.${index}.rateFC`);
+    const exRate = form.getValues(`lineItems.${index}.exRate`);
+    if (rateFC != null && exRate != null) {
+      form.setValue(`lineItems.${index}.rate`, roundToPaise(rateFC * exRate), { shouldDirty: true });
+    }
+  }
+
+  return (
+    <div className="col-span-12 grid grid-cols-12 gap-2">
+      <div className="col-span-2">
+        <FormField
+          control={form.control}
+          name={`lineItems.${index}.fcCurrency`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-xs">Foreign currency</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="e.g. USD"
+                  maxLength={3}
+                  autoComplete="off"
+                  value={field.value ?? ""}
+                  onChange={(e) => {
+                    const next = e.target.value.toUpperCase();
+                    if (next.trim() === "") {
+                      field.onChange(null);
+                      form.setValue(`lineItems.${index}.rateFC`, null);
+                      form.setValue(`lineItems.${index}.exRate`, null);
+                      return;
+                    }
+                    // First time a currency is set on this line: start the
+                    // exchange rate from the job's default, if it has one.
+                    if (!hasFc && jobExchangeRate != null && form.getValues(`lineItems.${index}.exRate`) == null) {
+                      form.setValue(`lineItems.${index}.exRate`, jobExchangeRate);
+                    }
+                    field.onChange(next);
+                    deriveRate();
+                  }}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+      {hasFc && (
+        <>
+          <div className="col-span-2">
+            <FormField
+              control={form.control}
+              name={`lineItems.${index}.rateFC`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Rate (FC)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={field.value ?? ""}
+                      onChange={(e) => {
+                        field.onChange(e.target.value === "" ? null : Number(e.target.value));
+                        deriveRate();
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="col-span-2">
+            <FormField
+              control={form.control}
+              name={`lineItems.${index}.exRate`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Ex. rate (to INR)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.0001"
+                      value={field.value ?? ""}
+                      onChange={(e) => {
+                        field.onChange(e.target.value === "" ? null : Number(e.target.value));
+                        deriveRate();
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 // A factory, not a shared constant — react-hook-form's useFieldArray
 // docs explicitly warn against passing the same object reference to
@@ -178,17 +302,25 @@ export function PurchaseInvoiceBuilder({
   });
 
   // Job.exchangeRate is a default/pre-fill, not a live override (same
-  // rule as document-builder.tsx's own handleJobChange). This builder
-  // has no per-line rateFC/exRate inputs yet — PurchaseLineItem gained
-  // those columns in an earlier round (schema/API/PDF only, UI
-  // deliberately deferred at the time) — so the only real "exchange
-  // rate" field to pre-fill today is the invoice-level one below.
-  // Never overwrites a value the user already typed.
+  // rule as document-builder.tsx's own handleJobChange): copied in once,
+  // here, and never over a value the user already typed. It seeds the
+  // invoice-level exchange rate if blank, and any line that already has a
+  // foreign currency but no exchange rate of its own (a line gets the same
+  // default when its currency is first entered — see LineFcFields).
   function handleJobChange(newJob: Job | null) {
     setJob(newJob);
     if (newJob?.exchangeRate == null) return;
-    if (form.getValues("exchangeRate")?.trim()) return;
-    form.setValue("exchangeRate", String(Number(newJob.exchangeRate)));
+    const rate = Number(newJob.exchangeRate);
+    if (!form.getValues("exchangeRate")?.trim()) {
+      form.setValue("exchangeRate", String(rate));
+    }
+    form.getValues("lineItems").forEach((line, i) => {
+      if ((line.fcCurrency ?? "").trim() === "" || line.exRate != null) return;
+      form.setValue(`lineItems.${i}.exRate`, rate, { shouldDirty: true });
+      if (line.rateFC != null && form.getValues("currency").trim().toUpperCase() === "INR") {
+        form.setValue(`lineItems.${i}.rate`, roundToPaise(line.rateFC * rate), { shouldDirty: true });
+      }
+    });
   }
 
   const { fields, append, remove } = useFieldArray({
@@ -266,12 +398,20 @@ export function PurchaseInvoiceBuilder({
         customsDocRef: values.customsDocRef || null,
         termsOfShipment: values.termsOfShipment || null,
         notes: values.notes || null,
-        lineItems: values.lineItems.map((item) => ({
-          ...item,
-          sac: item.sac || undefined,
-          unit: item.unit || undefined,
-          gstRate: gstEnabled ? item.gstRate : null,
-        })),
+        lineItems: values.lineItems.map((item) => {
+          const fcCurrency = item.fcCurrency?.trim() || null;
+          return {
+            ...item,
+            sac: item.sac || undefined,
+            unit: item.unit || undefined,
+            gstRate: gstEnabled ? item.gstRate : null,
+            fcCurrency,
+            rateFC: fcCurrency ? (item.rateFC ?? null) : null,
+            exRate: fcCurrency ? (item.exRate ?? null) : null,
+            // Recomputed server-side from qty * rateFC; never sent.
+            amountFC: undefined,
+          };
+        }),
       };
 
       const response = await fetch(`/api/purchase-invoices/${id}`, {
@@ -613,6 +753,12 @@ export function PurchaseInvoiceBuilder({
                     <Trash2 className="size-4" />
                   </Button>
                 </div>
+                <LineFcFields
+                  form={form}
+                  index={index}
+                  invoiceIsInr={!showFc}
+                  jobExchangeRate={job?.exchangeRate == null ? null : Number(job.exchangeRate)}
+                />
               </div>
             ))}
             {form.formState.errors.lineItems?.root && (

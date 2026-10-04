@@ -13,6 +13,7 @@ import {
 } from "@/lib/documents/line-item-columns";
 import { businessIdentityLine } from "@/lib/documents/business-identity";
 import { applyRounding } from "@/lib/tax/applyRounding";
+import { amountInWords } from "@/lib/purchase-invoices/amount-in-words";
 import { ASSET_SIZE_SCALE } from "@/lib/documents/asset-size";
 
 // react-pdf hyphenates any word that overflows its container by default
@@ -706,6 +707,22 @@ export function DocumentPdf({
               {formatCurrency(grandTotal, document.currency)}
             </Text>
           </View>
+          {/* INR only — the util spells out lakhs/crores, which is
+              meaningless for a USD/EUR amount. */}
+          {document.currency === "INR" && (
+            <Text
+              style={{
+                fontSize: fs(7),
+                fontFamily: "Noto Sans",
+                fontWeight: "bold",
+                color: COLORS.body,
+                marginTop: 4,
+                textAlign: "right",
+              }}
+            >
+              {amountInWords(grandTotal, "INR")}
+            </Text>
+          )}
           {showInrSubline && (
             <View style={[styles.totalRow, { paddingTop: 2 }]}>
               <Text style={{ fontSize: fs(7.5), color: COLORS.muted }}>INR equivalent</Text>

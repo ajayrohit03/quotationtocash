@@ -125,6 +125,11 @@ export default async function PurchaseInvoiceDetailPage({
                   unit: item.unit ?? "",
                   rate: Number(item.rate),
                   gstRate: item.gstRate ? Number(item.gstRate) : null,
+                  // Without these, re-saving a draft would wipe the line's
+                  // saved foreign-currency data (the PATCH replaces lines).
+                  fcCurrency: item.fcCurrency ?? null,
+                  rateFC: item.rateFC != null ? Number(item.rateFC) : null,
+                  exRate: item.exRate != null ? Number(item.exRate) : null,
                 }))
               : undefined,
           }}
