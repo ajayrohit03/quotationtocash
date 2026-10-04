@@ -335,7 +335,9 @@ export function DocumentRender({
               </div>
               <div>Currency: {currency}</div>
               {appearance.showReferenceNumber && referenceNumber && (
-                <div>Reference number: {referenceNumber}</div>
+                <div>
+                  <span className="font-semibold">Reference number:</span> {referenceNumber}
+                </div>
               )}
             </div>
           </div>
@@ -350,7 +352,8 @@ export function DocumentRender({
               .sort((a, b) => a.sortOrder - b.sortOrder)
               .map((entry) => (
                 <div key={entry.definitionId}>
-                  {entry.label}: {formatCustomFieldValue(entry)}
+                  <span className="font-semibold">{entry.label}:</span>{" "}
+                  {formatCustomFieldValue(entry)}
                 </div>
               ))}
           </div>

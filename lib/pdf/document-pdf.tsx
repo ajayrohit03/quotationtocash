@@ -464,7 +464,10 @@ export function DocumentPdf({
             <Text style={styles.sectionLabel}>REFERENCE</Text>
             {document.showReferenceNumber && document.referenceNumber && (
               <Text style={[styles.addressLine, { marginTop: fs(3) }]}>
-                Reference number: {document.referenceNumber}
+                <Text style={{ fontFamily: "Noto Sans", fontWeight: "bold" }}>
+                  Reference number:
+                </Text>{" "}
+                {document.referenceNumber}
               </Text>
             )}
             {/* One field per line, at the full 250pt column width —
@@ -492,7 +495,10 @@ export function DocumentPdf({
                       key={entry.definitionId}
                       style={[styles.addressLine, { marginTop: 2 }]}
                     >
-                      {`${entry.label}: ${formatCustomFieldValue(entry)}`}
+                      <Text style={{ fontFamily: "Noto Sans", fontWeight: "bold" }}>
+                        {`${entry.label}:`}
+                      </Text>
+                      {` ${formatCustomFieldValue(entry)}`}
                     </Text>
                   ))}
               </View>

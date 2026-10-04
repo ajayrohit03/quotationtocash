@@ -243,6 +243,17 @@ export function PurchaseInvoicePdf({ purchaseInvoice }: { purchaseInvoice: Purch
     shipmentField("Terms of Shipment", purchaseInvoice.termsOfShipment),
   ].filter(Boolean);
 
+  // Page content is 515pt wide. The FC layout has 8 numeric columns, so
+  // widths follow the widest realistic value (e.g. "₹12,34,567.89")
+  // instead of an even split, and the table uses a smaller font/padding —
+  // an even 8% split left ~35pt of text room per cell and amounts
+  // overflowed into the neighbouring column. Each set sums to 100%.
+  const cols = showFc
+    ? { desc: "13.5%", sac: "5.5%", qty: "7%", rate: "9.5%", exRate: "7%", amountFc: "10.5%", amountInr: "11%", taxable: "10.5%", tax: "8.5%", igst: "8.5%" }
+    : { desc: "22%", sac: "7%", qty: "8%", rate: "8%", exRate: "0%", amountFc: "0%", amountInr: "12%", taxable: "9%", tax: "9.3%", igst: "9.4%" };
+  const tableCellFont = showFc ? { fontSize: 6.5, padding: 2 } : {};
+  const tableHeadFont = showFc ? { fontSize: 6.5, padding: 2 } : {};
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -303,17 +314,17 @@ export function PurchaseInvoicePdf({ purchaseInvoice }: { purchaseInvoice: Purch
 
         <View style={styles.table}>
           <View style={styles.tableHeaderRow}>
-            <Text style={[styles.tableHeaderCell, { width: showFc ? "18%" : "22%", textAlign: "left" }]}>Description</Text>
-            <Text style={[styles.tableHeaderCell, { width: showFc ? "6%" : "7%" }]}>SAC</Text>
-            <Text style={[styles.tableHeaderCell, { width: showFc ? "7%" : "8%" }]}>Qty/UOM</Text>
-            <Text style={[styles.tableHeaderCell, { width: showFc ? "7%" : "8%" }]}>{showFc ? "Rate (FC)" : "Rate"}</Text>
-            {showFc && <Text style={[styles.tableHeaderCell, { width: "7%" }]}>Ex. Rate</Text>}
-            {showFc && <Text style={[styles.tableHeaderCell, { width: "8%" }]}>Amount (FC)</Text>}
-            <Text style={[styles.tableHeaderCell, { width: showFc ? "8%" : "12%" }]}>Amount (INR)</Text>
-            <Text style={[styles.tableHeaderCell, { width: showFc ? "8%" : "9%" }]}>Taxable</Text>
-            <Text style={[styles.tableHeaderCell, { width: showFc ? "8%" : "9.3%" }]}>CGST</Text>
-            <Text style={[styles.tableHeaderCell, { width: showFc ? "8%" : "9.3%" }]}>SGST</Text>
-            <Text style={[styles.tableHeaderCell, { width: showFc ? "8%" : "9.4%" }]}>IGST</Text>
+            <Text style={[styles.tableHeaderCell, tableHeadFont, { width: cols.desc, textAlign: "left" }]}>Description</Text>
+            <Text style={[styles.tableHeaderCell, tableHeadFont, { width: cols.sac }]}>SAC</Text>
+            <Text style={[styles.tableHeaderCell, tableHeadFont, { width: cols.qty }]}>Qty/UOM</Text>
+            <Text style={[styles.tableHeaderCell, tableHeadFont, { width: cols.rate }]}>{showFc ? "Rate (FC)" : "Rate"}</Text>
+            {showFc && <Text style={[styles.tableHeaderCell, tableHeadFont, { width: cols.exRate }]}>Ex. Rate</Text>}
+            {showFc && <Text style={[styles.tableHeaderCell, tableHeadFont, { width: cols.amountFc }]}>Amount (FC)</Text>}
+            <Text style={[styles.tableHeaderCell, tableHeadFont, { width: cols.amountInr }]}>Amount (INR)</Text>
+            <Text style={[styles.tableHeaderCell, tableHeadFont, { width: cols.taxable }]}>Taxable</Text>
+            <Text style={[styles.tableHeaderCell, tableHeadFont, { width: cols.tax }]}>CGST</Text>
+            <Text style={[styles.tableHeaderCell, tableHeadFont, { width: cols.tax }]}>SGST</Text>
+            <Text style={[styles.tableHeaderCell, tableHeadFont, { width: cols.igst }]}>IGST</Text>
           </View>
           {lineItems.map((item, index) => {
             // Prefer this line's own FC provenance (PurchaseLineItem.
@@ -332,30 +343,30 @@ export function PurchaseInvoicePdf({ purchaseInvoice }: { purchaseInvoice: Purch
               (item.amountInr != null && item.amount !== 0 ? item.amountInr / item.amount : null);
             return (
               <View style={styles.tableRow} key={index}>
-                <Text style={[styles.tableCell, { width: showFc ? "18%" : "22%" }]}>{item.description}</Text>
-                <Text style={[styles.tableCell, { width: showFc ? "6%" : "7%", textAlign: "center" }]}>{item.sac || "—"}</Text>
-                <Text style={[styles.tableCell, { width: showFc ? "7%" : "8%", textAlign: "center" }]}>
+                <Text style={[styles.tableCell, tableCellFont, { width: cols.desc }]}>{item.description}</Text>
+                <Text style={[styles.tableCell, tableCellFont, { width: cols.sac, textAlign: "center" }]}>{item.sac || "—"}</Text>
+                <Text style={[styles.tableCell, tableCellFont, { width: cols.qty, textAlign: "center" }]}>
                   {item.qty}
                   {item.unit ? ` ${item.unit}` : ""}
                 </Text>
-                <Text style={[styles.tableCell, { width: showFc ? "7%" : "8%", textAlign: "right" }]}>
+                <Text style={[styles.tableCell, tableCellFont, { width: cols.rate, textAlign: "right" }]}>
                   {showFc ? formatCurrency(rateFC, fcCurrency) : formatCurrency(item.rate, purchaseInvoice.currency)}
                 </Text>
                 {showFc && (
-                  <Text style={[styles.tableCell, { width: "7%", textAlign: "right" }]}>
+                  <Text style={[styles.tableCell, tableCellFont, { width: cols.exRate, textAlign: "right" }]}>
                     {effectiveExchangeRate != null ? effectiveExchangeRate.toFixed(4) : "—"}
                   </Text>
                 )}
                 {showFc && (
-                  <Text style={[styles.tableCell, { width: "8%", textAlign: "right" }]}>{formatCurrency(amountFC, fcCurrency)}</Text>
+                  <Text style={[styles.tableCell, tableCellFont, { width: cols.amountFc, textAlign: "right" }]}>{formatCurrency(amountFC, fcCurrency)}</Text>
                 )}
-                <Text style={[styles.tableCell, { width: showFc ? "8%" : "12%", textAlign: "right" }]}>
+                <Text style={[styles.tableCell, tableCellFont, { width: cols.amountInr, textAlign: "right" }]}>
                   {formatCurrency(item.amountInr ?? item.amount)}
                 </Text>
-                <Text style={[styles.tableCell, { width: showFc ? "8%" : "9%", textAlign: "right" }]}>{formatCurrency(item.taxableAmount)}</Text>
-                <Text style={[styles.tableCell, { width: showFc ? "8%" : "9.3%", textAlign: "right" }]}>{formatCurrency(item.cgst)}</Text>
-                <Text style={[styles.tableCell, { width: showFc ? "8%" : "9.3%", textAlign: "right" }]}>{formatCurrency(item.sgst)}</Text>
-                <Text style={[styles.tableCell, { width: showFc ? "8%" : "9.4%", textAlign: "right" }]}>{formatCurrency(item.igst)}</Text>
+                <Text style={[styles.tableCell, tableCellFont, { width: cols.taxable, textAlign: "right" }]}>{formatCurrency(item.taxableAmount)}</Text>
+                <Text style={[styles.tableCell, tableCellFont, { width: cols.tax, textAlign: "right" }]}>{formatCurrency(item.cgst)}</Text>
+                <Text style={[styles.tableCell, tableCellFont, { width: cols.tax, textAlign: "right" }]}>{formatCurrency(item.sgst)}</Text>
+                <Text style={[styles.tableCell, tableCellFont, { width: cols.igst, textAlign: "right" }]}>{formatCurrency(item.igst)}</Text>
               </View>
             );
           })}
