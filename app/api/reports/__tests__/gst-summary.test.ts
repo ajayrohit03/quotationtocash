@@ -70,6 +70,8 @@ async function setup() {
     igst?: number;
     total?: number;
     rates?: number[];
+    sacs?: (string | null)[];
+    legacyCustomSac?: string;
     customerName?: string;
   } = {}) {
     return prisma.document.create({
@@ -90,7 +92,19 @@ async function setup() {
         customerSnapshot: { name: opts.customerName ?? "Buyer", company: null, state: "Karnataka", gstin: "29AABCA1234A1Z5" },
         businessSnapshot: { placeOfSupply: "Karnataka" },
         lineItems: {
-          create: (opts.rates ?? [18]).map((r, i) => ({ name: `Item ${i}`, qty: 1, rate: 100, amount: 100, gstRate: r, sortOrder: i })),
+          create: (opts.rates ?? [18]).map((r, i) => ({
+            name: `Item ${i}`,
+            qty: 1,
+            rate: 100,
+            amount: 100,
+            gstRate: r,
+            sortOrder: i,
+            sac: opts.sacs?.[i] ?? null,
+            customFieldValues:
+              opts.legacyCustomSac && i === 0
+                ? [{ definitionId: "d1", label: "SAC Code", type: "text", value: opts.legacyCustomSac, sortOrder: 0 }]
+                : [],
+          })),
         },
       },
     });
@@ -123,7 +137,7 @@ describe("GET /api/reports/gst-summary — filtering", () => {
     expect(body).toHaveLength(1);
     expect(Object.keys(body[0]).sort()).toEqual(
       [
-        "invoiceNumber", "invoiceDate", "invoiceType", "customerName", "customerGstin", "placeOfSupply",
+        "invoiceNumber", "invoiceDate", "invoiceType", "sacCodes", "customerName", "customerGstin", "placeOfSupply",
         "taxableValue", "cgstRate", "cgstAmount", "sgstRate", "sgstAmount", "igstRate", "igstAmount",
         "totalTax", "invoiceTotal", "currency", "status",
       ].sort(),
@@ -132,6 +146,7 @@ describe("GET /api/reports/gst-summary — filtering", () => {
       invoiceNumber: "INV-1",
       invoiceDate: "2026-09-15",
       invoiceType: "invoice",
+      sacCodes: "",
       customerName: "Buyer",
       customerGstin: "29AABCA1234A1Z5",
       placeOfSupply: "Karnataka",
@@ -223,6 +238,31 @@ describe("GET /api/reports/gst-summary — filtering", () => {
     expect(exp).toMatchObject({ cgstRate: null, igstRate: null, totalTax: 0, currency: "USD" });
   });
 
+  it("lists each invoice's unique SAC/HSN codes, including a legacy custom-field code", async () => {
+    const { owner, makeDoc } = await setup();
+    await mockedAuthAs(owner.authProviderId);
+    await makeDoc({ number: "MULTI", rates: [18, 18, 12], sacs: ["996521", "996799", "996521"] });
+    await makeDoc({ number: "LEGACY", rates: [18], legacyCustomSac: "996511" });
+    await makeDoc({ number: "NONE", rates: [18] });
+    const rows = await (await call(RANGE)).json();
+    const byNo = Object.fromEntries(rows.map((r: { invoiceNumber: string; sacCodes: string }) => [r.invoiceNumber, r.sacCodes]));
+    expect(byNo).toEqual({ MULTI: "996521, 996799", LEGACY: "996511", NONE: "" });
+    expect(rows).toHaveLength(3); // still one row per invoice
+  });
+
+  it("puts the codes in the Excel SAC / HSN Code column (column 3) and keeps one row per invoice", async () => {
+    const { owner, makeDoc } = await setup();
+    await mockedAuthAs(owner.authProviderId);
+    await makeDoc({ number: "X1", rates: [18, 12], sacs: ["996521", "996799"] });
+    const res = await call(`${RANGE}&format=xlsx`);
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(Buffer.from(await res.arrayBuffer()) as never);
+    const sheet = wb.worksheets[0]!;
+    expect(sheet.getRow(1).getCell(3).value).toBe("SAC / HSN Code");
+    expect(sheet.getRow(2).getCell(1).value).toBe("X1");
+    expect(sheet.getRow(2).getCell(3).value).toBe("996521, 996799");
+  });
+
   it("validates the query", async () => {
     const { owner } = await setup();
     await mockedAuthAs(owner.authProviderId);
@@ -259,7 +299,7 @@ describe("GET /api/reports/gst-summary — file exports", () => {
     const sheet = workbook.worksheets[0]!;
     const labels = (sheet.getRow(1).values as unknown[]).slice(1);
     expect(labels).toEqual([
-      "Invoice No", "Type", "Date", "Customer", "GSTIN", "Place of Supply", "Currency", "Taxable Value",
+      "Invoice No", "Type", "SAC / HSN Code", "Date", "Customer", "GSTIN", "Place of Supply", "Currency", "Taxable Value",
       "CGST %", "CGST Amt", "SGST %", "SGST Amt", "IGST %", "IGST Amt", "Total Tax", "Invoice Total", "Status",
     ]);
     const invoiceNos = [2, 3, 4].map((r) => sheet.getRow(r).getCell(1).value);
@@ -271,12 +311,12 @@ describe("GET /api/reports/gst-summary — file exports", () => {
       if (first.startsWith("Total (")) totalRows[first.slice(7, 10)] = row;
     });
     const inr = totalRows["INR"]!;
-    const taxableCell = inr.getCell(8).value as { formula: string; result: number };
+    const taxableCell = inr.getCell(9).value as { formula: string; result: number };
     expect(taxableCell.formula).toContain("SUMIF");
     expect(taxableCell.result).toBe(15000);
-    expect((inr.getCell(15).value as { result: number }).result).toBe(2700); // Total Tax
-    expect((inr.getCell(16).value as { result: number }).result).toBe(17700); // Invoice Total
-    expect((totalRows["USD"]!.getCell(8).value as { result: number }).result).toBe(500);
+    expect((inr.getCell(16).value as { result: number }).result).toBe(2700); // Total Tax
+    expect((inr.getCell(17).value as { result: number }).result).toBe(17700); // Invoice Total
+    expect((totalRows["USD"]!.getCell(9).value as { result: number }).result).toBe(500);
   });
 
   it("csv: filename, BOM, header and a row per invoice with no totals line", async () => {
@@ -291,7 +331,7 @@ describe("GET /api/reports/gst-summary — file exports", () => {
     // Response.text() strips a BOM when decoding, so check the raw bytes.
     expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
     const text = new TextDecoder("utf-8", { ignoreBOM: true }).decode(bytes).slice(1);
-    expect(text.startsWith("Invoice No,Type,Date,Customer,GSTIN,Place of Supply,Currency,Taxable Value,")).toBe(true);
+    expect(text.startsWith("Invoice No,Type,SAC / HSN Code,Date,Customer,GSTIN,Place of Supply,Currency,Taxable Value,")).toBe(true);
     expect(text.trimEnd().split("\r\n")).toHaveLength(3);
   });
 

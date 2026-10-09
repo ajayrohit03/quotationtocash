@@ -60,7 +60,10 @@ export async function getGstSummaryRows(opts: {
       total: true,
       customerSnapshot: true,
       businessSnapshot: true,
-      lineItems: { select: { gstRate: true } },
+      lineItems: {
+        orderBy: { sortOrder: "asc" },
+        select: { gstRate: true, sac: true, customFieldValues: true },
+      },
     },
   });
 
@@ -80,7 +83,13 @@ export async function getGstSummaryRows(opts: {
       total: Number(doc.total),
       customerSnapshot: doc.customerSnapshot as GstSummaryRowSource["customerSnapshot"],
       businessSnapshot: doc.businessSnapshot as GstSummaryRowSource["businessSnapshot"],
-      lineItems: doc.lineItems.map((l) => ({ gstRate: l.gstRate == null ? null : Number(l.gstRate) })),
+      lineItems: doc.lineItems.map((l) => ({
+        gstRate: l.gstRate == null ? null : Number(l.gstRate),
+        sac: l.sac,
+        customFieldValues: Array.isArray(l.customFieldValues)
+          ? (l.customFieldValues as { label?: string; value?: unknown }[])
+          : [],
+      })),
     }),
   );
 }

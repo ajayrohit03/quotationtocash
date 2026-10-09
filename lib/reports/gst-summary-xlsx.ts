@@ -29,7 +29,7 @@ export async function buildGstSummaryWorkbook(rows: readonly GstSummaryRow[]): P
   sheet.columns = REPORT_COLUMNS.map((c) => ({
     header: c.label,
     key: c.key,
-    width: c.key === "customerName" ? 30 : c.key === "placeOfSupply" ? 18 : c.kind === "money" ? 15 : 13,
+    width: c.key === "customerName" ? 30 : c.key === "placeOfSupply" || c.key === "sacCodes" ? 18 : c.kind === "money" ? 15 : 13,
   }));
 
   const header = sheet.getRow(1);

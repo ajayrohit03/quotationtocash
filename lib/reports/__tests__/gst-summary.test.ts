@@ -84,6 +84,47 @@ describe("buildGstSummaryRow — rates are derived from line items", () => {
   });
 });
 
+describe("buildGstSummaryRow — SAC / HSN codes", () => {
+  const withLines = (lineItems: GstSummarySource["lineItems"]) => buildGstSummaryRow(doc({ lineItems }));
+
+  it("joins the unique codes in line order, dropping duplicates", () => {
+    const row = withLines([
+      { gstRate: 18, sac: "996521" },
+      { gstRate: 18, sac: "996799" },
+      { gstRate: 18, sac: "996521" },
+      { gstRate: 12, sac: "996712" },
+    ]);
+    expect(row.sacCodes).toBe("996521, 996799, 996712");
+  });
+
+  it("is an empty string when no line carries a code", () => {
+    expect(withLines([{ gstRate: 18 }, { gstRate: 18, sac: null }, { gstRate: 18, sac: "  " }]).sacCodes).toBe("");
+  });
+
+  it("falls back to a legacy 'SAC Code' / 'HSN' custom field when the column is empty", () => {
+    const row = withLines([
+      { gstRate: 18, sac: null, customFieldValues: [{ label: "Vessel", value: "MSC" }, { label: "SAC Code", value: "996511" }] },
+      { gstRate: 18, sac: "996521", customFieldValues: [{ label: "HSN Code", value: "000000" }] },
+      { gstRate: 18, sac: "", customFieldValues: [{ label: "hsn", value: 9983 }] },
+    ]);
+    // The real column wins over the custom field on the same line.
+    expect(row.sacCodes).toBe("996511, 996521, 9983");
+  });
+
+  it("ignores unrelated custom fields and null values", () => {
+    expect(withLines([{ gstRate: 18, customFieldValues: [{ label: "Project", value: "X" }, { label: "SAC", value: null }] }]).sacCodes).toBe("");
+  });
+
+  it("appears right after Invoice No and Type in the column list, labelled 'SAC / HSN Code'", () => {
+    expect(REPORT_COLUMNS.slice(0, 3).map((c) => c.label)).toEqual(["Invoice No", "Type", "SAC / HSN Code"]);
+  });
+
+  it("quotes a code list in CSV because it contains commas", () => {
+    const csv = buildCsv([withLines([{ gstRate: 18, sac: "996521" }, { gstRate: 18, sac: "996799" }])]);
+    expect(csv).toContain(',invoice,"996521, 996799",');
+  });
+});
+
 describe("totalsByCurrency", () => {
   const row = (currency: string, taxable: number, tax: number) =>
     buildGstSummaryRow(doc({ currency, taxableAmount: taxable, cgst: tax / 2, sgst: tax / 2, total: taxable + tax }));

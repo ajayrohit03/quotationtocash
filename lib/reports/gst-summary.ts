@@ -27,6 +27,9 @@ export type GstSummaryRow = {
   invoiceNumber: string;
   invoiceDate: string; // YYYY-MM-DD, IST calendar day
   invoiceType: ReportDocumentType;
+  // Unique SAC/HSN codes across the invoice's lines, in line order,
+  // joined ", " — empty when no line has one.
+  sacCodes: string;
   customerName: string;
   customerGstin: string;
   placeOfSupply: string;
@@ -58,7 +61,12 @@ export type GstSummarySource = {
   total: number;
   customerSnapshot: { name?: string | null; company?: string | null; state?: string | null; gstin?: string | null };
   businessSnapshot: { placeOfSupply?: string | null };
-  lineItems: { gstRate: number | null }[];
+  lineItems: {
+    gstRate: number | null;
+    sac?: string | null;
+    // Frozen custom-field entries; read only as the legacy source of a code.
+    customFieldValues?: { label?: string; value?: unknown }[];
+  }[];
 };
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -72,6 +80,17 @@ const IST_DATE = new Intl.DateTimeFormat("en-CA", {
 
 export function istDateString(date: Date): string {
   return IST_DATE.format(date);
+}
+
+// LineItem.sac is the real column. Lines entered before it existed (freight
+// customers typed "SAC Code" / "HSN Code" as a custom field) fall back to
+// that, same as lib/einvoice/buildIrpPayload.ts's lookupHsnCode.
+function lineSacCode(line: GstSummarySource["lineItems"][number]): string {
+  const direct = line.sac?.trim();
+  if (direct) return direct;
+  const legacy = line.customFieldValues?.find((v) => typeof v.label === "string" && /hsn|sac/i.test(v.label));
+  const value = legacy?.value;
+  return value === undefined || value === null ? "" : String(value).trim();
 }
 
 function formatRates(rates: number[]): number | string | null {
@@ -98,6 +117,7 @@ export function buildGstSummaryRow(doc: GstSummarySource): GstSummaryRow {
     invoiceNumber: doc.number,
     invoiceDate: istDateString(doc.issueDate),
     invoiceType: doc.type,
+    sacCodes: [...new Set(doc.lineItems.map(lineSacCode).filter(Boolean))].join(", "),
     customerName: doc.customerSnapshot.company?.trim() || doc.customerSnapshot.name?.trim() || "",
     customerGstin: doc.customerSnapshot.gstin?.trim() ?? "",
     // The recipient's state is the GST place of supply; a customer with no
@@ -174,6 +194,7 @@ export type ReportColumn = {
 export const REPORT_COLUMNS: readonly ReportColumn[] = [
   { key: "invoiceNumber", label: "Invoice No", kind: "text" },
   { key: "invoiceType", label: "Type", kind: "text" },
+  { key: "sacCodes", label: "SAC / HSN Code", kind: "text" },
   { key: "invoiceDate", label: "Date", kind: "text" },
   { key: "customerName", label: "Customer", kind: "text" },
   { key: "customerGstin", label: "GSTIN", kind: "text" },
